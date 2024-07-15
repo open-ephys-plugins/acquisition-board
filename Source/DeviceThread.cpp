@@ -238,7 +238,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
     eventChannels->add (new EventChannel (settings));
 }
 
-void DeviceThread::handleBroadcastMessage (String msg)
+void DeviceThread::handleBroadcastMessage (const String& msg, const int64 messageTimeMilliseconds)
 {
     StringArray parts = StringArray::fromTokens (msg, " ", "");
 

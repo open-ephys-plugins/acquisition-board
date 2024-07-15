@@ -55,7 +55,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     }
 
     // add rescan button
-    rescanButton = new UtilityButton ("RESCAN", Font ("Small Text", 13, Font::plain));
+    rescanButton = new UtilityButton ("RESCAN");
     rescanButton->setRadius (3.0f);
     rescanButton->setBounds (6, 108, 65, 18);
     rescanButton->addListener (this);
@@ -73,7 +73,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     bandwidthInterface->setBounds (80, 55, 80, 50);
 
     // add AUX channel enable/disable button
-    auxButton = new UtilityButton ("AUX", Font ("Small Text", 13, Font::plain));
+    auxButton = new UtilityButton ("AUX");
     auxButton->setRadius (3.0f);
     auxButton->setBounds (80, 108, 32, 18);
     auxButton->addListener (this);
@@ -82,7 +82,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     addAndMakeVisible (auxButton);
 
     // add ADC channel enable/disable button
-    adcButton = new UtilityButton ("ADC", Font ("Small Text", 13, Font::plain));
+    adcButton = new UtilityButton ("ADC");
     adcButton->setRadius (3.0f);
     adcButton->setBounds (80 + 32 + 1, 108, 32, 18);
     adcButton->addListener (this);
@@ -130,7 +130,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     clockInterface->setBounds (174, 80, 70, 50);
 
     // add DSP Offset Button
-    dspoffsetButton = new UtilityButton ("DSP:", Font ("Small Text", 13, Font::plain));
+    dspoffsetButton = new UtilityButton ("DSP:");
     dspoffsetButton->setRadius (3.0f); // sets the radius of the button's corners
     dspoffsetButton->setBounds (174, 108, 32, 18); // sets the x position, y position, width, and height of the button
     dspoffsetButton->addListener (this);
@@ -144,7 +144,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     addAndMakeVisible (dspInterface);
     dspInterface->setBounds (174 + 32, 108, 40, 50);
 
-    dacTTLButton = new UtilityButton ("DAC TTL", Font ("Small Text", 13, Font::plain));
+    dacTTLButton = new UtilityButton ("DAC TTL");
     dacTTLButton->setRadius (3.0f);
     dacTTLButton->setBounds (260, 25, 60, 18);
     dacTTLButton->addListener (this);
@@ -187,7 +187,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     ttlSettleCombo->setSelectedId (1, sendNotification);
     addAndMakeVisible (ttlSettleCombo);
 
-    ledButton = new UtilityButton ("LED", Font ("Small Text", 13, Font::plain));
+    ledButton = new UtilityButton ("LED");
     ledButton->setRadius (3.0f);
     ledButton->setBounds (288, 108, 32, 18);
     ledButton->addListener (this);
@@ -681,7 +681,7 @@ HeadstageOptionsInterface::HeadstageOptionsInterface (AcquisitionBoard* board_,
     channelsOnHs1 = 0;
     channelsOnHs2 = 0;
 
-    hsButton1 = new UtilityButton (" ", Font ("Small Text", 13, Font::plain));
+    hsButton1 = new UtilityButton (" ");
     hsButton1->setRadius (3.0f);
     hsButton1->setBounds (23, 1, 20, 17);
     hsButton1->setEnabledState (false);
@@ -689,7 +689,7 @@ HeadstageOptionsInterface::HeadstageOptionsInterface (AcquisitionBoard* board_,
     hsButton1->addListener (this);
     addAndMakeVisible (hsButton1);
 
-    hsButton2 = new UtilityButton (" ", Font ("Small Text", 13, Font::plain));
+    hsButton2 = new UtilityButton (" ");
     hsButton2->setRadius (3.0f);
     hsButton2->setBounds (43, 1, 20, 17);
     hsButton2->setEnabledState (false);

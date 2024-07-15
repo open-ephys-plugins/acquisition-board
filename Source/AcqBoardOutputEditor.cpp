@@ -38,7 +38,7 @@ AcqBoardOutputEditor::AcqBoardOutputEditor (GenericProcessor* parentNode)
     addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "gate_line", 100, 76);
     addTextBoxParameterEditor (Parameter::GLOBAL_SCOPE, "event_duration", 100, 30);
 
-    triggerButton = std::make_unique<UtilityButton> ("Trigger", Font ("Small Text", 13, Font::plain));
+    triggerButton = std::make_unique<UtilityButton> ("Trigger");
     triggerButton->setBounds (190, 95, 55, 25);
     triggerButton->addListener (this);
     addAndMakeVisible (triggerButton.get());

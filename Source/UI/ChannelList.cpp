@@ -48,13 +48,13 @@ ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : boa
     numberingScheme->setSelectedId (1, dontSendNotification);
     addAndMakeVisible (numberingScheme);
 
-    impedanceButton = new UtilityButton ("Measure Impedances", Font ("Default", 13, Font::plain));
+    impedanceButton = new UtilityButton ("Measure Impedances");
     impedanceButton->setRadius (3);
     impedanceButton->setBounds (280, 10, 140, 25);
     impedanceButton->addListener (this);
     addAndMakeVisible (impedanceButton);
 
-    saveImpedanceButton = new UtilityButton ("Save Impedances", Font ("Default", 13, Font::plain));
+    saveImpedanceButton = new UtilityButton ("Save Impedances");
     saveImpedanceButton->setRadius (3);
     saveImpedanceButton->setBounds (430, 10, 150, 25);
     saveImpedanceButton->addListener (this);
