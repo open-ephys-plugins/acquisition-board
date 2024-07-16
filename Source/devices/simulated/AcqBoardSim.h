@@ -24,6 +24,7 @@
 #define __ACQBOARDSIM_H_2C4CBD67__
 
 #include "../AcquisitionBoard.h"
+#include "ImpedanceMeterSim.h"
 
 /**
     Interface for a simulated Open Ephys Acquisition Board
@@ -159,6 +160,9 @@ public:
 private:
     /** Fills data buffer */
     void run();
+
+    /** Impedance meter */
+    std::unique_ptr<ImpedanceMeterSim> impedanceMeter;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AcqBoardSim);
 };

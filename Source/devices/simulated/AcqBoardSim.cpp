@@ -24,6 +24,7 @@
 
 AcqBoardSim::AcqBoardSim (DataBuffer* buffer_) : AcquisitionBoard (buffer_)
 {
+    impedanceMeter = std::make_unique<ImpedanceMeterSim> ();
 }
 
 AcqBoardSim::~AcqBoardSim()

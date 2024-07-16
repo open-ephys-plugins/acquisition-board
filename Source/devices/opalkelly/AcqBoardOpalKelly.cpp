@@ -38,6 +38,8 @@
 AcqBoardOpalKelly::AcqBoardOpalKelly (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
                                                              chipRegisters (30000.0f)
 {
+    impedanceMeter = std::make_unique<ImpedanceMeterOpalKelly> (this);
+    
     evalBoard = std::make_unique<Rhd2000EvalBoard>();
 
     memset (auxBuffer, 0, sizeof (auxBuffer));
