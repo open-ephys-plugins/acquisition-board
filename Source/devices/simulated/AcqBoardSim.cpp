@@ -357,6 +357,7 @@ void AcqBoardSim::run()
     int64 samplesPerBuffer = int64 (settings.boardSampleRate / 1000.0);
     int64 uSecPerBuffer = (samplesPerBuffer / settings.boardSampleRate) * 1e6;
     uint64 eventCode = 0;
+    int skip = 30000.0f / settings.boardSampleRate;
 
     int64 start = Time::getHighResolutionTicks();
     int64 bufferCount = 0;
@@ -389,7 +390,7 @@ void AcqBoardSim::run()
 
             for (int headstageChannel = 0; headstageChannel < numHeadstageChannels; headstageChannel++)
             {
-                samples[(ch * samplesPerBuffer) + sample_num] = data.spikes[sampleNumber % availableHeadstageSamples];
+                samples[(ch * samplesPerBuffer) + sample_num] = data.spikes[(sampleNumber * skip) % availableHeadstageSamples];
                 ch++;
             }
 
@@ -401,7 +402,7 @@ void AcqBoardSim::run()
                     {
                         for (int aux_ch = 0; aux_ch < 3; aux_ch++)
                         {
-							samples[(ch * samplesPerBuffer) + sample_num] = data.sine_wave[sampleNumber % availableAuxSamples] * 0.01f;
+                            samples[(ch * samplesPerBuffer) + sample_num] = data.sine_wave[(sampleNumber * skip) % availableAuxSamples] * 0.01f;
 							ch++;
 						}
 					
@@ -414,7 +415,7 @@ void AcqBoardSim::run()
 
                 for (int adc_ch = 0; adc_ch < 8; adc_ch++)
                 {
-                    samples[(ch * samplesPerBuffer) + sample_num] = data.adc[sampleNumber % availableAdcSamples];
+                    samples[(ch * samplesPerBuffer) + sample_num] = data.adc[(sampleNumber * skip) % availableAdcSamples];
                     ch++;
                 }
             }
