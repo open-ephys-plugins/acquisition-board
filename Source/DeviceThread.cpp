@@ -28,6 +28,9 @@
 #include "devices/opalkelly/AcqBoardOpalKelly.h"
 #include "devices/simulated/AcqBoardSim.h"
 
+/** Set to true to test simulation mode with boards connected */
+static const bool forceSimulationMode = false;
+
 BoardType DeviceThread::boardType = ACQUISITION_BOARD; // initialize static member
 
 DeviceThread::DeviceThread (SourceNode* sn, BoardType boardType_) : DataThread (sn)
@@ -70,6 +73,12 @@ std::unique_ptr<GenericEditor> DeviceThread::createEditor (SourceNode* sn)
 
 AcquisitionBoard* DeviceThread::detectBoard()
 {
+
+    if (forceSimulationMode)
+    {
+        return new AcqBoardSim (sourceBuffers.getLast());
+    }
+
     std::unique_ptr<AcqBoardOpalKelly> opalKellyBoard = std::make_unique<AcqBoardOpalKelly> (sourceBuffers.getLast());
 
     if (opalKellyBoard->detectBoard())

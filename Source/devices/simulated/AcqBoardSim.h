@@ -25,6 +25,10 @@
 
 #include "../AcquisitionBoard.h"
 #include "ImpedanceMeterSim.h"
+#include "HeadstageSim.h"
+#include "SimulatedData.h"
+
+#define MAX_SAMPLES_PER_BUFFER 300
 
 /**
     Interface for a simulated Open Ephys Acquisition Board
@@ -158,13 +162,32 @@ public:
     void setNumHeadstageChannels (int headstageIndex, int channelCount);
 
 private:
+
+    /** Enables or disables a given headstage */
+    bool enableHeadstage (int hsNum, bool enabled, int nStr = 1, int strChans = 32);
+
+
     /** Fills data buffer */
     void run();
+
+    /** Holds simulated samples */
+    SimulatedData data;
 
     /** Impedance meter */
     std::unique_ptr<ImpedanceMeterSim> impedanceMeter;
 
+    /** Headstages */
+    OwnedArray<HeadstageSim> headstages;
+
+    /** Data buffers */
+    float samples[384 * MAX_SAMPLES_PER_BUFFER];
+    int64 sampleNumbers[MAX_SAMPLES_PER_BUFFER];
+    double timestamps[MAX_SAMPLES_PER_BUFFER];
+    uint64 event_codes[MAX_SAMPLES_PER_BUFFER];
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AcqBoardSim);
 };
+
+
 
 #endif

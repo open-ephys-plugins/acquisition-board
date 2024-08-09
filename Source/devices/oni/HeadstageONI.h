@@ -52,9 +52,6 @@ public:
     /** Returns the name of a channel at a given index*/
     String getChannelName (int ch) const;
 
-    /** Returns the name of the headstage stream (used for naming AUX channels) */
-    String getStreamPrefix() const;
-
     /** Returns true if impedances for a headstage channel have been measured */
     bool hasValidImpedance (int ch) const;
 
@@ -72,9 +69,6 @@ public:
 
     /** Sets the index of this headstage's data stream */
     void setFirstStreamIndex (int streamIndex);
-
-    /** Sets the index of this headstage's first neural data channel*/
-    void setFirstChannel (int channelIndex);
 
     /** Sets the number of channels per stream*/
     void setChannelsPerStream (int nchan);
@@ -107,7 +101,6 @@ private:
     Rhd2000ONIBoard::BoardDataSource dataSource;
 
     int streamIndex;
-    int firstChannelIndex;
 
     int numStreams;
     int channelsPerStream;
@@ -115,10 +108,6 @@ private:
     bool halfChannels;
 
     int MAX_NUM_HEADSTAGES;
-
-    StringArray channelNames;
-    String prefix;
-    ChannelNamingScheme channelNamingScheme = GLOBAL_INDEX;
 
     Array<float> impedanceMagnitudes;
     Array<float> impedancePhases;

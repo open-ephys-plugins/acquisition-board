@@ -22,9 +22,15 @@
 
 #include "AcqBoardSim.h"
 
+const int MAX_NUM_HEADSTAGES = 8;
+
 AcqBoardSim::AcqBoardSim (DataBuffer* buffer_) : AcquisitionBoard (buffer_)
 {
     impedanceMeter = std::make_unique<ImpedanceMeterSim> ();
+
+    for (int i = 0; i < MAX_NUM_HEADSTAGES; i++)
+        headstages.add (new HeadstageSim (i));
+
 }
 
 AcqBoardSim::~AcqBoardSim()
@@ -51,22 +57,31 @@ Array<const Headstage*> AcqBoardSim::getHeadstages()
 
     Array<const Headstage*> connectedHeadstages;
 
+    for (auto headstage : headstages)
+    {
+        if (headstage->isConnected())
+        {
+			connectedHeadstages.add (headstage);
+		}
+	}
+
     return connectedHeadstages;
 }
 
 Array<int> AcqBoardSim::getAvailableSampleRates()
 {
     Array<int> sampleRates;
-
-    sampleRates.add (30000);
-    sampleRates.add (15000);
+    
     sampleRates.add (1000);
+    sampleRates.add (15000);
+    sampleRates.add (30000);
 
     return sampleRates;
 }
 
 void AcqBoardSim::setSampleRate (int sampleRateHz)
 {
+    LOGD ("Simulated acquisition board setting sample rate to ", sampleRateHz, " Hz.");
     settings.boardSampleRate = float (sampleRateHz);
 }
 
@@ -77,11 +92,49 @@ float AcqBoardSim::getSampleRate() const
 
 void AcqBoardSim::scanPorts()
 {
+    for (int i = 0; i < MAX_NUM_HEADSTAGES; i++)
+    {
+        if (i == 0)
+        {
+            enableHeadstage (i, true);
+		}
+        else
+        {
+            enableHeadstage (i, false);
+		}
+    }
+
+    buffer->resize (getNumChannels(), 10000);
+        
+}
+
+
+bool AcqBoardSim::enableHeadstage (int hsNum, bool enabled, int nStr, int strChans)
+{
+    LOGD ("Headstage ", hsNum, ", enabled: ", enabled, ", num streams: ", nStr, ", stream channels: ", strChans);
+    LOGD ("Max num headstages: ", MAX_NUM_HEADSTAGES);
+
+    if (enabled)
+    {
+        headstages[hsNum]->setFirstChannel (getNumDataOutputs (ContinuousChannel::ELECTRODE));
+        headstages[hsNum]->setChannelCount (nStr * strChans);
+    }
+    else
+    {
+        headstages[hsNum]->setFirstChannel (-1);
+        headstages[hsNum]->setChannelCount (0);
+    }
+
+    buffer->resize (getNumChannels(), 10000);
+
+    return true;
 }
 
 void AcqBoardSim::enableAuxChannels (bool enabled)
 {
     settings.acquireAux = enabled;
+
+    buffer->resize (getNumChannels(), 10000);
 }
 
 bool AcqBoardSim::areAuxChannelsEnabled() const
@@ -92,6 +145,8 @@ bool AcqBoardSim::areAuxChannelsEnabled() const
 void AcqBoardSim::enableAdcChannels (bool enabled)
 {
     settings.acquireAdc = enabled;
+
+    buffer->resize (getNumChannels(), 10000);
 }
 
 bool AcqBoardSim::areAdcChannelsEnabled() const
@@ -101,7 +156,15 @@ bool AcqBoardSim::areAdcChannelsEnabled() const
 
 float AcqBoardSim::getBitVolts(ContinuousChannel::Type type) const
 {
-    return 0.195;
+    switch (type)
+    {
+        case ContinuousChannel::ELECTRODE:
+            return 0.195f;
+        case ContinuousChannel::AUX:
+            return 0.0000374;
+        case ContinuousChannel::ADC:
+            return 0.00015258789;
+    }
 }
 
 void AcqBoardSim::measureImpedances()
@@ -127,11 +190,20 @@ ChannelNamingScheme AcqBoardSim::getNamingScheme()
 
 bool AcqBoardSim::startAcquisition()
 {
+    startThread();
+
     return true;
 }
 
 bool AcqBoardSim::stopAcquisition()
 {
+    if (isThreadRunning())
+    {
+        signalThreadShouldExit();
+    }
+
+    buffer->clear();
+
     return true;
 }
 
@@ -209,22 +281,69 @@ void AcqBoardSim::setDACTriggerThreshold (int dacChannelIndex, float threshold)
 
 bool AcqBoardSim::isHeadstageEnabled (int hsNum) const
 {
-    return true;
+    return headstages[hsNum]->isConnected();
 }
 
 int AcqBoardSim::getActiveChannelsInHeadstage (int hsNum) const
 {
-    return 64;
+    return headstages[hsNum]->getNumActiveChannels();
+   
 }
 
 int AcqBoardSim::getChannelsInHeadstage (int hsNum) const
 {
-    return 64;
+    return headstages[hsNum]->getNumActiveChannels();
 }
 
-int AcqBoardSim::getNumDataOutputs (ContinuousChannel::Type)
+int AcqBoardSim::getNumDataOutputs (ContinuousChannel::Type type)
 {
-    return 256;
+    if (type == ContinuousChannel::ELECTRODE)
+    {
+        int totalChannels = 0;
+
+        for (auto headstage : headstages)
+        {
+            if (headstage->isConnected())
+            {
+                totalChannels += headstage->getNumActiveChannels();
+            }
+        }
+
+        return totalChannels;
+    }
+    if (type == ContinuousChannel::AUX)
+    {
+        if (settings.acquireAux)
+        {
+            int numAuxOutputs = 0;
+
+            for (auto headstage : headstages)
+            {
+                if (headstage->isConnected())
+                {
+                    numAuxOutputs += 3;
+                }
+            }
+            return numAuxOutputs;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    if (type == ContinuousChannel::ADC)
+    {
+        if (settings.acquireAdc)
+        {
+            return 8;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    return 0;
 }
 
 void AcqBoardSim::setNumHeadstageChannels (int headstageIndex, int channelCount)
@@ -234,4 +353,127 @@ void AcqBoardSim::setNumHeadstageChannels (int headstageIndex, int channelCount)
 
 void AcqBoardSim::run()
 {
+    int64 sampleNumber = 0;
+    int64 samplesPerBuffer = int64 (settings.boardSampleRate / 1000.0);
+    int64 uSecPerBuffer = (samplesPerBuffer / settings.boardSampleRate) * 1e6;
+    uint64 eventCode = 0;
+
+    int64 start = Time::getHighResolutionTicks();
+    int64 bufferCount = 0;
+    const int numHeadstageChannels = getNumDataOutputs (ContinuousChannel::ELECTRODE);
+    const int numAuxChannels = getNumDataOutputs (ContinuousChannel::AUX);
+    const int numAdcChannels = getNumDataOutputs (ContinuousChannel::ADC);
+
+    const int availableHeadstageSamples = data.spikes.size();
+    const int availableAuxSamples = data.sine_wave.size();
+    const int availableAdcSamples = data.adc.size();
+    
+    LOGD (" ");
+    LOGD ("Starting acquisition.");
+    LOGD ("Sample rate: ", settings.boardSampleRate);
+    LOGD ("samplesPerBuffer: ", samplesPerBuffer);
+    LOGD ("uSecPerBuffer: ", uSecPerBuffer);
+    LOGD ("numHeadstageChannels: ", numHeadstageChannels);
+    LOGD ("availableHeadstageSamples: ", availableHeadstageSamples);
+    LOGD (" ");
+
+    while (! threadShouldExit())
+    {
+
+        bufferCount++;
+
+        for (int sample_num = 0; sample_num < samplesPerBuffer; sample_num++)
+        {
+
+            int ch = 0;
+
+            for (int headstageChannel = 0; headstageChannel < numHeadstageChannels; headstageChannel++)
+            {
+                samples[(ch * samplesPerBuffer) + sample_num] = data.spikes[sampleNumber % availableHeadstageSamples];
+                ch++;
+            }
+
+            if (settings.acquireAux)
+            {
+                for (auto headstage : headstages)
+                {
+                    if (headstage->isConnected())
+                    {
+                        for (int aux_ch = 0; aux_ch < 3; aux_ch++)
+                        {
+							samples[(ch * samplesPerBuffer) + sample_num] = data.sine_wave[sampleNumber % availableAuxSamples] * 0.01f;
+							ch++;
+						}
+					
+                    }
+                }
+            }
+
+            if (settings.acquireAdc)
+            {
+
+                for (int adc_ch = 0; adc_ch < 8; adc_ch++)
+                {
+                    samples[(ch * samplesPerBuffer) + sample_num] = data.adc[sampleNumber % availableAdcSamples];
+                    ch++;
+                }
+            }
+
+            sampleNumbers[sample_num] = sampleNumber++;
+            timestamps[sample_num] = -1.0;
+
+            if (sampleNumber < settings.boardSampleRate * 30.0f)
+            {
+                if (sampleNumber % int (settings.boardSampleRate) == 0)
+                {
+                    if (eventCode == 0)
+                        eventCode = 1;
+                    else
+                        eventCode = 0;
+                }
+            }
+            else if (sampleNumber < settings.boardSampleRate * 60.0f)
+            {
+                if (sampleNumber % int (settings.boardSampleRate / 2) == 0)
+                {
+                    if (eventCode == 0)
+                        eventCode = 1;
+                    else
+                        eventCode = 0;
+                }
+            }
+            else if (sampleNumber < settings.boardSampleRate * 90.0f)
+            {
+                if (sampleNumber % int (settings.boardSampleRate / 4) == 0)
+                {
+                    if (eventCode == 0)
+                        eventCode = 1;
+                    else
+                        eventCode = 0;
+                }
+            }
+            else
+            {
+                if (sampleNumber % int (settings.boardSampleRate / 8) == 0)
+                {
+                    if (eventCode == 0)
+                        eventCode = 1;
+                    else
+                        eventCode = 0;
+                }
+            }
+
+            event_codes[sample_num] = eventCode;
+        }
+
+        buffer->addToBuffer (samples, sampleNumbers, timestamps, event_codes, samplesPerBuffer);
+
+        int64 uSecElapsed = int64 (Time::highResolutionTicksToSeconds (Time::getHighResolutionTicks() - start) * 1e6);
+
+        if (uSecElapsed < (uSecPerBuffer * bufferCount))
+        {
+            std::this_thread::sleep_for (std::chrono::microseconds ((uSecPerBuffer * bufferCount) - uSecElapsed));
+        }
+    }
+
 }

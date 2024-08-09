@@ -157,6 +157,9 @@ public:
     /** Returns true if a headstage is enabled */
     virtual bool isHeadstageEnabled (int hsNum) const = 0;
 
+    /** Sets the number of channels to use in a headstage */
+    virtual void setNumHeadstageChannels (int headstageIndex, int channelCount) = 0;
+
     /** Returns the active number of channels in a headstage */
     virtual int getActiveChannelsInHeadstage (int hsNum) const = 0;
 
@@ -166,8 +169,13 @@ public:
     /** Returns the total number of channels of a given type */
     virtual int getNumDataOutputs (ContinuousChannel::Type) = 0;
 
-    /** Sets the number of channels to use in a headstage */
-    virtual void setNumHeadstageChannels (int headstageIndex, int channelCount) = 0;
+    /** Returns total number of continuous channels */
+    int getNumChannels()
+    {
+        return getNumDataOutputs (ContinuousChannel::ELECTRODE)
+               + getNumDataOutputs (ContinuousChannel::AUX)
+               + getNumDataOutputs (ContinuousChannel::ADC);
+    }
 
     /** Trigger a digital output event */
     void triggerDigitalOutput (int ttlLine, int eventDurationMs)

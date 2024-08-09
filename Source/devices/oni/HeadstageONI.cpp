@@ -23,17 +23,15 @@
 
 #include "HeadstageONI.h"
 
-HeadstageONI::HeadstageONI (Rhd2000ONIBoard::BoardDataSource dataSource_, int MAX_H) : dataSource (dataSource_),
-                                                                                                    MAX_NUM_HEADSTAGES (MAX_H),
-                                                                                                    numStreams (0),
-                                                                                                    channelsPerStream (32),
-                                                                                                    halfChannels (false),
-                                                                                                    streamIndex (-1),
-                                                                                                    firstChannelIndex (0)
+HeadstageONI::HeadstageONI (Rhd2000ONIBoard::BoardDataSource dataSource_,
+                            int MAX_H) : Headstage (int (dataSource_)),
+                                         dataSource (dataSource_),
+                                         MAX_NUM_HEADSTAGES (MAX_H),
+                                         numStreams (0),
+                                         channelsPerStream (32),
+                                         halfChannels (false),
+                                         streamIndex (-1)
 {
-    StringArray stream_prefix = { "A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2", "F1", "F2", "G1", "G2", "H1", "H2" };
-
-    prefix = stream_prefix[int (dataSource_)];
 }
 
 int HeadstageONI::getNumStreams() const
@@ -71,16 +69,6 @@ void HeadstageONI::setChannelsPerStream (int nchan)
 void HeadstageONI::setFirstStreamIndex (int streamIndex_)
 {
     streamIndex = streamIndex_;
-}
-
-void HeadstageONI::setFirstChannel (int channelIndex)
-{
-    LOGD ("Headstage ", prefix, " setting first channel to ", channelIndex);
-
-    if (firstChannelIndex != channelIndex)
-    {
-        firstChannelIndex = channelIndex;
-    }
 }
 
 int HeadstageONI::getStreamIndex (int offset) const
@@ -136,11 +124,6 @@ String HeadstageONI::getChannelName (int ch) const
         LOGD ("Headstage ", prefix, " channel ", ch, " name: ", name);
 
     return name;
-}
-
-String HeadstageONI::getStreamPrefix() const
-{
-    return prefix;
 }
 
 void HeadstageONI::generateChannelNames (ChannelNamingScheme scheme)

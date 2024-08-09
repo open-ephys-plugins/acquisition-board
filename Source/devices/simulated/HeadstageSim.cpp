@@ -23,7 +23,7 @@
 
 #include "HeadstageSim.h"
 
-HeadstageSim::HeadstageSim()
+HeadstageSim::HeadstageSim(int port_index) : Headstage(port_index)
 {
 
 }
@@ -37,19 +37,23 @@ HeadstageSim::~HeadstageSim()
 
 int HeadstageSim::getNumActiveChannels() const
 {
-    return 64;
+    return numChannels;
 }
 
 
 String HeadstageSim::getChannelName (int ch) const
 {
-    return "CH" + ch;
-}
+    String name;
 
+    if (ch > -1 && ch < channelNames.size())
+        name = channelNames[ch];
+    else
+        name = " ";
 
-String HeadstageSim::getStreamPrefix() const
-{
-    return "A1";
+    if (ch == 0)
+        LOGD ("Headstage ", prefix, " channel ", ch, " name: ", name);
+
+    return name;
 }
 
 
@@ -71,7 +75,32 @@ float HeadstageSim::getImpedancePhase (int ch) const
 }
 
 
+void HeadstageSim::setChannelCount(int numChannels_)
+{
+	numChannels = numChannels_;
+
+    generateChannelNames (channelNamingScheme);
+}
+
+
 void HeadstageSim::generateChannelNames (ChannelNamingScheme scheme)
 {
+    channelNamingScheme = scheme;
 
+    channelNames.clear();
+
+    switch (scheme)
+    {
+        case GLOBAL_INDEX:
+            for (int i = 0; i < getNumActiveChannels(); i++)
+            {
+                channelNames.add ("CH" + String (firstChannelIndex + i + 1));
+            }
+            break;
+        case STREAM_INDEX:
+            for (int i = 0; i < getNumActiveChannels(); i++)
+            {
+                channelNames.add (prefix + "_CH" + String (i + 1));
+            }
+    }
 }

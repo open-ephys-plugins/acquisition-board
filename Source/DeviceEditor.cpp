@@ -580,27 +580,18 @@ SampleRateInterface::SampleRateInterface (AcquisitionBoard* board_,
 {
     name = "Sample Rate";
 
-    sampleRateOptions.add ("1.00 kS/s");
-    sampleRateOptions.add ("1.25 kS/s");
-    sampleRateOptions.add ("1.50 kS/s");
-    sampleRateOptions.add ("2.00 kS/s");
-    sampleRateOptions.add ("2.50 kS/s");
-    sampleRateOptions.add ("3.00 kS/s");
-    sampleRateOptions.add ("3.33 kS/s");
-    sampleRateOptions.add ("4.00 kS/s");
-    sampleRateOptions.add ("5.00 kS/s");
-    sampleRateOptions.add ("6.25 kS/s");
-    sampleRateOptions.add ("8.00 kS/s");
-    sampleRateOptions.add ("10.0 kS/s");
-    sampleRateOptions.add ("12.5 kS/s");
-    sampleRateOptions.add ("15.0 kS/s");
-    sampleRateOptions.add ("20.0 kS/s");
-    sampleRateOptions.add ("25.0 kS/s");
-    sampleRateOptions.add ("30.0 kS/s");
+    Array<int> sampleRates = board->getAvailableSampleRates();
 
     rateSelection = new ComboBox ("Sample Rate");
     rateSelection->addItemList (sampleRateOptions, 1);
-    rateSelection->setSelectedId (17, dontSendNotification);
+    for (auto sampleRate : sampleRates)
+    {
+        int numDecimals = sampleRate < 10000 ? 2 : 1;
+
+        rateSelection->addItem (String (float (sampleRate) / 1000.0f, numDecimals) + " kS/s", sampleRate);
+    } 
+
+    rateSelection->setSelectedId (sampleRates.getLast(), dontSendNotification);
     rateSelection->addListener (this);
     rateSelection->setBounds (0, 12, 80, 20);
     addAndMakeVisible (rateSelection);
@@ -616,9 +607,9 @@ void SampleRateInterface::comboBoxChanged (ComboBox* cb)
     {
         if (cb == rateSelection)
         {
-            board->setSampleRate (cb->getSelectedId() - 1);
+            board->setSampleRate (cb->getSelectedId());
 
-            LOGD ("Setting sample rate to index ", cb->getSelectedId() - 1);
+            LOGD ("Setting sample rate to ", cb->getSelectedId());
 
             CoreServices::updateSignalChain (editor);
         }

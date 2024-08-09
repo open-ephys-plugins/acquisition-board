@@ -23,17 +23,17 @@
 
 #include "HeadstageOpalKelly.h"
 
-HeadstageOpalKelly::HeadstageOpalKelly (Rhd2000EvalBoard::BoardDataSource dataSource_, int MAX_H) : dataSource (dataSource_),
-                                                                                                    MAX_NUM_HEADSTAGES (MAX_H),
-                                                                                                    numStreams (0),
-                                                                                                    channelsPerStream (32),
-                                                                                                    halfChannels (false),
-                                                                                                    streamIndex (-1),
-                                                                                                    firstChannelIndex (0)
+HeadstageOpalKelly::HeadstageOpalKelly (
+    Rhd2000EvalBoard::BoardDataSource dataSource_,
+    int MAX_H) : Headstage(int(dataSource_)),
+                 dataSource (dataSource_),
+                 MAX_NUM_HEADSTAGES (MAX_H),
+                 numStreams (0),
+                 channelsPerStream (32),
+                 halfChannels (false),
+                 streamIndex (-1)
 {
-    StringArray stream_prefix = { "A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2", "F1", "F2", "G1", "G2", "H1", "H2" };
 
-    prefix = stream_prefix[int (dataSource_)];
 }
 
 int HeadstageOpalKelly::getNumStreams() const
@@ -71,16 +71,6 @@ void HeadstageOpalKelly::setChannelsPerStream (int nchan)
 void HeadstageOpalKelly::setFirstStreamIndex (int streamIndex_)
 {
     streamIndex = streamIndex_;
-}
-
-void HeadstageOpalKelly::setFirstChannel (int channelIndex)
-{
-    LOGD ("Headstage ", prefix, " setting first channel to ", channelIndex);
-
-    if (firstChannelIndex != channelIndex)
-    {
-        firstChannelIndex = channelIndex;
-    }
 }
 
 int HeadstageOpalKelly::getStreamIndex (int offset) const
@@ -138,15 +128,10 @@ String HeadstageOpalKelly::getChannelName (int ch) const
     return name;
 }
 
-String HeadstageOpalKelly::getStreamPrefix() const
-{
-    return prefix;
-}
-
 void HeadstageOpalKelly::generateChannelNames (ChannelNamingScheme scheme)
 {
     channelNamingScheme = scheme;
-    
+
     channelNames.clear();
 
     switch (scheme)

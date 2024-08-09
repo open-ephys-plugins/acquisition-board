@@ -195,9 +195,6 @@ private:
     /** Enables or disables a given headstage */
     bool enableHeadstage (int hsNum, bool enabled, int nStr = 1, int strChans = 32);
 
-    /** Returns total number of continuous channels */
-    int getNumChannels();
-
     /**Returns the global channel index for a local headstage channel */
     int getChannelFromHeadstage(int headstageIndex, int channelIndex);
 
@@ -234,10 +231,13 @@ private:
     /** Impedance meter */
     std::unique_ptr<ImpedanceMeterOpalKelly> impedanceMeter;
 
-    /** Not sure if this is needed: */
-    int *dacChannels, *dacStream;
-    float* dacThresholds;
-    bool* dacChannelsToUpdate;
+    /** Storing values for DAC channels */
+    Array<int> dacChannels;
+    Array<int> dacStream;
+    Array<int> dacThresholds;
+    Array<bool> dacChannelsToUpdate;
+
+    /** Storing values for chip identifiers*/
     Array<int> chipId;
 
     /** Holds state of digital output lines */

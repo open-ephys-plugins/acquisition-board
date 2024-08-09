@@ -49,7 +49,8 @@ class Headstage
 {
 public:
     /** Constructor */
-    Headstage() { }
+    Headstage (int port_index) : 
+        prefix (headstage_names[port_index]) { }
 
     /** Destructor*/
     ~Headstage() { }
@@ -59,9 +60,6 @@ public:
 
     /** Returns the name of a channel at a given index*/
     virtual String getChannelName (int ch) const = 0;
-
-    /** Returns the name of the headstage stream (used for naming AUX channels) */
-    virtual String getStreamPrefix () const = 0;
 
     /** Returns true if impedances for a headstage channel have been measured */
     virtual bool hasValidImpedance (int ch) const = 0;
@@ -75,11 +73,41 @@ public:
     /** Generates names for each channel, depending on the scheme */
     virtual void generateChannelNames (ChannelNamingScheme scheme) = 0;
 
+    /** Returns true if the headstage is connected*/
+    virtual bool isConnected() const = 0;
+
+    /** Sets the index of this headstage's first neural data channel*/
+    void setFirstChannel (int channelIndex) { firstChannelIndex = channelIndex;}
+
+    /** Returns the name of the headstage stream (used for naming AUX channels) */
+    String getStreamPrefix() const { return prefix; }
+
     /** Sets the channel naming scheme*/
     void setNamingScheme (ChannelNamingScheme scheme)
     {
         generateChannelNames (scheme);
     }
+
+protected:
+
+    /** Available headstage names (based on ports) */
+    StringArray headstage_names = { 
+        "A1", "A2", "B1", "B2", "C1", "C2", 
+        "D1", "D2", "E1", "E2", "F1", "F2", 
+        "G1", "G2", "H1", "H2" };
+
+    /** Prefix for this headstage */
+    const String prefix;
+
+    /** Names of individual channels*/
+    StringArray channelNames;
+
+    /** Naming scheme for channels */
+    ChannelNamingScheme channelNamingScheme = GLOBAL_INDEX;
+
+    /** Index of first channel */
+    int firstChannelIndex = 0;
+
 
 private:
    

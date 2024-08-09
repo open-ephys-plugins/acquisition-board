@@ -33,7 +33,7 @@ class HeadstageSim : public Headstage
 {
 public:
     /** Constructor */
-    HeadstageSim();
+    HeadstageSim(int port_index);
 
     /** Destructor*/
     ~HeadstageSim();
@@ -43,9 +43,6 @@ public:
 
     /** Returns the name of a channel at a given index*/
     String getChannelName (int ch) const;
-
-    /** Returns the name of the headstage stream (used for naming AUX channels) */
-    String getStreamPrefix() const;
 
     /** Returns true if impedances for a headstage channel have been measured */
     bool hasValidImpedance (int ch) const;
@@ -58,6 +55,16 @@ public:
 
     /** Generates names for each channel, depending on the scheme */
     void generateChannelNames (ChannelNamingScheme scheme);
+
+    /** Returns true if headstage is connected */
+    bool isConnected() const { return numChannels > 0; }
+
+    /** Sets the number of channels for this headstage */
+    void setChannelCount (int numChannels_);
+
+
+ private:
+     int numChannels;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HeadstageSim);
 };

@@ -43,29 +43,20 @@ AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
     for (int i = 0; i < maxNumHeadstages; i++)
         headstages.add (new HeadstageONI (static_cast<Rhd2000ONIBoard::BoardDataSource> (i), maxNumHeadstages));
 
-    dacStream = new int[8];
-    dacChannels = new int[8];
-    dacThresholds = new float[8];
-    dacChannelsToUpdate = new bool[8];
-
     for (int k = 0; k < 8; k++)
     {
-        dacChannelsToUpdate[k] = true;
-        dacStream[k] = 0;
+        dacChannelsToUpdate.add(true);
+        dacStream.add(0);
         setDACTriggerThreshold (k, 65534);
-        dacChannels[k] = 0;
-        dacThresholds[k] = 0;
+        dacChannels.add(0);
+        dacThresholds.add(0);
     }
 }
 
 AcqBoardONI::~AcqBoardONI()
 {
     LOGD ("RHD2000 interface destroyed.");
-    //   const ScopedLock lock(oniLock);
-    delete[] dacStream;
-    delete[] dacChannels;
-    delete[] dacThresholds;
-    delete[] dacChannelsToUpdate;
+
 }
 
 bool AcqBoardONI::checkBoardMem() const
@@ -1178,8 +1169,8 @@ int AcqBoardONI::setClockDivider (int divide_ratio)
 
 void AcqBoardONI::setDACTriggerThreshold (int dacChannelIndex, float threshold)
 {
-    dacThresholds[dacChannelIndex] = threshold;
-    dacChannelsToUpdate[dacChannelIndex] = true;
+    dacThresholds.set(dacChannelIndex, threshold);
+    dacChannelsToUpdate.set(dacChannelIndex, true);
     updateSettingsDuringAcquisition = true;
 
     //evalBoard->setDacThresholdVoltage(dacOutput,threshold);
@@ -1187,6 +1178,9 @@ void AcqBoardONI::setDACTriggerThreshold (int dacChannelIndex, float threshold)
 
 void AcqBoardONI::connectHeadstageChannelToDAC (int headstageChannelIndex, int dacChannelIndex)
 {
+    if (dacChannelIndex == -1)
+        return;
+
     if (headstageChannelIndex < getNumDataOutputs (ContinuousChannel::ELECTRODE))
     {
         int channelCount = 0;
@@ -1194,8 +1188,8 @@ void AcqBoardONI::connectHeadstageChannelToDAC (int headstageChannelIndex, int d
         {
             if (headstageChannelIndex < channelCount + numChannelsPerDataStream[i])
             {
-                dacChannels[dacChannelIndex] = headstageChannelIndex - channelCount;
-                dacStream[dacChannelIndex] = i;
+                dacChannels.set(dacChannelIndex, headstageChannelIndex - channelCount);
+                dacStream.set(dacChannelIndex, i);
                 break;
             }
             else
@@ -1203,7 +1197,7 @@ void AcqBoardONI::connectHeadstageChannelToDAC (int headstageChannelIndex, int d
                 channelCount += numChannelsPerDataStream[i];
             }
         }
-        dacChannelsToUpdate[dacChannelIndex] = true;
+        dacChannelsToUpdate.set(dacChannelIndex, true);
         updateSettingsDuringAcquisition = true;
     }
 }
@@ -1416,7 +1410,7 @@ void AcqBoardONI::run()
             {
                 if (dacChannelsToUpdate[k])
                 {
-                    dacChannelsToUpdate[k] = false;
+                    dacChannelsToUpdate.set(k,false);
                     if (dacChannels[k] >= 0)
                     {
                         evalBoard->enableDac (k, true);
@@ -1495,15 +1489,6 @@ void AcqBoardONI::setNumHeadstageChannels (int hsNum, int numChannels)
 int AcqBoardONI::getChannelsInHeadstage (int hsNum) const
 {
     return headstages[hsNum]->getNumChannels();
-}
-
-int AcqBoardONI::getNumChannels()
-{
-    int totalChannels = getNumDataOutputs (ContinuousChannel::ELECTRODE)
-                        + getNumDataOutputs (ContinuousChannel::AUX)
-                        + getNumDataOutputs (ContinuousChannel::ADC);
-
-    return totalChannels;
 }
 
 int AcqBoardONI::getNumDataOutputs (ContinuousChannel::Type type)

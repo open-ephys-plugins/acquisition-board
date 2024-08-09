@@ -53,18 +53,13 @@ AcqBoardOpalKelly::AcqBoardOpalKelly (DataBuffer* buffer_) : AcquisitionBoard (b
     for (int i = 0; i < maxNumHeadstages; i++)
         headstages.add (new HeadstageOpalKelly (static_cast<Rhd2000EvalBoard::BoardDataSource> (i), maxNumHeadstages));
 
-    dacStream = new int[8];
-    dacChannels = new int[8];
-    dacThresholds = new float[8];
-    dacChannelsToUpdate = new bool[8];
-
     for (int k = 0; k < 8; k++)
     {
-        dacChannelsToUpdate[k] = true;
-        dacStream[k] = 0;
+        dacChannelsToUpdate.add (true);
+        dacStream.add (0);
         setDACTriggerThreshold (k, 65534);
-        dacChannels[k] = 0;
-        dacThresholds[k] = 0;
+        dacChannels.add (0);
+        dacThresholds.add (0);
     }
 }
 
@@ -78,11 +73,6 @@ AcqBoardOpalKelly::~AcqBoardOpalKelly()
         evalBoard->setLedDisplay (ledArray);
         evalBoard->resetFpga();
     }
-
-    delete[] dacStream;
-    delete[] dacChannels;
-    delete[] dacThresholds;
-    delete[] dacChannelsToUpdate;
 }
 
 bool AcqBoardOpalKelly::detectBoard()
@@ -105,6 +95,7 @@ bool AcqBoardOpalKelly::detectBoard()
 
     if (return_code == 1) // device found
     {
+        LOGC ("Board opened successfully.");
         deviceFound = true;
         return true;
     }
@@ -210,6 +201,8 @@ bool AcqBoardOpalKelly::initializeBoard()
     // Turn one LED on to indicate that the board is now connected
     int ledArray[8] = { 1, 0, 0, 0, 0, 0, 0, 0 };
     evalBoard->setLedDisplay (ledArray);
+
+    return true;
 }
 
 bool AcqBoardOpalKelly::foundInputSource() const
@@ -1040,8 +1033,8 @@ int AcqBoardOpalKelly::setClockDivider (int divide_ratio)
 
 void AcqBoardOpalKelly::setDACTriggerThreshold (int dacChannelIndex, float threshold)
 {
-    dacThresholds[dacChannelIndex] = threshold;
-    dacChannelsToUpdate[dacChannelIndex] = true;
+    dacThresholds.set (dacChannelIndex, threshold);
+    dacChannelsToUpdate.set (dacChannelIndex, true);
     updateSettingsDuringAcquisition = true;
 
     //evalBoard->setDacThresholdVoltage(dacOutput,threshold);
@@ -1049,6 +1042,10 @@ void AcqBoardOpalKelly::setDACTriggerThreshold (int dacChannelIndex, float thres
 
 void AcqBoardOpalKelly::connectHeadstageChannelToDAC (int headstageChannelIndex, int dacChannelIndex)
 {
+
+    if (dacChannelIndex == -1)
+        return;
+
     if (headstageChannelIndex < getNumDataOutputs (ContinuousChannel::ELECTRODE))
     {
         int channelCount = 0;
@@ -1056,8 +1053,8 @@ void AcqBoardOpalKelly::connectHeadstageChannelToDAC (int headstageChannelIndex,
         {
             if (headstageChannelIndex < channelCount + numChannelsPerDataStream[i])
             {
-                dacChannels[dacChannelIndex] = headstageChannelIndex - channelCount;
-                dacStream[dacChannelIndex] = i;
+                dacChannels.set (dacChannelIndex, headstageChannelIndex - channelCount);
+                dacStream.set (dacChannelIndex, i);
                 break;
             }
             else
@@ -1065,7 +1062,7 @@ void AcqBoardOpalKelly::connectHeadstageChannelToDAC (int headstageChannelIndex,
                 channelCount += numChannelsPerDataStream[i];
             }
         }
-        dacChannelsToUpdate[dacChannelIndex] = true;
+        dacChannelsToUpdate.set (dacChannelIndex, true);
         updateSettingsDuringAcquisition = true;
     }
 }
@@ -1269,7 +1266,7 @@ void AcqBoardOpalKelly::run()
             {
                 if (dacChannelsToUpdate[k])
                 {
-                    dacChannelsToUpdate[k] = false;
+                    dacChannelsToUpdate.set(k, false);
                     if (dacChannels[k] >= 0)
                     {
                         evalBoard->enableDac (k, true);
@@ -1345,15 +1342,6 @@ void AcqBoardOpalKelly::setNumHeadstageChannels (int hsNum, int numChannels)
             channelIndex += hs->getNumActiveChannels();
         }
     }
-}
-
-int AcqBoardOpalKelly::getNumChannels()
-{
-    int totalChannels = getNumDataOutputs (ContinuousChannel::ELECTRODE)
-                        + getNumDataOutputs (ContinuousChannel::AUX)
-                        + getNumDataOutputs (ContinuousChannel::ADC);
-
-    return totalChannels;
 }
 
 int AcqBoardOpalKelly::getNumDataOutputs (ContinuousChannel::Type type)
