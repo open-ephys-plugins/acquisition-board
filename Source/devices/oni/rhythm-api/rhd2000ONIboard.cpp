@@ -36,10 +36,11 @@ bool Rhd2000ONIBoard::isUSB3()
 int Rhd2000ONIBoard::open (const oni_driver_info_t** driverInfo)
 {
     ctx = oni_create_ctx ("ft600"); // "ft600" is the driver name for the usb
-    if (driverInfo)
-        getONIDriverInfo (driverInfo);
     if (ctx == NULL)
         return -1;
+    if (driverInfo)
+        getONIDriverInfo (driverInfo);
+    
 
     if (oni_init_ctx (ctx, -1) != ONI_ESUCCESS)
     {

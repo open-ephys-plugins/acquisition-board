@@ -77,14 +77,14 @@ bool AcqBoardONI::detectBoard()
     LOGC ("Searching for ONI Acquisition Board...");
     const oni_driver_info_t* driverInfo;
     int return_code = evalBoard->open (&driverInfo);
-
-    int major, minor, patch;
-    evalBoard->getONIVersion (&major, &minor, &patch);
-    LOGC ("ONI Library version: ", major, ".", minor, ".", patch);
-    LOGC ("ONI Driver: ", driverInfo->name, " Version: ", driverInfo->major, ".", driverInfo->minor, ".", driverInfo->patch, (driverInfo->pre_release ? "-" : ""), (driverInfo->pre_release ? driverInfo->pre_release : ""));
+       
 
     if (return_code == 1) // successfully opened board
     {
+        int major, minor, patch;
+        evalBoard->getONIVersion (&major, &minor, &patch);
+        LOGC ("ONI Library version: ", major, ".", minor, ".", patch);
+        LOGC ("ONI Driver: ", driverInfo->name, " Version: ", driverInfo->major, ".", driverInfo->minor, ".", driverInfo->patch, (driverInfo->pre_release ? "-" : ""), (driverInfo->pre_release ? driverInfo->pre_release : ""));
         if (evalBoard->getFTDriverInfo (&major, &minor, &patch))
         {
             LOGC ("FTDI Driver version: ", major, ".", minor, ".", patch);
