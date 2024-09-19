@@ -175,6 +175,12 @@ public:
     /** Sets the number of channels to use in a headstage */
     void setNumHeadstageChannels (int headstageIndex, int channelCount);
 
+    /** Creates buffers for custom streams if the acquisition board type has them */
+    void createCustomStreams (OwnedArray<DataBuffer>& otherBuffers) override;
+
+    /** Create stream and channel structures is the acquisition board type has custom streams and updates the buffers */
+    void updateCustomStreams (OwnedArray<DataStream>& otherStreams, OwnedArray<ContinuousChannel>& otherChannels) override;
+
 private:
 
     /**Check board memory status */
@@ -262,6 +268,9 @@ private:
     bool varSampleRateCapable = false;
     bool commonCommandsSet = false;
     bool initialScan = true;
+    bool hasBNO = false;
+
+    DataBuffer *bnoBuffer, *memBuffer;
 };
 
 #endif

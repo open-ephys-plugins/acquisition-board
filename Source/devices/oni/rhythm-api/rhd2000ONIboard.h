@@ -122,7 +122,7 @@ public:
     bool readDataBlock (Rhd2000ONIDataBlock* dataBlock, int nSamples = -1);
     bool readDataBlocks (int numBlocks, std::queue<Rhd2000ONIDataBlock>& dataqueue);
 
-    int readFrame (oni_frame_t** frame);
+    int readFrame (oni_frame_t** frame, bool filterRhythm = true);
 
     void setTtlOut (int ttlOutArray[16]);
     void clearTtlOut();
@@ -147,6 +147,14 @@ public:
     };
 
     BoardMemState getBoardMemState() const;
+
+    /** ONI device indices*/
+    static const oni_dev_idx_t DEVICE_RHYTHM = 0x0101;
+    static const oni_dev_idx_t DEVICE_TTL = 0x0102;
+    static const oni_dev_idx_t DEVICE_DAC = 0x0103;
+    static const oni_dev_idx_t DEVICE_HEARTBEAT = 0x0000;
+    static const oni_dev_idx_t DEVICE_MEMORY = 0x0001;
+    static const oni_dev_idx_t DEVICE_BNO = 0x0002;
 
 private:
     const oni_size_t usbReadBlockSize = 24 * 1024;
@@ -206,10 +214,7 @@ private:
         LED_ENABLE = 4
     };
 
-    /** ONI device indices*/
-    const oni_dev_idx_t DEVICE_RHYTHM = 0x0101;
-    const oni_dev_idx_t DEVICE_TTL = 0x0102;
-    const oni_dev_idx_t DEVICE_DAC = 0x0103;
+    
 
     const oni_dev_idx_t RHYTHM_HUB_MANAGER = 0x01FE;
     const oni_reg_addr_t HUB_CLOCK_SEL = 0x2000;

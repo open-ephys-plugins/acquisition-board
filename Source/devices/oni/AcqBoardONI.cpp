@@ -24,6 +24,8 @@
 
 #define INIT_STEP 64
 
+const double quat_scale = (1.0f / (1 << 14));
+
 AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
                                                  chipRegisters(30000.0f)
 {
@@ -93,12 +95,86 @@ bool AcqBoardONI::detectBoard()
         {
             LOGC ("FTDI Library version: ", major, ".", minor, ".", patch);
         }
+        if (evalBoard->getFirmwareVersion (&major, &minor))
+        {
+            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor);
+            if (major >= 16) //For now we use this, we will use the proper versioning
+                hasBNO = true; 
+        }
 
         deviceFound = true;
         return true;
     } else {
         return false;
     }
+}
+
+void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
+{
+    memBuffer = otherBuffers.add (new DataBuffer (1, 10000)); // Memory device
+    if(hasBNO)
+        bnoBuffer = otherBuffers.add (new DataBuffer (4, 10000)); // BNO
+}
+
+
+void AcqBoardONI::updateCustomStreams(OwnedArray<DataStream>& otherStreams, OwnedArray<ContinuousChannel>& otherChannels)
+{
+    DataStream* stream;
+
+    //Memory usage device
+    DataStream::Settings memStreamSettings {
+        "Memory Usage",
+        "Hardware buffer usage on an acquisition board",
+        "rhythm-fpga-device.memory",
+
+        100
+
+    };
+
+    stream = new DataStream (memStreamSettings);
+    otherStreams.add (stream);
+
+    {
+        ContinuousChannel::Settings channelSettings {
+            ContinuousChannel::AUX,
+            "MEM",
+            "Hardware buffer usage",
+            "rhythm-fpga-device.continuous.mem",
+            0.1f, //some scaling so it does not overflow too easily
+            stream
+        };
+        otherChannels.add (new ContinuousChannel (channelSettings));
+    }
+
+    //BNO
+    if (hasBNO)
+    {
+        DataStream::Settings bnoStreamSettings {
+            "IMU Quaternion",
+            "Quaternion from the BNO device",
+            "rhythm-fpga-device.bno",
+
+            100
+
+        };
+
+        stream = new DataStream (bnoStreamSettings);
+        otherStreams.add (stream);
+
+        for (int i = 0; i < 4; i++)
+        {
+            ContinuousChannel::Settings channelSettings {
+                ContinuousChannel::AUX,
+                "QUAT_" + String (i),
+                "Quaternion channel",
+                "rhythm-fpga-device.continuous.bno.quat",
+                quat_scale,
+                stream
+            };
+            otherChannels.add (new ContinuousChannel (channelSettings));
+        }
+    }
+
 }
 
 bool AcqBoardONI::initializeBoard()
@@ -1301,105 +1377,140 @@ void AcqBoardONI::run()
         {
             int index = 0;
             int auxIndex, chanIndex;
-            int res = evalBoard->readFrame (&frame);
+            int res = evalBoard->readFrame (&frame, false);
 
             if (res < ONI_ESUCCESS)
             {
                 LOGE ("Error reading ONI frame: ", oni_error_str (res), " code ", res);
                 signalThreadShouldExit();
             }
-
-            int channel = -1;
-
-            bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
-
-            if (! Rhd2000ONIDataBlock::checkUsbHeader (bufferPtr, index))
+            if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_RHYTHM)
             {
-                LOGE ("Error in Rhd2000ONIBoard::readDataBlock: Incorrect header.");
-                oni_destroy_frame (frame);
-                break;
-            }
+                int channel = -1;
 
-            index += 8; // magic number header width (bytes)
-            int64 timestamp = Rhd2000ONIDataBlock::convertUsbTimeStamp (bufferPtr, index);
-            index += 4; // timestamp width
-            auxIndex = index; // aux chans start at this offset
-            index += 6 * numStreams; // width of the 3 aux chans
+                bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
 
-            for (int dataStream = 0; dataStream < numStreams; dataStream++)
-            {
-                int nChans = numChannelsPerDataStream[dataStream];
-
-                chanIndex = index + 2 * dataStream;
-
-                if ((chipId[dataStream] == CHIP_ID_RHD2132) && (nChans == 16)) //RHD2132 16ch. headstage
+                if (! Rhd2000ONIDataBlock::checkUsbHeader (bufferPtr, index))
                 {
-                    chanIndex += 2 * RHD2132_16CH_OFFSET * numStreams;
+                    LOGE ("Error in Rhd2000ONIBoard::readDataBlock: Incorrect header.");
+                    oni_destroy_frame (frame);
+                    break;
                 }
 
-                for (int chan = 0; chan < nChans; chan++)
-                {
-                    channel++;
-                    thisSample[channel] = float (*(uint16*) (bufferPtr + chanIndex) - 32768) * 0.195f;
-                    chanIndex += 2 * numStreams; // single chan width (2 bytes)
-                }
-            }
-            index += 64 * numStreams; // neural data width
-            auxIndex += 2 * numStreams; // skip AuxCmd1 slots (see updateRegisters())
-            // copy the 3 aux channels
-            if (settings.acquireAux)
-            {
+                index += 8; // magic number header width (bytes)
+                int64 timestamp = Rhd2000ONIDataBlock::convertUsbTimeStamp (bufferPtr, index);
+                index += 4; // timestamp width
+                auxIndex = index; // aux chans start at this offset
+                index += 6 * numStreams; // width of the 3 aux chans
+
                 for (int dataStream = 0; dataStream < numStreams; dataStream++)
                 {
-                    if (chipId[dataStream] != CHIP_ID_RHD2164_B)
+                    int nChans = numChannelsPerDataStream[dataStream];
+
+                    chanIndex = index + 2 * dataStream;
+
+                    if ((chipId[dataStream] == CHIP_ID_RHD2132) && (nChans == 16)) //RHD2132 16ch. headstage
                     {
-                        int auxNum = (samp + 3) % 4;
-                        if (auxNum < 3)
-                        {
-                            auxSamples[dataStream][auxNum] = float (*(uint16*) (bufferPtr + auxIndex) - 32768) * 0.0000374;
-                        }
-                        for (int chan = 0; chan < 3; chan++)
-                        {
-                            channel++;
-                            if (auxNum == 3)
-                            {
-                                auxBuffer[channel] = auxSamples[dataStream][chan];
-                            }
-                            thisSample[channel] = auxBuffer[channel];
-                        }
+                        chanIndex += 2 * RHD2132_16CH_OFFSET * numStreams;
                     }
-                    auxIndex += 2; // single chan width (2 bytes)
+
+                    for (int chan = 0; chan < nChans; chan++)
+                    {
+                        channel++;
+                        thisSample[channel] = float (*(uint16*) (bufferPtr + chanIndex) - 32768) * 0.195f;
+                        chanIndex += 2 * numStreams; // single chan width (2 bytes)
+                    }
                 }
-            }
-            index += 2 * numStreams; // skip over filler word at the end of each data stream
-            // copy the 8 ADC channels
-            if (settings.acquireAdc)
-            {
-                for (int adcChan = 0; adcChan < 8; ++adcChan)
+                index += 64 * numStreams; // neural data width
+                auxIndex += 2 * numStreams; // skip AuxCmd1 slots (see updateRegisters())
+                // copy the 3 aux channels
+                if (settings.acquireAux)
                 {
-                    channel++;
-                    // ADC waveform units = volts
-
-                    thisSample[channel] = getBitVolts (ContinuousChannel::ADC) * float (*(uint16*) (bufferPtr + index)) - 5 - 0.4096;
-
-                    index += 2; // single chan width (2 bytes)
+                    for (int dataStream = 0; dataStream < numStreams; dataStream++)
+                    {
+                        if (chipId[dataStream] != CHIP_ID_RHD2164_B)
+                        {
+                            int auxNum = (samp + 3) % 4;
+                            if (auxNum < 3)
+                            {
+                                auxSamples[dataStream][auxNum] = float (*(uint16*) (bufferPtr + auxIndex) - 32768) * 0.0000374;
+                            }
+                            for (int chan = 0; chan < 3; chan++)
+                            {
+                                channel++;
+                                if (auxNum == 3)
+                                {
+                                    auxBuffer[channel] = auxSamples[dataStream][chan];
+                                }
+                                thisSample[channel] = auxBuffer[channel];
+                            }
+                        }
+                        auxIndex += 2; // single chan width (2 bytes)
+                    }
                 }
+                index += 2 * numStreams; // skip over filler word at the end of each data stream
+                // copy the 8 ADC channels
+                if (settings.acquireAdc)
+                {
+                    for (int adcChan = 0; adcChan < 8; ++adcChan)
+                    {
+                        channel++;
+                        // ADC waveform units = volts
+
+                        thisSample[channel] = getBitVolts (ContinuousChannel::ADC) * float (*(uint16*) (bufferPtr + index)) - 5 - 0.4096;
+
+                        index += 2; // single chan width (2 bytes)
+                    }
+                }
+                else
+                {
+                    index += 16; // skip ADC chans (8 * 2 bytes)
+                }
+
+                uint64 ttlEventWord = *(uint64*) (bufferPtr + index) & 65535;
+
+                index += 4;
+
+                buffer->addToBuffer (thisSample,
+                                     &timestamp,
+                                     &ts,
+                                     &ttlEventWord,
+                                     1);
+
             }
-            else
+            else if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_MEMORY)
             {
-                index += 16; // skip ADC chans (8 * 2 bytes)
+                bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
+                uint32 membytes = (uint32 (*(uint16*) bufferPtr) << 16) + (uint32 (*(uint16*) (bufferPtr + 2)));
+                float memf = membytes * 0.1f;
+                uint64 zero = 0;
+                int64 tst = frame->time;
+                double tsd = frame->time / 50e6;
+                memBuffer->addToBuffer (
+                    &memf,
+                    &tst,
+                    &tsd,
+                    &zero,
+                    1);
             }
-
-            uint64 ttlEventWord = *(uint64*) (bufferPtr + index) & 65535;
-
-            index += 4;
-
-            buffer->addToBuffer (thisSample,
-                                           &timestamp,
-                                           &ts,
-                                           &ttlEventWord,
-                                           1);
-
+            else if (hasBNO && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO)
+            {
+                bufferPtr = (unsigned char*) frame->data + 8 + 6;
+                uint64 zero = 0;
+                int64 tst = frame->time;
+                double tsd = frame->time / 50e6;
+                float quatdata[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
+                }
+                bnoBuffer->addToBuffer (
+                    quatdata,
+                    &tst,
+                    &tsd,
+                    &zero,
+                    1);
+            }
             oni_destroy_frame (frame);
         }
 

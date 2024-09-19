@@ -191,6 +191,12 @@ public:
         digitalOutputTimers.add (timer);
     }
 
+    /** Creates buffers for custom streams if the acquisition board type has them */
+    virtual void createCustomStreams (OwnedArray<DataBuffer>& otherBuffers) {};
+
+    /** Create stream and channel structures is the acquisition board type has custom streams and updates the buffers */
+    virtual void updateCustomStreams (OwnedArray<DataStream>& otherStreams, OwnedArray<ContinuousChannel>& otherChannels) {};
+
 protected:
     /** Timer for triggering digtial outputs */
     class DigitalOutputTimer : public Timer
@@ -231,6 +237,8 @@ protected:
 
         digitalOutputTimers.removeObject (timerToDelete);
     }
+
+
 
     /** Sample buffer to fill */
     DataBuffer* buffer;

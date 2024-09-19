@@ -47,6 +47,12 @@ DeviceThread::DeviceThread (SourceNode* sn, BoardType boardType_) : DataThread (
         return;
     }
 
+    OwnedArray<DataBuffer> otherBuffers;
+    acquisitionBoard->createCustomStreams (otherBuffers);
+    sourceBuffers.addArray (otherBuffers);
+    otherBuffers.clearQuick (false);
+
+
     deviceFound = acquisitionBoard->initializeBoard(); // returns false if initialization fails
 
     if (! deviceFound)
@@ -76,10 +82,10 @@ AcquisitionBoard* DeviceThread::detectBoard()
 
     if (forceSimulationMode)
     {
-        return new AcqBoardSim (sourceBuffers.getLast());
+        return new AcqBoardSim (sourceBuffers.getFirst());
     }
 
-    std::unique_ptr<AcqBoardOpalKelly> opalKellyBoard = std::make_unique<AcqBoardOpalKelly> (sourceBuffers.getLast());
+    std::unique_ptr<AcqBoardOpalKelly> opalKellyBoard = std::make_unique<AcqBoardOpalKelly> (sourceBuffers.getFirst());
 
     if (opalKellyBoard->detectBoard())
     {
@@ -90,7 +96,7 @@ AcquisitionBoard* DeviceThread::detectBoard()
         opalKellyBoard.reset();
     }
 
-    std::unique_ptr<AcqBoardONI> oniBoard = std::make_unique<AcqBoardONI> (sourceBuffers.getLast());
+    std::unique_ptr<AcqBoardONI> oniBoard = std::make_unique<AcqBoardONI> (sourceBuffers.getFirst());
 
     if (oniBoard->detectBoard())
     {
@@ -111,7 +117,7 @@ AcquisitionBoard* DeviceThread::detectBoard()
 
     if (response)
     {
-        return new AcqBoardSim (sourceBuffers.getLast());
+        return new AcqBoardSim (sourceBuffers.getFirst());
     }
 
     // if we reach this point, we have no device connected
@@ -245,6 +251,14 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
     };
 
     eventChannels->add (new EventChannel (settings));
+
+    OwnedArray<DataStream> otherStreams;
+    OwnedArray<ContinuousChannel> otherChannels;
+    acquisitionBoard->updateCustomStreams (otherStreams, otherChannels);
+    sourceStreams->addArray (otherStreams);
+    otherStreams.clearQuick (false);
+    continuousChannels->addArray (otherChannels);
+    otherChannels.clearQuick (false);
 }
 
 void DeviceThread::handleBroadcastMessage (const String& msg, const int64 messageTimeMilliseconds)

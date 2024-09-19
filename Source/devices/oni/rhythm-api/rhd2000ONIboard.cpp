@@ -996,7 +996,7 @@ int Rhd2000ONIBoard::oni_write_reg_mask (const oni_ctx ctx, oni_dev_idx_t dev_id
     return res;
 }
 
-int Rhd2000ONIBoard::readFrame (oni_frame_t** frame)
+int Rhd2000ONIBoard::readFrame (oni_frame_t** frame, bool filterRhythm)
 {
     int res;
     bool found = false;
@@ -1005,7 +1005,7 @@ int Rhd2000ONIBoard::readFrame (oni_frame_t** frame)
         res = oni_read_frame (ctx, frame);
         if (res < ONI_ESUCCESS)
             return res;
-        if ((*frame)->dev_idx == DEVICE_RHYTHM)
+        if (filterRhythm == false || (*frame)->dev_idx == DEVICE_RHYTHM)
         {
             found = true;
         }
