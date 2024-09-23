@@ -89,10 +89,10 @@ bool AcqBoardONI::detectBoard()
         {
             LOGC ("FTDI Driver version: ", major, ".", minor, ".", patch);
         }
-        if (evalBoard->getFTLibInfo (&major, &minor, &patch))
-        {
-            LOGC ("FTDI Library version: ", major, ".", minor, ".", patch);
-        }
+        //if (evalBoard->getFTLibInfo (&major, &minor, &patch))
+        //{
+        //    LOGC ("FTDI Library version: ", major, ".", minor, ".", patch);
+        //}
 
         deviceFound = true;
         return true;
