@@ -85,10 +85,10 @@ bool AcqBoardONI::detectBoard()
         evalBoard->getONIVersion (&major, &minor, &patch);
         LOGC ("ONI Library version: ", major, ".", minor, ".", patch);
         LOGC ("ONI Driver: ", driverInfo->name, " Version: ", driverInfo->major, ".", driverInfo->minor, ".", driverInfo->patch, (driverInfo->pre_release ? "-" : ""), (driverInfo->pre_release ? driverInfo->pre_release : ""));
-        if (evalBoard->getFTDriverInfo (&major, &minor, &patch))
-        {
-            LOGC ("FTDI Driver version: ", major, ".", minor, ".", patch);
-        }
+        //if (evalBoard->getFTDriverInfo (&major, &minor, &patch))
+        //{
+        //    LOGC ("FTDI Driver version: ", major, ".", minor, ".", patch);
+        //}
         if (evalBoard->getFTLibInfo (&major, &minor, &patch))
         {
             LOGC ("FTDI Library version: ", major, ".", minor, ".", patch);
