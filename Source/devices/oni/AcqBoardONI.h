@@ -42,6 +42,26 @@
 
 #define MAX_NUM_CHANNELS MAX_NUM_DATA_STREAMS_USB3 * 35 + 16
 
+class PortScanner : public ThreadWithProgressWindow
+{
+public:
+    PortScanner(AcqBoardONI* board_) : 
+        ThreadWithProgressWindow("Scanning ports...", true, false), board(board_)
+    {
+	}
+
+    ~PortScanner()
+    {
+		signalThreadShouldExit();
+		waitForThreadToExit(1000);
+	}
+
+    void run() override;
+
+private:
+    AcqBoardONI* board;
+};
+
 /**
     Interface for Open Ephys Acquisition Board with an Open Ephys FPGA
 
@@ -84,6 +104,12 @@ public:
 
     /** Checks for connected headstages */
     void scanPorts();
+
+    /** Checks for connected headstages in background thread */
+    void scanPortsInThread();
+
+    /** Checks cable delays after sample rate update */
+    void checkAllCableDelays();
 
     /** Enables AUX channel out */
     void enableAuxChannels (bool enabled);
