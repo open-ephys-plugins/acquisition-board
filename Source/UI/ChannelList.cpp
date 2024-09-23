@@ -37,7 +37,6 @@ ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : boa
     numberingSchemeLabel = new Label ("Channel Names:", "Channel Names:");
     numberingSchemeLabel->setEditable (false);
     numberingSchemeLabel->setBounds (10, 10, 150, 25);
-    numberingSchemeLabel->setColour (Label::textColourId, juce::Colours::white);
     addAndMakeVisible (numberingSchemeLabel);
 
     numberingScheme = new ComboBox ("numberingScheme");
@@ -73,6 +72,13 @@ ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : boa
     gains.add (100);
     gains.add (500);
     gains.add (1000);
+
+    update();
+}
+
+void ChannelList::lookAndFeelChanged()
+{
+    numberingSchemeLabel->setColour (Label::textColourId, findColour (ThemeColours::defaultText));
 
     update();
 }
@@ -131,7 +137,7 @@ void ChannelList::update()
         lbl->setEditable (false);
         lbl->setBounds (10 + column * columnWidth, 40, columnWidth, 25);
         lbl->setJustificationType (juce::Justification::centred);
-        lbl->setColour (Label::textColourId, juce::Colours::white);
+        lbl->setColour (Label::textColourId, findColour(ThemeColours::defaultText));
         staticLabels.add (lbl);
         addAndMakeVisible (lbl);
 

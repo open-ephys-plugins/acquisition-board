@@ -46,7 +46,7 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
     editName = new Label (name, name);
     editName->setFont (f);
     editName->setEditable (false);
-    editName->setColour (Label::backgroundColourId, juce::Colours::lightgrey);
+    editName->setColour (Label::backgroundColourId, findColour(ThemeColours::componentParentBackground));
     editName->addListener (this);
     addAndMakeVisible (editName);
 
@@ -74,6 +74,11 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
         impedance = nullptr;
         rangeComboBox = nullptr;
     }
+}
+
+void ChannelComponent::lookAndFeelChanged()
+{
+    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentParentBackground));
 }
 
 void ChannelComponent::setImpedanceValues (float mag, float phase)
