@@ -179,8 +179,11 @@ public:
 
     int MAX_NUM_DATA_STREAMS;
 
+    OpalKellyLegacy::okCFrontPanel* dev;
+    double getSystemClockFreq() const;
+
 private:
-    OpalKellyLegacy::okCFrontPanel *dev;
+    
     AmplifierSampleRate sampleRate;
     int numDataStreams; // total number of data streams currently enabled
     int dataStreamEnabled[MAX_NUM_DATA_STREAMS_USB3]; // 0 (disabled) or 1 (enabled), set for maximum stream number
@@ -246,7 +249,7 @@ private:
     };
 
     std::string opalKellyModelName(int model) const;
-    double getSystemClockFreq() const;
+    
 
     bool isDcmProgDone() const;
     bool isDataClockLocked() const;

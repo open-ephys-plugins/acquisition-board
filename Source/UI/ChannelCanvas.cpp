@@ -50,7 +50,7 @@ ChannelCanvas::ChannelCanvas(AcquisitionBoard* board_,
 
 void ChannelCanvas::paint(Graphics& g)
 {
-    g.fillAll(Colours::grey);
+    g.fillAll(findColour(ThemeColours::componentBackground));
 
 }
 

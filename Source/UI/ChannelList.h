@@ -43,6 +43,8 @@ public:
     /** Destructor */
     ~ChannelList() {}
 
+    void lookAndFeelChanged() override;
+
     void setNewName (int channelIndex, String newName);
     void setNewGain (int channel, float gain);
     void disableAll();

@@ -96,6 +96,13 @@ bool AcqBoardOpalKelly::detectBoard()
     if (return_code == 1) // device found
     {
         LOGC ("Board opened successfully.");
+
+            // Get some general information about the XEM.
+        LOGC("FPGA system clock: ", evalBoard->getSystemClockFreq(), " MHz"); // Should indicate 100 MHz
+        LOGC ("Opal Kelly device firmware version: ", evalBoard->dev->GetDeviceMajorVersion(), ".", evalBoard->dev->GetDeviceMinorVersion());
+        LOGC ("Opal Kelly device serial number: ", evalBoard->dev->GetSerialNumber().c_str());
+        LOGC ("Opal Kelly device ID std::string: ", evalBoard->dev->GetDeviceID().c_str());
+
         deviceFound = true;
         return true;
     }

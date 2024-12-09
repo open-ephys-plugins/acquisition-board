@@ -45,6 +45,9 @@ public:
     /** Destructor */
     ~ChannelComponent() {}
 
+    /** Called when look and feel is updated*/
+    void lookAndFeelChanged() override;
+
     Colour getDefaultColor (int ID);
     void setImpedanceValues (float mag, float phase);
     void disableEdit();

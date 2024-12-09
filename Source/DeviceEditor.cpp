@@ -561,7 +561,7 @@ double BandwidthInterface::getUpperBandwidth()
 
 void BandwidthInterface::paint (Graphics& g)
 {
-    g.setColour (Colours::darkgrey);
+    g.setColour (findColour(ThemeColours::defaultText));
 
     g.setFont (Font ("Small Text", 10, Font::plain));
 
@@ -633,7 +633,7 @@ String SampleRateInterface::getText()
 
 void SampleRateInterface::paint (Graphics& g)
 {
-    g.setColour (Colours::darkgrey);
+    g.setColour (findColour(ThemeColours::defaultText));
 
     g.setFont (Font ("Small Text", 10, Font::plain));
 
@@ -793,14 +793,14 @@ void HeadstageOptionsInterface::set32Channel (int hsIndex, bool is32Channel)
 
 void HeadstageOptionsInterface::paint (Graphics& g)
 {
-    g.setColour (Colours::lightgrey);
+    g.setColour (findColour(ThemeColours::componentParentBackground));
 
     g.fillRoundedRectangle (5, 0, getWidth() - 10, getHeight(), 4.0f);
 
     if (isEnabled)
-        g.setColour (Colours::black);
+        g.setColour (findColour(ThemeColours::highlightedText));
     else
-        g.setColour (Colours::grey);
+        g.setColour (findColour(ThemeColours::defaultText));
 
     g.setFont (Font ("Small Text", 15, Font::plain));
 
@@ -881,7 +881,7 @@ int AudioInterface::getNoiseSlicerLevel()
 
 void AudioInterface::paint (Graphics& g)
 {
-    g.setColour (Colours::darkgrey);
+    g.setColour (findColour(ThemeColours::defaultText));
     g.setFont (Font ("Small Text", 10, Font::plain));
     g.drawText (name, 0, 0, 200, 15, Justification::left, false);
     g.drawText ("Slicer:", 0, 10, 200, 15, Justification::left, false);
@@ -937,7 +937,7 @@ void ClockDivideInterface::setClockDivideRatio (int value)
 
 void ClockDivideInterface::paint (Graphics& g)
 {
-    g.setColour (Colours::darkgrey);
+    g.setColour (findColour(ThemeColours::defaultText));
     g.setFont (Font ("Small Text", 10, Font::plain));
     g.drawText (name, 0, 0, 200, 15, Justification::left, false);
     g.drawText ("Divider: ", 0, 10, 200, 15, Justification::left, false);
@@ -999,6 +999,6 @@ double DSPInterface::getDspCutoffFreq()
 
 void DSPInterface::paint (Graphics& g)
 {
-    g.setColour (Colours::darkgrey);
+    g.setColour (findColour(ThemeColours::defaultText));
     g.setFont (Font ("Small Text", 10, Font::plain));
 }
