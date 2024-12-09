@@ -68,9 +68,9 @@ bool Rhd2000ONIBoard::getFTDriverInfo (int* major, int* minor, int* patch)
     size_t size = sizeof (val);
     if (oni_get_driver_opt (ctx, 0, &val, &size) == ONI_ESUCCESS)
     {
-        *major = (val >> 16) & 0xFF;
-        *minor = (val >> 8) & 0xFF;
-        *patch = (val >> 0) & 0xFF;
+        *major = (val >> 24) & 0xFF;
+        *minor = (val >> 16) & 0xFF;
+        *patch = (val >> 0) & 0xFFFF;
         return true;
     }
     else
@@ -81,10 +81,10 @@ bool Rhd2000ONIBoard::getFTLibInfo (int* major, int* minor, int* patch)
 {
     uint32_t val;
     size_t size = sizeof (val);
-    if (oni_get_driver_opt (ctx, 0, &val, &size) == ONI_ESUCCESS)
+    if (oni_get_driver_opt (ctx, 1, &val, &size) == ONI_ESUCCESS)
     {
-        *major = (val >> 16) & 0xFF;
-        *minor = (val >> 8) & 0xFF;
+        *major = (val >> 24) & 0xFF;
+        *minor = (val >> 16) & 0xFF;
         *patch = (val >> 0) & 0xFF;
         return true;
     }
