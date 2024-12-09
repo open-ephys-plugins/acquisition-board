@@ -703,29 +703,41 @@ void AcqBoardONI::scanPortsInThread()
 
     int major = 0, minor = 0;
 
-    if (evalBoard->getFirmwareVersion (&major, &minor) < 2)
+    if (evalBoard->getFirmwareVersion(&major, &minor))
     {
-        hasBnoSupport = false;
+        if (major > 2)
+        {
+            hasBnoSupport = false;
+        }
+        else
+        {
+            hasBnoSupport = true;
+
+            // Enable BNO device support
+            evalBoard->enableBnoSupport();
+            evalBoard->resetBoard();
+
+            // Check if physical BNO device is connected
+            bool connected;
+            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_A, connected))
+                hasBNO[0] = connected;
+            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_B, connected))
+                hasBNO[1] = connected;
+            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_C, connected))
+                hasBNO[2] = connected;
+            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_D, connected))
+                hasBNO[3] = connected;
+
+            // Disable BNO support for ports without a BNO
+            evalBoard->disableBnoSupport (hasBNO);
+
+            evalBoard->resetBoard();
+        }
     }
     else
     {
-        hasBnoSupport = true;
-
-        // Enable BNO device support
-        evalBoard->enableBnoSupport();
-        evalBoard->resetBoard();
-
-        // Check if physical BNO device is connected
-        bool connected;
-        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_A, connected)) hasBNO[0] = connected;
-        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_B, connected)) hasBNO[1] = connected;
-        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_C, connected)) hasBNO[2] = connected;
-        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_D, connected)) hasBNO[3] = connected;
-
-        // Disable BNO support for ports without a BNO
-        evalBoard->disableBnoSupport (hasBNO);
-
-        evalBoard->resetBoard();
+        hasBnoSupport = false;
+        return;
     }
 
     //Clear previous known streams
