@@ -294,7 +294,8 @@ private:
     bool varSampleRateCapable = false;
     bool commonCommandsSet = false;
     bool initialScan = true;
-    bool hasBNO = false;
+    bool hasBNO[4];
+    bool hasBnoSupport = false;
 
     DataBuffer *bnoBuffer, *memBuffer;
 };

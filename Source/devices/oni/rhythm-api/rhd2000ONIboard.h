@@ -138,6 +138,12 @@ public:
     bool getFTDriverInfo (int* major, int* minor, int* patch);
     bool getFTLibInfo (int* major, int* minor, int* patch);
 
+    /** Enables support for BNOs across all ports */
+    bool enableBnoSupport();
+    /** Disables BNO support for ports where a BNO is not connected */
+    bool disableBnoSupport (bool[4]);
+    bool isBnoConnected (const oni_dev_idx_t, bool&);
+
     enum BoardMemState
     {
         BOARDMEM_INIT = 0,
@@ -149,12 +155,16 @@ public:
     BoardMemState getBoardMemState() const;
 
     /** ONI device indices*/
+    static const oni_dev_idx_t DEVICE_INFO = 254U;
     static const oni_dev_idx_t DEVICE_RHYTHM = 0x0101;
     static const oni_dev_idx_t DEVICE_TTL = 0x0102;
     static const oni_dev_idx_t DEVICE_DAC = 0x0103;
     static const oni_dev_idx_t DEVICE_HEARTBEAT = 0x0000;
     static const oni_dev_idx_t DEVICE_MEMORY = 0x0001;
-    static const oni_dev_idx_t DEVICE_BNO = 0x0002;
+    static const oni_dev_idx_t DEVICE_BNO_A = 0x0002;
+    static const oni_dev_idx_t DEVICE_BNO_B = 0x0003;
+    static const oni_dev_idx_t DEVICE_BNO_C = 0x0004;
+    static const oni_dev_idx_t DEVICE_BNO_D = 0x0005;
 
 private:
     const oni_size_t usbReadBlockSize = 24 * 1024;

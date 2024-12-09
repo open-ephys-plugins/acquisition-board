@@ -40,7 +40,6 @@ int Rhd2000ONIBoard::open (const oni_driver_info_t** driverInfo)
         return -1;
     if (driverInfo)
         getONIDriverInfo (driverInfo);
-    
 
     if (oni_init_ctx (ctx, -1) != ONI_ESUCCESS)
     {
@@ -1169,4 +1168,60 @@ Rhd2000ONIBoard::BoardMemState Rhd2000ONIBoard::getBoardMemState() const
     if (oni_read_reg (ctx, 254, 0x1000, &val) != ONI_ESUCCESS)
         return BOARDMEM_INVALID;
     return static_cast<BoardMemState> (val & 0x03);
+}
+
+bool Rhd2000ONIBoard::enableBnoSupport()
+{
+    if (! ctx)
+        return false;
+
+    const oni_reg_addr_t ENABLE_BNO_ADDRESS = 0x00001001;
+    const oni_reg_val_t val = 0x7; // Bits 3-0 enable bno in ports D-A
+
+    if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_BNO_ADDRESS, val) != ONI_ESUCCESS)
+        return false;
+
+    return true;
+}
+
+bool Rhd2000ONIBoard::disableBnoSupport (bool connectedBnos[4])
+{
+    if (! ctx)
+        return false;
+
+    const oni_reg_addr_t ENABLE_BNO_ADDRESS = 0x00001001;
+    oni_reg_val_t val = 0x0;
+
+    for (int i = 3; i >= 0; i--)
+    {
+        val |= val << 1 | connectedBnos[i];
+    }
+
+    if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_BNO_ADDRESS, val) != ONI_ESUCCESS)
+        return false;
+
+    return true;
+}
+
+bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device, bool& isConnected)
+{
+    isConnected = false;
+
+    if (! ctx)
+        return false;
+
+    oni_reg_val_t val = 2; // Value == 2 means there is a BNO scan in progress
+    int result;
+
+    while (val == 2)
+    {
+        result = oni_read_reg (ctx, device, 0x1, &val);
+    }
+
+    if (result != ONI_ESUCCESS)
+        return false;
+
+    isConnected = val == 1;
+
+    return true;
 }
