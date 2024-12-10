@@ -1170,21 +1170,7 @@ Rhd2000ONIBoard::BoardMemState Rhd2000ONIBoard::getBoardMemState() const
     return static_cast<BoardMemState> (val & 0x03);
 }
 
-bool Rhd2000ONIBoard::enableBnoSupport()
-{
-    if (! ctx)
-        return false;
-
-    const oni_reg_addr_t ENABLE_BNO_ADDRESS = 0x00001001;
-    const oni_reg_val_t val = 0x7; // Bits 3-0 enable bno in ports D-A
-
-    if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_BNO_ADDRESS, val) != ONI_ESUCCESS)
-        return false;
-
-    return true;
-}
-
-bool Rhd2000ONIBoard::disableBnoSupport (bool connectedBnos[4])
+bool Rhd2000ONIBoard::enableBnoSupport (bool connected[4])
 {
     if (! ctx)
         return false;
@@ -1194,7 +1180,7 @@ bool Rhd2000ONIBoard::disableBnoSupport (bool connectedBnos[4])
 
     for (int i = 3; i >= 0; i--)
     {
-        val |= val << 1 | connectedBnos[i];
+        val |= val << 1 | connected[i];
     }
 
     if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_BNO_ADDRESS, val) != ONI_ESUCCESS)
@@ -1216,10 +1202,10 @@ bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device, bool& isConnected)
     while (val == 2)
     {
         result = oni_read_reg (ctx, device, 0x1, &val);
-    }
 
-    if (result != ONI_ESUCCESS)
-        return false;
+        if (result != ONI_ESUCCESS)
+            return false;
+    }
 
     isConnected = val == 1;
 

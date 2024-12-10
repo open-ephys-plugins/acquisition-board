@@ -138,10 +138,8 @@ public:
     bool getFTDriverInfo (int* major, int* minor, int* patch);
     bool getFTLibInfo (int* major, int* minor, int* patch);
 
-    /** Enables support for BNOs across all ports */
-    bool enableBnoSupport();
-    /** Disables BNO support for ports where a BNO is not connected */
-    bool disableBnoSupport (bool[4]);
+    /** Enables support for the specified BNOs across all ports */
+    bool enableBnoSupport (bool[4]);
     bool isBnoConnected (const oni_dev_idx_t, bool&);
 
     enum BoardMemState

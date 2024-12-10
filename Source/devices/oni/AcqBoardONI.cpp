@@ -53,7 +53,8 @@ AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
         dacThresholds.add (0);
     }
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++)
+    {
         hasBNO[i] = false;
     }
 }
@@ -100,6 +101,7 @@ bool AcqBoardONI::detectBoard()
             LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor);
             //if (major >= 16) //For now we use this, we will use the proper versioning
             //    hasBNO[0] = true;
+            hasBnoSupport = major >= 2;
         }
 
         deviceFound = true;
@@ -703,41 +705,29 @@ void AcqBoardONI::scanPortsInThread()
 
     int major = 0, minor = 0;
 
-    if (evalBoard->getFirmwareVersion(&major, &minor))
+    if (hasBnoSupport)
     {
-        if (major > 2)
-        {
-            hasBnoSupport = false;
-        }
-        else
-        {
-            hasBnoSupport = true;
+        bool enableBnos[4] = { true, true, true, true };
 
-            // Enable BNO device support
-            evalBoard->enableBnoSupport();
-            evalBoard->resetBoard();
+        // Enable BNO device support
+        evalBoard->enableBnoSupport (enableBnos);
+        evalBoard->resetBoard();
 
-            // Check if physical BNO device is connected
-            bool connected;
-            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_A, connected))
-                hasBNO[0] = connected;
-            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_B, connected))
-                hasBNO[1] = connected;
-            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_C, connected))
-                hasBNO[2] = connected;
-            if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_D, connected))
-                hasBNO[3] = connected;
+        // Check if physical BNO device is connected
+        bool connected;
+        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_A, connected))
+            hasBNO[0] = connected;
+        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_B, connected))
+            hasBNO[1] = connected;
+        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_C, connected))
+            hasBNO[2] = connected;
+        if (evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_D, connected))
+            hasBNO[3] = connected;
 
-            // Disable BNO support for ports without a BNO
-            evalBoard->disableBnoSupport (hasBNO);
+        // Disable BNO support for ports without a BNO
+        evalBoard->enableBnoSupport (hasBNO);
 
-            evalBoard->resetBoard();
-        }
-    }
-    else
-    {
-        hasBnoSupport = false;
-        return;
+        evalBoard->resetBoard();
     }
 
     //Clear previous known streams
