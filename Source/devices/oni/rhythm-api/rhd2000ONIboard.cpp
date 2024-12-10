@@ -1189,10 +1189,8 @@ bool Rhd2000ONIBoard::enableBnoSupport (bool connected[4])
     return true;
 }
 
-bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device, bool& isConnected)
+bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device)
 {
-    isConnected = false;
-
     if (! ctx)
         return false;
 
@@ -1207,7 +1205,5 @@ bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device, bool& isConnected)
             return false;
     }
 
-    isConnected = val == 1;
-
-    return true;
+    return val == 1;
 }

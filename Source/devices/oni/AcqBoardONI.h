@@ -297,7 +297,7 @@ private:
     bool hasBNO[4];
     bool hasBnoSupport = false;
 
-    DataBuffer *bnoBuffer, *memBuffer;
+    DataBuffer *bnoBufferA, *bnoBufferB, *bnoBufferC, *bnoBufferD, *memBuffer;
 };
 
 #endif
