@@ -28,8 +28,8 @@
 #include "ImpedanceMeterONI.h"
 
 #include "rhythm-api/okFrontPanelDLL.h"
-#include "rhythm-api/rhd2000ONIdatablock.h"
 #include "rhythm-api/rhd2000ONIboard.h"
+#include "rhythm-api/rhd2000ONIdatablock.h"
 #include "rhythm-api/rhd2000ONIregisters.h"
 
 #define CHIP_ID_RHD2132 1
@@ -45,16 +45,16 @@
 class PortScanner : public ThreadWithProgressWindow
 {
 public:
-    PortScanner(AcqBoardONI* board_) : 
-        ThreadWithProgressWindow("Scanning ports...", true, false), board(board_)
+    PortScanner (AcqBoardONI* board_) : ThreadWithProgressWindow ("Scanning ports...", true, false),
+                                        board (board_)
     {
-	}
+    }
 
     ~PortScanner()
     {
-		signalThreadShouldExit();
-		waitForThreadToExit(1000);
-	}
+        signalThreadShouldExit();
+        waitForThreadToExit (1000);
+    }
 
     void run() override;
 
@@ -208,10 +208,9 @@ public:
     void updateCustomStreams (OwnedArray<DataStream>& otherStreams, OwnedArray<ContinuousChannel>& otherChannels) override;
 
 private:
-
     /**Check board memory status */
     bool checkBoardMem() const;
-    
+
     /** Fills data buffer */
     void run();
 
@@ -235,6 +234,9 @@ private:
 
     /** ??? Returns the global channel index for a local headstage channel */
     int getHeadstageChannel (int& headstageIndex, int channelIndex) const;
+
+    /** Adds the given frame to the corresponding BNO buffer */
+    void addBnoDataToBuffer (oni_frame_t*, DataBuffer*);
 
     /** Rhythm API classes*/
     std::unique_ptr<Rhd2000ONIBoard> evalBoard;
@@ -289,15 +291,18 @@ private:
 
     /** Re-check cable delays after changing sample rate*/
     bool checkCableDelays = false;
-    
+
+    static const int numberOfPorts = 4;
+
     int regOffset;
     bool varSampleRateCapable = false;
     bool commonCommandsSet = false;
     bool initialScan = true;
-    bool hasBNO[4];
+    bool hasBNO[numberOfPorts];
     bool hasBnoSupport = false;
 
-    DataBuffer *bnoBufferA, *bnoBufferB, *bnoBufferC, *bnoBufferD, *memBuffer;
+    DataBuffer* memBuffer;
+    Array<DataBuffer*, juce::DummyCriticalSection, numberOfPorts> bnoBuffers;
 };
 
 #endif

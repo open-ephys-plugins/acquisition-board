@@ -53,9 +53,10 @@ AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
         dacThresholds.add (0);
     }
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < numberOfPorts; i++)
     {
         hasBNO[i] = false;
+        bnoBuffers.add (nullptr);
     }
 }
 
@@ -117,14 +118,13 @@ void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
 {
     memBuffer = otherBuffers.add (new DataBuffer (1, 10000)); // Memory device
 
-    if (hasBNO[0])
-        bnoBufferA = otherBuffers.add (new DataBuffer (4, 10000)); // BNO Port A
-    if (hasBNO[1])
-        bnoBufferB = otherBuffers.add (new DataBuffer (4, 10000)); // BNO Port B
-    if (hasBNO[2])
-        bnoBufferC = otherBuffers.add (new DataBuffer (4, 10000)); // BNO Port C
-    if (hasBNO[3])
-        bnoBufferD = otherBuffers.add (new DataBuffer (4, 10000)); // BNO Port D
+    for (int i = 0; i < numberOfPorts; i++)
+    {
+        if (hasBNO[i])
+            bnoBuffers.set (i, otherBuffers.add (new DataBuffer (4, 10000)));
+        else
+            bnoBuffers.set (i, nullptr);
+    }
 }
 
 void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, OwnedArray<ContinuousChannel>& otherChannels)
@@ -157,14 +157,14 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
     String port = "ABCD";
 
     //BNO
-    for (int k = 0; k < 4; k++)
+    for (int k = 0; k < numberOfPorts; k++)
     {
         if (hasBNO[k])
         {
             DataStream::Settings bnoStreamSettings {
                 "IMU Port " + port[k],
                 "Inertial measurement unit data from the BNO device on port " + port[k],
-                "rhythm-fpga-device.bno-" + port.toLowerCase()[k],
+                "rhythm-fpga-device.bno",
 
                 100
 
@@ -175,7 +175,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 
             for (int i = 0; i < 4; i++)
             {
-                String identifier = "rhythm-fpga-device.continuous.bno-" + port.toLowerCase()[k];
+                String identifier = "rhythm-fpga-device.continuous.bno";
 
                 String quatIdentifier = identifier + ".quat";
                 ContinuousChannel::Settings channelSettings {
@@ -1549,75 +1549,19 @@ void AcqBoardONI::run()
             }
             else if (hasBNO[0] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_A)
             {
-                bufferPtr = (unsigned char*) frame->data + 8 + 6;
-                uint64 zero = 0;
-                int64 tst = frame->time;
-                double tsd = frame->time / 50e6;
-                float quatdata[4];
-                for (int i = 0; i < 4; i++)
-                {
-                    quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
-                }
-                bnoBufferA->addToBuffer (
-                    quatdata,
-                    &tst,
-                    &tsd,
-                    &zero,
-                    1);
+                addBnoDataToBuffer (frame, bnoBuffers[0]);
             }
             else if (hasBNO[1] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_B)
             {
-                bufferPtr = (unsigned char*) frame->data + 8 + 6;
-                uint64 zero = 0;
-                int64 tst = frame->time;
-                double tsd = frame->time / 50e6;
-                float quatdata[4];
-                for (int i = 0; i < 4; i++)
-                {
-                    quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
-                }
-                bnoBufferB->addToBuffer (
-                    quatdata,
-                    &tst,
-                    &tsd,
-                    &zero,
-                    1);
+                addBnoDataToBuffer (frame, bnoBuffers[1]);
             }
             else if (hasBNO[2] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_C)
             {
-                bufferPtr = (unsigned char*) frame->data + 8 + 6;
-                uint64 zero = 0;
-                int64 tst = frame->time;
-                double tsd = frame->time / 50e6;
-                float quatdata[4];
-                for (int i = 0; i < 4; i++)
-                {
-                    quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
-                }
-                bnoBufferC->addToBuffer (
-                    quatdata,
-                    &tst,
-                    &tsd,
-                    &zero,
-                    1);
+                addBnoDataToBuffer (frame, bnoBuffers[2]);
             }
             else if (hasBNO[3] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_D)
             {
-                bufferPtr = (unsigned char*) frame->data + 8 + 6;
-                uint64 zero = 0;
-                int64 tst = frame->time;
-                double tsd = frame->time / 50e6;
-                float quatdata[4];
-                for (int i = 0; i < 4; i++)
-                {
-                    quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
-                }
-                bnoBufferD->addToBuffer (
-                    quatdata,
-                    &tst,
-                    &tsd,
-                    &zero,
-                    1);
+                addBnoDataToBuffer (frame, bnoBuffers[3]);
             }
             oni_destroy_frame (frame);
         }
@@ -1678,6 +1622,25 @@ void AcqBoardONI::run()
                   TTL_OUTPUT_STATE[7]);
         }
     }
+}
+
+void AcqBoardONI::addBnoDataToBuffer(oni_frame_t* frame, DataBuffer* buffer)
+{
+    unsigned char* bufferPtr = (unsigned char*) frame->data + 8 + 6;
+    uint64 zero = 0;
+    int64 tst = frame->time;
+    double tsd = frame->time / 50e6;
+    float quatdata[4];
+    for (int i = 0; i < 4; i++)
+    {
+        quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
+    }
+    buffer->addToBuffer (
+        quatdata,
+        &tst,
+        &tsd,
+        &zero,
+        1);
 }
 
 void AcqBoardONI::setNumHeadstageChannels (int hsNum, int numChannels)
