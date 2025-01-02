@@ -155,6 +155,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
     sourceStreams->clear();
     devices->clear();
     configurationObjects->clear();
+    sourceBuffers.removeLast (sourceBuffers.size() - 1);
 
     DataStream::Settings dataStreamSettings {
         "acquisition_board",
@@ -254,6 +255,10 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
 
     OwnedArray<DataStream> otherStreams;
     OwnedArray<ContinuousChannel> otherChannels;
+    OwnedArray<DataBuffer> otherBuffers;
+    acquisitionBoard->createCustomStreams (otherBuffers);
+    sourceBuffers.addArray (otherBuffers);
+    otherBuffers.clearQuick (false);
     acquisitionBoard->updateCustomStreams (otherStreams, otherChannels);
     sourceStreams->addArray (otherStreams);
     otherStreams.clearQuick (false);

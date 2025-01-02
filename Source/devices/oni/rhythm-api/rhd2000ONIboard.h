@@ -141,6 +141,8 @@ public:
     /** Enables support for the specified BNOs across all ports */
     bool enableBnoSupport (bool[4]);
     bool isBnoConnected (const oni_dev_idx_t);
+    void enableBnoStream (unsigned int bnoIndex, bool enabled);
+    bool isBnoEnabled (unsigned int bnoIndex);
 
     enum BoardMemState
     {

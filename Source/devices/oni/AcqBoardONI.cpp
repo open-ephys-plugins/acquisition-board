@@ -162,12 +162,10 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         if (hasBNO[k])
         {
             DataStream::Settings bnoStreamSettings {
-                "IMU Port " + port[k],
-                "Inertial measurement unit data from the BNO device on port " + port[k],
+                "IMU Port " + String::charToString(port[k]),
+                "Inertial measurement unit data from the BNO device on port " + String::charToString(port[k]),
                 "rhythm-fpga-device.bno",
-
                 100
-
             };
 
             stream = new DataStream (bnoStreamSettings);
@@ -730,6 +728,11 @@ void AcqBoardONI::scanPortsInThread()
         hasBNO[2] = evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_C);
         hasBNO[3] = evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_D);
 
+        for (int i = 0; i < 4; i++)
+        {
+            evalBoard->enableBnoStream (i, hasBNO[i]);
+        }
+
         // Disable BNO support for ports without a BNO
         evalBoard->enableBnoSupport (hasBNO);
 
@@ -1049,7 +1052,6 @@ void AcqBoardONI::updateBoardStreams()
     {
         if (i < enabledStreams.size())
         {
-            //std::cout << "Enabling stream " << i << " with source " << enabledStreams[i] << std::endl;
             evalBoard->enableDataStream (i, true);
             evalBoard->setDataSource (i, enabledStreams[i]);
         }

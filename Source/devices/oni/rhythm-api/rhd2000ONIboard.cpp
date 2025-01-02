@@ -1180,7 +1180,7 @@ bool Rhd2000ONIBoard::enableBnoSupport (bool connected[4])
 
     for (int i = 3; i >= 0; i--)
     {
-        val |= val << 1 | connected[i];
+        val |= static_cast<int>(connected[i]) << i;
     }
 
     if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_BNO_ADDRESS, val) != ONI_ESUCCESS)
@@ -1206,4 +1206,22 @@ bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device)
     }
 
     return val == 1;
+}
+
+void Rhd2000ONIBoard::enableBnoStream (unsigned int bnoIndex, bool enabled)
+{
+    if (bnoIndex > 3)
+        return;
+
+    oni_write_reg (ctx, DEVICE_BNO_A + bnoIndex, 0, static_cast<int> (enabled));
+}
+
+bool Rhd2000ONIBoard::isBnoEnabled (unsigned int bnoIndex)
+{
+    if (bnoIndex > 3)
+        return false;
+    oni_reg_val_t val;
+    if (oni_read_reg (ctx, DEVICE_BNO_A + bnoIndex, 0, &val) != ONI_ESUCCESS)
+        return false;
+    return static_cast<bool>(val);
 }
