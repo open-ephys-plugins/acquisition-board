@@ -113,6 +113,7 @@ private:
     ScopedPointer<ComboBox> ttlSettleCombo, dacHPFcombo;
 
     ScopedPointer<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
+    std::unique_ptr<Label> noBoardsDetectedLabel;
 
     enum AudioChannel
     {

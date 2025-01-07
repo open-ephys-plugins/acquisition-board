@@ -44,6 +44,20 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
       board (board_)
 {
     canvas = nullptr;
+    noBoardsDetectedLabel = nullptr;
+
+    if (board == nullptr)
+    {
+        noBoardsDetectedLabel = std::make_unique<Label> ("NoBoardsDetected", "No Boards Detected.");
+        noBoardsDetectedLabel->setBounds (0, 15, 340, 125);
+        noBoardsDetectedLabel->setAlwaysOnTop (true);
+        noBoardsDetectedLabel->toFront(false);
+        noBoardsDetectedLabel->setJustificationType (Justification::centred);
+        noBoardsDetectedLabel->setColour(Label::textColourId, Colours::black);
+        addAndMakeVisible (noBoardsDetectedLabel.get());
+
+        return;
+    }
 
     // add headstage-specific controls (currently just a toggle button)
     for (int i = 0; i < 4; i++)
@@ -362,6 +376,11 @@ void DeviceEditor::stopAcquisition()
 
 void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 {
+    if (board == nullptr)
+    {
+        return;
+    }
+
     xml->setAttribute ("SampleRate", sampleRateInterface->getSelectedId());
     xml->setAttribute ("SampleRateString", sampleRateInterface->getText());
     xml->setAttribute ("LowCut", bandwidthInterface->getLowerBandwidth());
@@ -440,6 +459,11 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
 Visualizer* DeviceEditor::createNewCanvas()
 {
     GenericProcessor* processor = (GenericProcessor*) getProcessor();
+
+    if (board == nullptr)
+    {
+        return nullptr;
+    }
 
     canvas = new ChannelCanvas (board, this);
 
