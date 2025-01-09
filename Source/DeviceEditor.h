@@ -97,22 +97,22 @@ private:
     OwnedArray<HeadstageOptionsInterface> headstageOptionsInterfaces;
     OwnedArray<ElectrodeButton> electrodeButtons;
 
-    ScopedPointer<SampleRateInterface> sampleRateInterface;
-    ScopedPointer<BandwidthInterface> bandwidthInterface;
-    ScopedPointer<DSPInterface> dspInterface;
+    std::unique_ptr<SampleRateInterface> sampleRateInterface;
+    std::unique_ptr<BandwidthInterface> bandwidthInterface;
+    std::unique_ptr<DSPInterface> dspInterface;
 
-    ScopedPointer<AudioInterface> audioInterface;
-    ScopedPointer<ClockDivideInterface> clockInterface;
+    std::unique_ptr<AudioInterface> audioInterface;
+    std::unique_ptr<ClockDivideInterface> clockInterface;
 
-    ScopedPointer<UtilityButton> rescanButton, dacTTLButton;
-    ScopedPointer<UtilityButton> auxButton;
-    ScopedPointer<UtilityButton> adcButton;
-    ScopedPointer<UtilityButton> ledButton;
+    std::unique_ptr<UtilityButton> rescanButton, dacTTLButton;
+    std::unique_ptr<UtilityButton> auxButton;
+    std::unique_ptr<UtilityButton> adcButton;
+    std::unique_ptr<UtilityButton> ledButton;
 
-    ScopedPointer<UtilityButton> dspoffsetButton;
-    ScopedPointer<ComboBox> ttlSettleCombo, dacHPFcombo;
+    std::unique_ptr<UtilityButton> dspoffsetButton;
+    std::unique_ptr<ComboBox> ttlSettleCombo, dacHPFcombo;
 
-    ScopedPointer<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
+    std::unique_ptr<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
 
     enum AudioChannel
     {
@@ -168,8 +168,8 @@ private:
     class AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<UtilityButton> hsButton1;
-    ScopedPointer<UtilityButton> hsButton2;
+    std::unique_ptr<UtilityButton> hsButton1;
+    std::unique_ptr<UtilityButton> hsButton2;
 };
 
 class BandwidthInterface : public Component,
@@ -195,8 +195,8 @@ private:
     class AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<Label> upperBandwidthSelection;
-    ScopedPointer<Label> lowerBandwidthSelection;
+    std::unique_ptr<Label> upperBandwidthSelection;
+    std::unique_ptr<Label> lowerBandwidthSelection;
 
     double actualUpperBandwidth;
     double actualLowerBandwidth;
@@ -221,7 +221,7 @@ private:
     class AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<Label> dspOffsetSelection;
+    std::unique_ptr<Label> dspOffsetSelection;
 
     double actualDspCutoffFreq;
 };
@@ -248,7 +248,7 @@ private:
     class AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<ComboBox> rateSelection;
+    std::unique_ptr<ComboBox> rateSelection;
     StringArray sampleRateOptions;
 };
 
@@ -274,7 +274,7 @@ private:
     class AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<Label> noiseSlicerLevelSelection;
+    std::unique_ptr<Label> noiseSlicerLevelSelection;
 
     int actualNoiseSlicerLevel;
 };
@@ -298,7 +298,7 @@ private:
     class AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<Label> divideRatioSelection;
+    std::unique_ptr<Label> divideRatioSelection;
     int actualDivideRatio;
 };
 

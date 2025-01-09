@@ -192,9 +192,9 @@ bool AcqBoardOpalKelly::initializeBoard()
 
     // Read the resulting single data block from the USB interface. We don't
     // need to do anything with this, since it was only used for ADC calibration
-    ScopedPointer<Rhd2000DataBlock> dataBlock = new Rhd2000DataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000DataBlock> dataBlock = std::make_unique<Rhd2000DataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
-    evalBoard->readDataBlock (dataBlock, INIT_STEP);
+    evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
     // Now that ADC calibration has been performed, we switch to the command sequence
     // that does not execute ADC calibration.
     evalBoard->selectAuxCommandBank (Rhd2000EvalBoard::PortA, Rhd2000EvalBoard::AuxCmd3, settings.fastSettleEnabled ? 2 : 1);
@@ -529,8 +529,8 @@ void AcqBoardOpalKelly::scanPorts()
     evalBoard->setMaxTimeStep (INIT_STEP);
     evalBoard->setContinuousRunMode (false);
 
-    ScopedPointer<Rhd2000DataBlock> dataBlock =
-        new Rhd2000DataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000DataBlock> dataBlock =
+        std::make_unique<Rhd2000DataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
     Array<int> sumGoodDelays;
     sumGoodDelays.insertMultiple (0, 0, 8);
@@ -562,13 +562,13 @@ void AcqBoardOpalKelly::scanPorts()
             ;
         }
         // Read the resulting single data block from the USB interface.
-        evalBoard->readDataBlock (dataBlock, INIT_STEP);
+        evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
 
         // Read the Intan chip ID number from each RHD2000 chip found.
         // Record delay settings that yield good communication with the chip.
         for (hs = 0; hs < headstages.size(); ++hs)
         {
-            id = getIntanChipId (dataBlock, hs, register59Value);
+            id = getIntanChipId (dataBlock.get(), hs, register59Value);
 
             if (id == CHIP_ID_RHD2132 || id == CHIP_ID_RHD2216 || (id == CHIP_ID_RHD2164 && register59Value == REGISTER_59_MISO_A))
             {

@@ -65,11 +65,11 @@ private:
     AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<UtilityButton> impedanceButton;
-    ScopedPointer<UtilityButton> saveImpedanceButton;
+    std::unique_ptr<UtilityButton> impedanceButton;
+    std::unique_ptr<UtilityButton> saveImpedanceButton;
 
-    ScopedPointer<ComboBox> numberingScheme;
-    ScopedPointer<Label> numberingSchemeLabel;
+    std::unique_ptr<ComboBox> numberingScheme;
+    std::unique_ptr<Label> numberingSchemeLabel;
 
     OwnedArray<Label> staticLabels;
     OwnedArray<ChannelComponent> channelComponents;

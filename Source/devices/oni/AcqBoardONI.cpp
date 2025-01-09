@@ -345,8 +345,8 @@ void AcqBoardONI::checkAllCableDelays()
     evalBoard->setMaxTimeStep (128 * INIT_STEP);
     evalBoard->setContinuousRunMode (false);
 
-    ScopedPointer<Rhd2000ONIDataBlock> dataBlock =
-        new Rhd2000ONIDataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000ONIDataBlock> dataBlock =
+        std::make_unique<Rhd2000ONIDataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
     Array<int> sumGoodDelays;
     sumGoodDelays.insertMultiple (0, 0, 8);
@@ -403,7 +403,7 @@ void AcqBoardONI::checkAllCableDelays()
         evalBoard->run();
 
         // Read the resulting single data block from the USB interface.
-        evalBoard->readDataBlock (dataBlock, INIT_STEP);
+        evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
         {
             const ScopedLock lock (oniLock);
             evalBoard->stop();
@@ -415,7 +415,7 @@ void AcqBoardONI::checkAllCableDelays()
         {
             if (headstages[hs]->isConnected())
             {
-                id = getIntanChipId (dataBlock, headstages[hs]->getStreamIndex (0), register59Value);
+                id = getIntanChipId (dataBlock.get(), headstages[hs]->getStreamIndex (0), register59Value);
 
                 //     LOGD("hs ", hs, " id ", id, " r59 ", (int)register59Value);
 
@@ -690,8 +690,8 @@ void AcqBoardONI::scanPortsInThread()
     evalBoard->setMaxTimeStep (128 * INIT_STEP);
     evalBoard->setContinuousRunMode (false);
 
-    ScopedPointer<Rhd2000ONIDataBlock> dataBlock =
-        new Rhd2000ONIDataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000ONIDataBlock> dataBlock =
+        std::make_unique<Rhd2000ONIDataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
     Array<int> sumGoodDelays;
     sumGoodDelays.insertMultiple (0, 0, 8);
@@ -725,7 +725,7 @@ void AcqBoardONI::scanPortsInThread()
             ;
         }*/
         // Read the resulting single data block from the USB interface.
-        evalBoard->readDataBlock (dataBlock, INIT_STEP);
+        evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
         {
             const ScopedLock lock (oniLock);
             evalBoard->stop();
@@ -735,7 +735,7 @@ void AcqBoardONI::scanPortsInThread()
         // Record delay settings that yield good communication with the chip.
         for (hs = 0; hs < headstages.size(); ++hs)
         {
-            id = getIntanChipId (dataBlock, hs, register59Value);
+            id = getIntanChipId (dataBlock.get(), hs, register59Value);
 
             //     LOGD("hs ", hs, " id ", id, " r59 ", (int)register59Value);
 

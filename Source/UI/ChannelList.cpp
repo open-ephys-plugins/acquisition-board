@@ -34,31 +34,31 @@ ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : boa
 {
     channelComponents.clear();
 
-    numberingSchemeLabel = new Label ("Channel Names:", "Channel Names:");
+    numberingSchemeLabel = std::make_unique< Label >("Channel Names:", "Channel Names:");
     numberingSchemeLabel->setEditable (false);
     numberingSchemeLabel->setBounds (10, 10, 150, 25);
-    addAndMakeVisible (numberingSchemeLabel);
+    addAndMakeVisible (numberingSchemeLabel.get());
 
-    numberingScheme = new ComboBox ("numberingScheme");
+    numberingScheme = std::make_unique < ComboBox >("numberingScheme");
     numberingScheme->addItem ("Global", 1);
     numberingScheme->addItem ("Stream-Based", 2);
     numberingScheme->setBounds (125, 10, 140, 25);
     numberingScheme->addListener (this);
     numberingScheme->setSelectedId (1, dontSendNotification);
-    addAndMakeVisible (numberingScheme);
+    addAndMakeVisible (numberingScheme.get());
 
-    impedanceButton = new UtilityButton ("Measure Impedances");
+    impedanceButton = std::make_unique < UtilityButton >("Measure Impedances");
     impedanceButton->setRadius (3);
     impedanceButton->setBounds (280, 10, 140, 25);
     impedanceButton->addListener (this);
-    addAndMakeVisible (impedanceButton);
+    addAndMakeVisible (impedanceButton.get());
 
-    saveImpedanceButton = new UtilityButton ("Save Impedances");
+    saveImpedanceButton = std::make_unique < UtilityButton >("Save Impedances");
     saveImpedanceButton->setRadius (3);
     saveImpedanceButton->setBounds (430, 10, 150, 25);
     saveImpedanceButton->addListener (this);
     saveImpedanceButton->setEnabled (false);
-    addAndMakeVisible (saveImpedanceButton);
+    addAndMakeVisible (saveImpedanceButton.get());
 
     gains.clear();
     gains.add (0.01);
@@ -85,12 +85,12 @@ void ChannelList::lookAndFeelChanged()
 
 void ChannelList::buttonClicked (Button* btn)
 {
-    if (btn == impedanceButton)
+    if (btn == impedanceButton.get())
     {
         editor->measureImpedances();
         saveImpedanceButton->setEnabled (true);
     }
-    else if (btn == saveImpedanceButton)
+    else if (btn == saveImpedanceButton.get())
     {
         FileChooser chooseOutputFile ("Please select the location to save...",
                                       File(),
@@ -222,7 +222,7 @@ void ChannelList::updateButtons()
 
 void ChannelList::comboBoxChanged (ComboBox* b)
 {
-    if (b == numberingScheme)
+    if (b == numberingScheme.get())
     {
         board->setNamingScheme ((ChannelNamingScheme) b->getSelectedId());
 
