@@ -243,11 +243,26 @@ void ImpedanceMeterONI::empiricalResistanceCorrection (double& impedanceMagnitud
 
 void ImpedanceMeterONI::run()
 {
+    LOGD ("Storing board settings...");
+    AcquisitionBoard::AnalogFilter analogFilterSettings = acquisitionBoard->settings.analogFilter;
+    AcquisitionBoard::Dsp dspSettings = acquisitionBoard->settings.dsp;
+    float boardSampleRate = acquisitionBoard->settings.boardSampleRate;
+
+    acquisitionBoard->setSampleRate (30000.0f);
+    acquisitionBoard->setUpperBandwidth (7500);
+    acquisitionBoard->setLowerBandwidth (1);
+    acquisitionBoard->setDspOffset (false);
+
     LOGD ("Running imedance measurement");
     runImpedanceMeasurement (acquisitionBoard->impedances);
 
     LOGD ("Restoring board settings");
     restoreBoardSettings();
+
+    acquisitionBoard->setSampleRate (boardSampleRate);
+    acquisitionBoard->setUpperBandwidth (analogFilterSettings.upperBandwidth);
+    acquisitionBoard->setLowerBandwidth (analogFilterSettings.lowerBandwidth);
+    acquisitionBoard->setDspOffset (dspSettings.enabled);
 
     LOGD ("Impedance measurement finished");
     acquisitionBoard->impedanceMeasurementFinished();

@@ -61,6 +61,9 @@ public:
     /** Called when parameters of the underlying data processor are changed*/
     void update();
 
+     /** Calls update after a delay*/
+    void updateAsync();
+
     /** Called instead of repaint to avoid redrawing underlying components*/
     void refresh();
 
@@ -79,6 +82,7 @@ public:
 
     /** Pointer to the editor object*/
     DeviceEditor* editor;
+
 };
 
 #endif // __CHANNELCANVAS_H_2AD3C591__

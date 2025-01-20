@@ -64,6 +64,9 @@ public:
 
     /** Runs impedance test*/
     void measureImpedances();
+    
+    /** Callback when impedance measurement is finished */
+    void impedanceMeasurementFinished();
 
     /** Saves impedance data to a file */
     void saveImpedances (File& file);

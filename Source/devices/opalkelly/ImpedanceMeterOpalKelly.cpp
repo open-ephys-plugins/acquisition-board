@@ -224,10 +224,28 @@ void ImpedanceMeterOpalKelly::empiricalResistanceCorrection (double& impedanceMa
 void ImpedanceMeterOpalKelly::run()
 {
 
+    LOGD ("Storing board settings...");
+    AcquisitionBoard::AnalogFilter analogFilterSettings = acquisitionBoard->settings.analogFilter;
+    AcquisitionBoard::Dsp dspSettings = acquisitionBoard->settings.dsp;
+    float boardSampleRate = acquisitionBoard->settings.boardSampleRate;
+
+    acquisitionBoard->setSampleRate (30000.0f);
+    acquisitionBoard->setUpperBandwidth (7500);
+    acquisitionBoard->setLowerBandwidth (1);
+    acquisitionBoard->setDspOffset (false);
+
+    LOGD ("Running impedance measurement...");
     runImpedanceMeasurement(acquisitionBoard->impedances);
     
+    LOGD ("Restoring board settings...");
     restoreBoardSettings();
 
+    acquisitionBoard->setSampleRate (boardSampleRate);
+    acquisitionBoard->setUpperBandwidth (analogFilterSettings.upperBandwidth);
+    acquisitionBoard->setLowerBandwidth (analogFilterSettings.lowerBandwidth);
+    acquisitionBoard->setDspOffset (dspSettings.enabled);
+
+    LOGD ("Sending signal that impedance measurement finished...");
     acquisitionBoard->impedanceMeasurementFinished();
 
     setProgress(1.0f);
@@ -254,7 +272,6 @@ void ImpedanceMeterOpalKelly::runImpedanceMeasurement (Impedances& impedances)
     for (stream = 0; stream < acquisitionBoard->MAX_NUM_DATA_STREAMS; ++stream)
     {
         CHECK_EXIT;
-
         if (acquisitionBoard->evalBoard->isStreamEnabled(stream))
         {
             enabledStreams.add(stream);
@@ -271,6 +288,7 @@ void ImpedanceMeterOpalKelly::runImpedanceMeasurement (Impedances& impedances)
 
     if (!validImpedanceFreq)
     {
+        LOGD (actualImpedanceFreq, " -- Invalid frequency, returning.");
         return;
     }
     

@@ -233,7 +233,6 @@ Array<int> AcqBoardONI::getAvailableSampleRates()
 
 void AcqBoardONI::setSampleRate (int desiredSampleRate)
 {
-    impedanceMeter->stopThreadSafely();
 
     Rhd2000ONIBoard::AmplifierSampleRate sampleRate;
 
@@ -641,7 +640,6 @@ void AcqBoardONI::scanPortsInThread()
     if (! checkBoardMem())
         return;
     LOGDD ("DBG: SA");
-    impedanceMeter->stopThreadSafely();
 
     //Clear previous known streams
     enabledStreams.clear();
@@ -1010,6 +1008,9 @@ void AcqBoardONI::impedanceMeasurementFinished()
                 hs->setImpedances (impedances);
             }
         }
+
+        editor->impedanceMeasurementFinished();
+
     }
 }
 
@@ -1041,7 +1042,7 @@ void AcqBoardONI::saveImpedances (File& file)
             xml->addChildElement (headstageXml);
         }
 
-       // xml->writeTo (file, XmlElement::TextFormat());
+       xml->writeTo (file, XmlElement::TextFormat());
     }
 }
 
@@ -1085,8 +1086,6 @@ bool AcqBoardONI::areAdcChannelsEnabled() const
 
 double AcqBoardONI::setUpperBandwidth (double upper)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.analogFilter.upperBandwidth = upper;
 
     updateRegisters();
@@ -1096,8 +1095,6 @@ double AcqBoardONI::setUpperBandwidth (double upper)
 
 double AcqBoardONI::setLowerBandwidth (double lower)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.analogFilter.lowerBandwidth = lower;
 
     updateRegisters();
@@ -1107,8 +1104,6 @@ double AcqBoardONI::setLowerBandwidth (double lower)
 
 double AcqBoardONI::setDspCutoffFreq (double freq)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.dsp.cutoffFreq = freq;
 
     updateRegisters();
@@ -1123,8 +1118,6 @@ double AcqBoardONI::getDspCutoffFreq() const
 
 void AcqBoardONI::setDspOffset (bool state)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.dsp.enabled = state;
 
     updateRegisters();

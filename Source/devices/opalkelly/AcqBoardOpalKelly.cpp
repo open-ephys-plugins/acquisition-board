@@ -257,8 +257,7 @@ Array<int> AcqBoardOpalKelly::getAvailableSampleRates()
 
 void AcqBoardOpalKelly::setSampleRate (int desiredSampleRate)
 {
-    impedanceMeter->stopThreadSafely();
-    
+
     Rhd2000EvalBoard::AmplifierSampleRate sampleRate;
 
     switch (desiredSampleRate)
@@ -467,7 +466,6 @@ int AcqBoardOpalKelly::getIntanChipId (Rhd2000DataBlock* dataBlock, int stream, 
 
 void AcqBoardOpalKelly::scanPorts()
 {
-    impedanceMeter->stopThreadSafely();
 
     //Clear previous known streams
     enabledStreams.clear();
@@ -842,6 +840,8 @@ void AcqBoardOpalKelly::impedanceMeasurementFinished()
                 hs->setImpedances (impedances);
             }
         }
+
+        editor->impedanceMeasurementFinished();
     }
 }
 
@@ -873,7 +873,7 @@ void AcqBoardOpalKelly::saveImpedances (File& file)
             xml->addChildElement (headstageXml);
         }
 
-       // xml->writeTo(file, XmlElement::TextFormat());
+       xml->writeTo(file, XmlElement::TextFormat());
     }
 }
 
@@ -917,7 +917,6 @@ bool AcqBoardOpalKelly::areAdcChannelsEnabled() const
 
 double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.analogFilter.upperBandwidth = upper;
 
@@ -928,7 +927,6 @@ double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 
 double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.analogFilter.lowerBandwidth = lower;
 
@@ -939,7 +937,6 @@ double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 
 double AcqBoardOpalKelly::setDspCutoffFreq (double freq)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.dsp.cutoffFreq = freq;
 
@@ -955,7 +952,6 @@ double AcqBoardOpalKelly::getDspCutoffFreq() const
 
 void AcqBoardOpalKelly::setDspOffset (bool state)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.dsp.enabled = state;
 

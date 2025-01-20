@@ -45,8 +45,8 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
 
     editName = std::make_unique<Label> (name, name);
     editName->setFont (f);
+    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker (0.3f));
     editName->setEditable (false);
-    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentParentBackground));
     editName->addListener (this);
     addAndMakeVisible (editName.get());
 
@@ -78,7 +78,7 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
 
 void ChannelComponent::lookAndFeelChanged()
 {
-    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentParentBackground));
+    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker(0.3f));
 }
 
 void ChannelComponent::setImpedanceValues (float mag, float phase)

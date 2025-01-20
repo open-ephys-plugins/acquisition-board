@@ -45,6 +45,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 {
     canvas = nullptr;
     noBoardsDetectedLabel = nullptr;
+    board->editor = this;
 
     if (board == nullptr)
     {
@@ -213,9 +214,16 @@ void DeviceEditor::measureImpedances()
     if (! acquisitionIsActive)
     {
         board->measureImpedances();
-
-        CoreServices::updateSignalChain (this);
     }
+}
+
+void DeviceEditor::impedanceMeasurementFinished()
+{
+    if (canvas != nullptr)
+    {
+		canvas->updateAsync();
+	}
+
 }
 
 void DeviceEditor::saveImpedances (File& file)
@@ -362,6 +370,11 @@ void DeviceEditor::startAcquisition()
 		headstageOptions->setEnabled (false);
 	}
 
+    if (canvas != nullptr)
+    {
+		canvas->beginAnimation();
+	}
+
     acquisitionIsActive = true;
 }
 
@@ -375,6 +388,11 @@ void DeviceEditor::stopAcquisition()
     for (auto headstageOptions : headstageOptionsInterfaces)
     {
         headstageOptions->setEnabled (true);
+    }
+
+    if (canvas != nullptr)
+    {
+        canvas->endAnimation();
     }
 
     acquisitionIsActive = false;

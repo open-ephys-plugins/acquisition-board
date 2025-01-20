@@ -39,6 +39,7 @@ ChannelCanvas::ChannelCanvas(AcquisitionBoard* board_,
 
     channelViewport->setViewedComponent(channelList.get(), false);
     channelViewport->setScrollBarsShown(true, true);
+    channelViewport->setScrollBarThickness (10);
     addAndMakeVisible(channelViewport.get());
 
     update();
@@ -66,8 +67,12 @@ void ChannelCanvas::refreshState()
 
 void ChannelCanvas::update()
 {
-
     channelList->update();
+}
+
+void ChannelCanvas::updateAsync()
+{
+    Timer::callAfterDelay(5, [this] { update(); });
 }
 
 void ChannelCanvas::beginAnimation()
