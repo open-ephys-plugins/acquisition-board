@@ -360,6 +360,11 @@ void DeviceEditor::startAcquisition()
     adcButton->setEnabledState (false);
     dspoffsetButton->setEnabledState (false);
 
+    for (auto headstageOptions : headstageOptionsInterfaces)
+    {
+		headstageOptions->setEnabled (false);
+	}
+
     acquisitionIsActive = true;
 }
 
@@ -369,6 +374,11 @@ void DeviceEditor::stopAcquisition()
     auxButton->setEnabledState (true);
     adcButton->setEnabledState (true);
     dspoffsetButton->setEnabledState (true);
+
+    for (auto headstageOptions : headstageOptionsInterfaces)
+    {
+        headstageOptions->setEnabled (true);
+    }
 
     acquisitionIsActive = false;
 }
@@ -717,35 +727,53 @@ HeadstageOptionsInterface::~HeadstageOptionsInterface()
 {
 }
 
+void HeadstageOptionsInterface::setEnabled(bool state)
+{
+    hsButton1->setEnabledState (state);
+    hsButton2->setEnabledState (state);
+}
+
 void HeadstageOptionsInterface::checkEnabledState()
 {
+    LOGD ("Checking enabled state of HS ", hsNumber1, " and HS ", hsNumber2);
+    
     isEnabled = (board->isHeadstageEnabled (hsNumber1) || board->isHeadstageEnabled (hsNumber2));
+
+    LOGD ("Is enabled: ", isEnabled);
 
     if (board->isHeadstageEnabled (hsNumber1))
     {
         channelsOnHs1 = board->getActiveChannelsInHeadstage (hsNumber1);
         hsButton1->setLabel (String (channelsOnHs1));
         hsButton1->setEnabledState (true);
+        hsButton1->setToggleState (true, false);
     }
     else
     {
         channelsOnHs1 = 0;
         hsButton1->setLabel (" ");
         hsButton1->setEnabledState (false);
+        hsButton1->setToggleState (false, false);
     }
+
+    LOGD ("Channels on HS1: ", channelsOnHs1);
 
     if (board->isHeadstageEnabled (hsNumber2))
     {
         channelsOnHs2 = board->getActiveChannelsInHeadstage (hsNumber2);
         hsButton2->setLabel (String (channelsOnHs2));
         hsButton2->setEnabledState (true);
+        hsButton2->setToggleState (true, false);
     }
     else
     {
         channelsOnHs2 = 0;
         hsButton2->setLabel (" ");
         hsButton2->setEnabledState (false);
+        hsButton2->setToggleState (false, false);
     }
+
+    LOGD ("Channels on HS2: ", channelsOnHs1);
 
     repaint();
 }
@@ -763,6 +791,7 @@ void HeadstageOptionsInterface::buttonClicked (Button* button)
 
             hsButton1->setLabel (String (channelsOnHs1));
             board->setNumHeadstageChannels (hsNumber1, channelsOnHs1);
+            CoreServices::updateSignalChain (editor);
         }
         else if ((button == hsButton2.get()) && (board->getChannelsInHeadstage (hsNumber2) == 32))
         {
@@ -773,9 +802,9 @@ void HeadstageOptionsInterface::buttonClicked (Button* button)
 
             hsButton2->setLabel (String (channelsOnHs2));
             board->setNumHeadstageChannels (hsNumber2, channelsOnHs2);
+            CoreServices::updateSignalChain (editor);
         }
-
-        CoreServices::updateSignalChain (editor);
+   
     }
 }
 
@@ -815,18 +844,15 @@ void HeadstageOptionsInterface::set32Channel (int hsIndex, bool is32Channel)
 
 void HeadstageOptionsInterface::paint (Graphics& g)
 {
-    g.setColour (findColour (ThemeColours::componentParentBackground));
+    g.setColour (findColour (ThemeColours::componentBackground).darker(0.2f));
 
     g.fillRoundedRectangle (5, 0, getWidth() - 10, getHeight(), 4.0f);
 
-    if (isEnabled)
-        g.setColour (findColour (ThemeColours::highlightedText));
-    else
-        g.setColour (findColour (ThemeColours::defaultText));
+    g.setColour (findColour (ThemeColours::defaultText));
 
     g.setFont (Font ("Small Text", 15, Font::plain));
 
-    g.drawText (name, 8, 2, 200, 15, Justification::left, false);
+    g.drawText (name, 10, 2, 200, 15, Justification::left, false);
 }
 
 // (Direct OpalKelly) Audio Options --------------------------------------------------------------------

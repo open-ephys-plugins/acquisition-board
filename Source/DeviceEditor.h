@@ -26,7 +26,6 @@
 
 #include <VisualizerEditorHeaders.h>
 
-
 class HeadstageOptionsInterface;
 class SampleRateInterface;
 class BandwidthInterface;
@@ -87,13 +86,12 @@ public:
     virtual Array<int> getSelectedChannels() { return Array<int>(); }
 
 private:
-
     /** Pointer to acquisition board device */
     class AcquisitionBoard* board;
 
     /** Pointer to visualizer canvas */
     ChannelCanvas* canvas;
-    
+
     OwnedArray<HeadstageOptionsInterface> headstageOptionsInterfaces;
     OwnedArray<ElectrodeButton> electrodeButtons;
 
@@ -113,7 +111,6 @@ private:
     std::unique_ptr<ComboBox> ttlSettleCombo, dacHPFcombo;
     std::unique_ptr<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
     std::unique_ptr<Label> noBoardsDetectedLabel;
-
 
     enum AudioChannel
     {
@@ -152,6 +149,9 @@ public:
 
     /** Refresh button state*/
     void checkEnabledState();
+
+    /** Set enabled (e.g. during acquisition) */
+    void setEnabled (bool state);
 
     /** Checks whether headstage is in 32- or 16-channel mode*/
     bool is32Channel (int hsIndex);
