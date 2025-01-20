@@ -38,36 +38,36 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
 {
     Font f = Font ("Small Text", 13, Font::plain);
 
-    staticLabel = new Label ("Channel", "Channel");
+    staticLabel = std::make_unique<Label> ("Channel", "Channel");
     staticLabel->setFont (f);
     staticLabel->setEditable (false);
-    addAndMakeVisible (staticLabel);
+    addAndMakeVisible (staticLabel.get());
 
-    editName = new Label (name, name);
+    editName = std::make_unique<Label> (name, name);
     editName->setFont (f);
     editName->setEditable (false);
-    editName->setColour (Label::backgroundColourId, findColour(ThemeColours::componentParentBackground));
+    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentParentBackground));
     editName->addListener (this);
-    addAndMakeVisible (editName);
+    addAndMakeVisible (editName.get());
 
     if (type == ContinuousChannel::ELECTRODE)
     {
-        impedance = new Label ("Impedance", "? Ohm");
+        impedance = std::make_unique<Label> ("Impedance", "? Ohm");
         impedance->setFont (Font ("Default", 13, Font::plain));
         impedance->setEditable (false);
-        addAndMakeVisible (impedance);
+        addAndMakeVisible (impedance.get());
     }
     else if (type == ContinuousChannel::ADC)
     {
         impedance = nullptr;
-        rangeComboBox = new ComboBox ("ADC Ranges");
+        rangeComboBox = std::make_unique<ComboBox> ("ADC Ranges");
         rangeComboBox->addItem ("-5V - +5V", 1);
         rangeComboBox->addItem ("0V - +5V", 2);
         //SourceNode* proc = channelList->proc;
         // RHD2000Thread* thread = static_cast<RHD2000Thread*>(proc->getThread());
         // rangeComboBox->setSelectedId(thread->getAdcRange(proc->getDataChannel(channel)->getSourceTypeIndex()) + 1, dontSendNotification);
         rangeComboBox->addListener (this);
-        addAndMakeVisible (rangeComboBox);
+        addAndMakeVisible (rangeComboBox.get());
     }
     else
     {
@@ -99,7 +99,7 @@ void ChannelComponent::setImpedanceValues (float mag, float phase)
 
 void ChannelComponent::comboBoxChanged (ComboBox* comboBox)
 {
-    if (comboBox == rangeComboBox)
+    if (comboBox == rangeComboBox.get())
     {
         // SourceNode* proc = channelList->proc;
         // RHD2000Thread* thread = static_cast<RHD2000Thread*>(proc->getThread());

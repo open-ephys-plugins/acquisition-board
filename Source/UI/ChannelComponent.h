@@ -72,8 +72,8 @@ private:
     Array<float> gains;
     ChannelList* channelList;
 
-    ScopedPointer<Label> staticLabel, editName, impedance;
-    ScopedPointer<ComboBox> rangeComboBox;
+    std::unique_ptr<Label> staticLabel, editName, impedance;
+    std::unique_ptr<ComboBox> rangeComboBox;
 
     int channel;
     String name;
