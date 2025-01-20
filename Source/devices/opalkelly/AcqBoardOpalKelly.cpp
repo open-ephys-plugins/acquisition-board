@@ -59,7 +59,7 @@ AcqBoardOpalKelly::AcqBoardOpalKelly (DataBuffer* buffer_) : AcquisitionBoard (b
         dacStream.add (0);
         setDACTriggerThreshold (k, 65534);
         dacChannels.add (0);
-        dacThresholds.add (0);
+        dacThresholds.set (k, 0);
     }
 }
 

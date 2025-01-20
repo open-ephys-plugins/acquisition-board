@@ -49,7 +49,7 @@ AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
         dacStream.add(0);
         setDACTriggerThreshold (k, 65534);
         dacChannels.add(0);
-        dacThresholds.add(0);
+        dacThresholds.set(k, 0);
     }
 }
 
@@ -63,11 +63,29 @@ bool AcqBoardONI::checkBoardMem() const
 {
     Rhd2000ONIBoard::BoardMemState memState;
     memState = evalBoard->getBoardMemState();
-    if (memState == Rhd2000ONIBoard::BOARDMEM_INVALID)
-        return true; //Firmware does not report memory status
-    if (memState == Rhd2000ONIBoard::BOARDMEM_OK)
+
+    if (memState == Rhd2000ONIBoard::BOARDMEM_INIT)
+    {
+        LOGD ("Memory is still initializing, wait before retrying this operation.");
+        CoreServices::sendStatusMessage ("Acquisition Board: Please wait, memory initializing.");
+        return false;
+    }
+    else if (memState == Rhd2000ONIBoard::BOARDMEM_ERR)
+    {
+        LOGE ("On-board memory error. Try closing the GUI, un-plugging the board from power and usb and plugging everything again. If the problem persists please contact support.");
+        CoreServices::sendStatusMessage ("Acquisition Board: Memory error.");
+        return false;
+    }
+    else if (memState == Rhd2000ONIBoard::BOARDMEM_INVALID)
+    {
+        LOGE ("Invalid memory operation.");
+        CoreServices::sendStatusMessage ("Acquisition Board: Invalid memory operation.");
+        return false;
+    }
+    else if (memState == Rhd2000ONIBoard::BOARDMEM_OK)
         return true;
-    LOGE ("On-board memory error. Try again after 30 seconds or after closing the GUI, un-plugging the board from power and usb and plugging everything again. If the problem persists please contact support");
+
+    LOGD ("Unknown memory state. Board returned ", memState);
     return false;
 }
 

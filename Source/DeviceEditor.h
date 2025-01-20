@@ -111,8 +111,9 @@ private:
 
     std::unique_ptr<UtilityButton> dspoffsetButton;
     std::unique_ptr<ComboBox> ttlSettleCombo, dacHPFcombo;
-
     std::unique_ptr<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
+    std::unique_ptr<Label> noBoardsDetectedLabel;
+
 
     enum AudioChannel
     {
