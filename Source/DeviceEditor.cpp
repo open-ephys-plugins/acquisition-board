@@ -108,7 +108,6 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     audioLabel = std::make_unique<Label> ("audio label", "Audio out");
     audioLabel->setBounds (170, 20, 75, 15);
     audioLabel->setFont (Font ("Small Text", 10, Font::plain));
-    audioLabel->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (audioLabel.get());
 
     for (int i = 0; i < 2; i++)
@@ -169,7 +168,6 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     dacHPFlabel = std::make_unique<Label> ("DAC HPF", "DAC HPF");
     dacHPFlabel->setFont (Font ("Small Text", 10, Font::plain));
     dacHPFlabel->setBounds (255, 40, 60, 20);
-    dacHPFlabel->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (dacHPFlabel.get());
 
     dacHPFcombo = std::make_unique<ComboBox> ("dacHPFCombo");
@@ -187,7 +185,6 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     ttlSettleLabel = std::make_unique<Label> ("TTL Settle", "TTL Settle");
     ttlSettleLabel->setFont (Font ("Small Text", 10, Font::plain));
     ttlSettleLabel->setBounds (255, 70, 70, 20);
-    ttlSettleLabel->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (ttlSettleLabel.get());
 
     ttlSettleCombo = std::make_unique<ComboBox> ("FastSettleComboBox");
@@ -497,14 +494,12 @@ BandwidthInterface::BandwidthInterface (AcquisitionBoard* board_,
     upperBandwidthSelection->setEditable (true, false, false);
     upperBandwidthSelection->addListener (this);
     upperBandwidthSelection->setBounds (30, 25, 60, 20);
-    upperBandwidthSelection->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (upperBandwidthSelection.get());
 
     lowerBandwidthSelection = std::make_unique<Label> ("LowerBandwidth", lastLowCutString);
     lowerBandwidthSelection->setEditable (true, false, false);
     lowerBandwidthSelection->addListener (this);
     lowerBandwidthSelection->setBounds (30, 10, 60, 20);
-    lowerBandwidthSelection->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (lowerBandwidthSelection.get());
 }
 
@@ -871,7 +866,6 @@ AudioInterface::AudioInterface (AcquisitionBoard* board_,
     noiseSlicerLevelSelection->setEditable (true, false, false);
     noiseSlicerLevelSelection->addListener (this);
     noiseSlicerLevelSelection->setBounds (45, 6, 35, 20);
-    noiseSlicerLevelSelection->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (noiseSlicerLevelSelection.get());
 }
 
@@ -948,7 +942,6 @@ ClockDivideInterface::ClockDivideInterface (AcquisitionBoard* board_,
     divideRatioSelection->setEditable (true, false, false);
     divideRatioSelection->addListener (this);
     divideRatioSelection->setBounds (45, 6, 35, 20);
-    divideRatioSelection->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (divideRatioSelection.get());
 }
 
@@ -1004,7 +997,6 @@ DSPInterface::DSPInterface (AcquisitionBoard* board_,
     dspOffsetSelection->setEditable (true, false, false);
     dspOffsetSelection->addListener (this);
     dspOffsetSelection->setBounds (0, 0, 35, 20);
-    dspOffsetSelection->setColour (Label::textColourId, Colours::darkgrey);
     addAndMakeVisible (dspOffsetSelection.get());
 }
 
