@@ -181,6 +181,12 @@ void AcqBoardSim::saveImpedances (File& file)
 
 void AcqBoardSim::setNamingScheme (ChannelNamingScheme scheme)
 {
+    channelNamingScheme = scheme;
+
+    for (auto hs : headstages)
+    {
+        hs->setNamingScheme (scheme);
+    }
 }
 
 ChannelNamingScheme AcqBoardSim::getNamingScheme()

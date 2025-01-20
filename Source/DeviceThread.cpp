@@ -73,7 +73,6 @@ std::unique_ptr<GenericEditor> DeviceThread::createEditor (SourceNode* sn)
 
 AcquisitionBoard* DeviceThread::detectBoard()
 {
-
     if (forceSimulationMode)
     {
         return new AcqBoardSim (sourceBuffers.getLast());
@@ -167,7 +166,6 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
     {
         for (int ch = 0; ch < headstage->getNumActiveChannels(); ch++)
         {
-
             ContinuousChannel::Settings channelSettings {
                 ContinuousChannel::ELECTRODE,
                 headstage->getChannelName (ch),
@@ -182,7 +180,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
             continuousChannels->add (new ContinuousChannel (channelSettings));
             continuousChannels->getLast()->setUnits ("uV");
 
-            if (headstage->hasValidImpedance(ch))
+            if (headstage->hasValidImpedance (ch))
             {
                 continuousChannels->getLast()->impedance.magnitude = headstage->getImpedanceMagnitude (ch);
                 continuousChannels->getLast()->impedance.phase = headstage->getImpedancePhase (ch);

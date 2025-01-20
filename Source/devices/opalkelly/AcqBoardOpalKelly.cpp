@@ -843,7 +843,7 @@ void AcqBoardOpalKelly::impedanceMeasurementFinished()
 
         editor->impedanceMeasurementFinished();
     }
-}
+ }
 
 void AcqBoardOpalKelly::saveImpedances (File& file)
 {

@@ -27,32 +27,27 @@
 
 /**********************************************/
 
-ChannelCanvas::ChannelCanvas(AcquisitionBoard* board_,
-                             DeviceEditor* editor_) :
-    board(board_),
-    editor(editor_)
+ChannelCanvas::ChannelCanvas (AcquisitionBoard* board_,
+                              DeviceEditor* editor_) : board (board_),
+                                                       editor (editor_)
 {
-
     channelViewport = std::make_unique<Viewport>();
 
-    channelList = std::make_unique<ChannelList>(board, editor);
+    channelList = std::make_unique<ChannelList> (board, editor);
 
-    channelViewport->setViewedComponent(channelList.get(), false);
-    channelViewport->setScrollBarsShown(true, true);
+    channelViewport->setViewedComponent (channelList.get(), false);
+    channelViewport->setScrollBarsShown (true, true);
     channelViewport->setScrollBarThickness (10);
-    addAndMakeVisible(channelViewport.get());
+    addAndMakeVisible (channelViewport.get());
 
     update();
 
     resized();
-    
 }
 
-
-void ChannelCanvas::paint(Graphics& g)
+void ChannelCanvas::paint (Graphics& g)
 {
-    g.fillAll(findColour(ThemeColours::componentBackground));
-
+    g.fillAll (findColour (ThemeColours::componentBackground));
 }
 
 void ChannelCanvas::refresh()
@@ -73,7 +68,8 @@ void ChannelCanvas::update()
 
 void ChannelCanvas::updateAsync()
 {
-    Timer::callAfterDelay(5, [this] { update(); });
+    Timer::callAfterDelay (5, [this]
+                           { update(); });
 }
 
 void ChannelCanvas::beginAnimation()
@@ -88,11 +84,9 @@ void ChannelCanvas::endAnimation()
 
 void ChannelCanvas::resized()
 {
-
     int scrollBarThickness = channelViewport->getScrollBarThickness();
 
-    channelViewport->setBounds(0, 0, getWidth(), getHeight());
+    channelViewport->setBounds (0, 0, getWidth(), getHeight());
 
-    channelList->setBounds(0, 0, getWidth()-scrollBarThickness, 200 + 22* channelList->getMaxChannels());
+    channelList->setBounds (0, 0, getWidth() - scrollBarThickness, 200 + 22 * channelList->getMaxChannels());
 }
-

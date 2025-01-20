@@ -43,108 +43,57 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
     staticLabel->setEditable (false);
     addAndMakeVisible (staticLabel.get());
 
-    editName = std::make_unique<Label> (name, name);
-    editName->setFont (f);
-    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker (0.3f));
-    editName->setEditable (false);
-    editName->addListener (this);
-    addAndMakeVisible (editName.get());
+    nameLabel = std::make_unique<Label> (name, name);
+    nameLabel->setFont (f);
+    nameLabel->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker (0.3f));
+    nameLabel->setEditable (false);
+    addAndMakeVisible (nameLabel.get());
 
     if (type == ContinuousChannel::ELECTRODE)
     {
-        impedance = std::make_unique<Label> ("Impedance", "? Ohm");
-        impedance->setFont (Font ("Default", 13, Font::plain));
-        impedance->setEditable (false);
-        addAndMakeVisible (impedance.get());
+        impedanceLabel = std::make_unique<Label> ("Impedance", "? Ohm");
+        impedanceLabel->setFont (Font ("Default", 13, Font::plain));
+        impedanceLabel->setEditable (false);
+        addAndMakeVisible (impedanceLabel.get());
     }
     else if (type == ContinuousChannel::ADC)
     {
-        impedance = nullptr;
-        rangeComboBox = std::make_unique<ComboBox> ("ADC Ranges");
-        rangeComboBox->addItem ("-5V - +5V", 1);
-        rangeComboBox->addItem ("0V - +5V", 2);
-        //SourceNode* proc = channelList->proc;
-        // RHD2000Thread* thread = static_cast<RHD2000Thread*>(proc->getThread());
-        // rangeComboBox->setSelectedId(thread->getAdcRange(proc->getDataChannel(channel)->getSourceTypeIndex()) + 1, dontSendNotification);
-        rangeComboBox->addListener (this);
-        addAndMakeVisible (rangeComboBox.get());
+        impedanceLabel = nullptr;
     }
     else
     {
-        impedance = nullptr;
-        rangeComboBox = nullptr;
+        impedanceLabel = nullptr;
     }
 }
 
 void ChannelComponent::lookAndFeelChanged()
 {
-    editName->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker(0.3f));
+    nameLabel->setColour (Label::backgroundColourId,
+                          findColour (ThemeColours::componentBackground).darker (0.3f));
 }
 
 void ChannelComponent::setImpedanceValues (float mag, float phase)
 {
-    if (impedance != nullptr)
+    if (impedanceLabel != nullptr)
     {
         if (mag > 10000)
-            impedance->setText (String (mag / 1e6, 2) + " MOhm, " + String ((int) phase) + " deg", juce::NotificationType::dontSendNotification);
+            impedanceLabel->setText (String (mag / 1e6, 2) + " MOhm, " + String ((int) phase) + " deg", juce::NotificationType::dontSendNotification);
         else if (mag > 1000)
-            impedance->setText (String (mag / 1e3, 0) + " kOhm, " + String ((int) phase) + " deg", juce::NotificationType::dontSendNotification);
+            impedanceLabel->setText (String (mag / 1e3, 0) + " kOhm, " + String ((int) phase) + " deg", juce::NotificationType::dontSendNotification);
         else
-            impedance->setText (String (mag, 0) + " Ohm, " + String ((int) phase) + " deg", juce::NotificationType::dontSendNotification);
+            impedanceLabel->setText (String (mag, 0) + " Ohm, " + String ((int) phase) + " deg", juce::NotificationType::dontSendNotification);
     }
     else
     {
     }
 }
 
-void ChannelComponent::comboBoxChanged (ComboBox* comboBox)
-{
-    if (comboBox == rangeComboBox.get())
-    {
-        // SourceNode* proc = channelList->proc;
-        // RHD2000Thread* thread = static_cast<RHD2000Thread*>(proc->getThread());
-        // thread->setAdcRange(proc->getDataChannel(channel)->getSourceTypeIndex(), comboBox->getSelectedId() - 1);
-    }
-}
-void ChannelComponent::labelTextChanged (Label* lbl)
-{
-    // channel name change
-    String newName = lbl->getText();
-    channelList->setNewName (channel, newName);
-}
-
-void ChannelComponent::disableEdit()
-{
-    editName->setEnabled (false);
-}
-
-void ChannelComponent::enableEdit()
-{
-    editName->setEnabled (true);
-}
-
-void ChannelComponent::buttonClicked (Button* btn)
-{
-}
-
-void ChannelComponent::setUserDefinedData (int d)
-{
-}
-
-int ChannelComponent::getUserDefinedData()
-{
-    return 0;
-}
-
 void ChannelComponent::resized()
 {
-    editName->setBounds (0, 0, 90, 20);
-    if (rangeComboBox != nullptr)
+    nameLabel->setBounds (0, 0, 90, 20);
+
+    if (impedanceLabel != nullptr)
     {
-        rangeComboBox->setBounds (100, 0, 80, 20);
-    }
-    if (impedance != nullptr)
-    {
-        impedance->setBounds (100, 0, 130, 20);
+        impedanceLabel->setBounds (100, 0, 130, 20);
     }
 }

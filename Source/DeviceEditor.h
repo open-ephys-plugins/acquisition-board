@@ -64,7 +64,7 @@ public:
 
     /** Runs impedance test*/
     void measureImpedances();
-    
+
     /** Callback when impedance measurement is finished */
     void impedanceMeasurementFinished();
 
@@ -94,6 +94,9 @@ private:
 
     /** Pointer to visualizer canvas */
     ChannelCanvas* canvas;
+
+    /** XmlElement to hold previously saved parameters if no device is found */
+    std::unique_ptr<XmlElement> previousSettings;
 
     OwnedArray<HeadstageOptionsInterface> headstageOptionsInterfaces;
     OwnedArray<ElectrodeButton> electrodeButtons;
@@ -127,13 +130,12 @@ private:
 };
 
 /** 
-	
-		Holds buttons for headstages on one port.
+    Holds buttons for headstages on one port.
 
-		If a 32-channel headstages is detected, it 
-		allows the user to toggle between 16 and 32-channel mode
-		
-	*/
+    If a 32-channel headstages is detected, it 
+    allows the user to toggle between 16 and 32-channel mode
+
+*/
 class HeadstageOptionsInterface : public Component,
                                   public Button::Listener
 {
@@ -176,19 +178,36 @@ private:
     std::unique_ptr<UtilityButton> hsButton2;
 };
 
+/** 
+    Holds settings for RHD chip analog filters
+
+*/
 class BandwidthInterface : public Component,
                            public Label::Listener
 {
 public:
+    /** Constructor */
     BandwidthInterface (class AcquisitionBoard*, DeviceEditor*);
+
+    /** Destructor */
     ~BandwidthInterface();
 
+    /** Draw interface labels */
     void paint (Graphics& g);
+
+    /** Called when settings are changed */
     void labelTextChanged (Label* te);
 
+    /** Sets lower bandwidth value */
     void setLowerBandwidth (double value);
+
+    /** Sets upper bandwidth value */
     void setUpperBandwidth (double value);
+
+    /** Returns actual lower bandwidth value */
     double getLowerBandwidth();
+
+    /** Returns actual upper bandwidth value */
     double getUpperBandwidth();
 
 private:
@@ -206,17 +225,30 @@ private:
     double actualLowerBandwidth;
 };
 
+/** 
+    Holds settings for digital on-chip filters
+    
+*/
 class DSPInterface : public Component,
                      public Label::Listener
 {
 public:
+    /** Constructor */
     DSPInterface (class AcquisitionBoard*, DeviceEditor*);
+
+    /** Destructor */
     ~DSPInterface();
 
+    /** Draw interface labels */
     void paint (Graphics& g);
+
+    /** Called when settings are changed */
     void labelTextChanged (Label* te);
 
+    /** Sets DSP cutoff frequency */
     void setDspCutoffFreq (double value);
+
+    /** Returns actual DSP cutoff frequency */
     double getDspCutoffFreq();
 
 private:
@@ -227,22 +259,37 @@ private:
 
     std::unique_ptr<Label> dspOffsetSelection;
 
-    double actualDspCutoffFreq;
+    double actualDspCutoffFreq = 0.5;
 };
 
+/**
+
+   Holds sample rate settings
+
+*/
 class SampleRateInterface : public Component,
                             public ComboBox::Listener
 {
 public:
+    /** Constructor */
     SampleRateInterface (class AcquisitionBoard*, DeviceEditor*);
+
+    /** Destructor */
     ~SampleRateInterface();
 
+    /** Returns index of selected sample rate */
     int getSelectedId();
+
+    /** Sets sample rate by index */
     void setSelectedId (int);
 
+    /** Returns sample rate string */
     String getText();
 
+    /** Draw interface labels */
     void paint (Graphics& g);
+
+    /** Called when settings are changed */
     void comboBoxChanged (ComboBox* cb);
 
 private:
@@ -256,17 +303,30 @@ private:
     StringArray sampleRateOptions;
 };
 
+/** 
+    Holds settings for audio output
+    
+*/
 class AudioInterface : public Component,
                        public Label::Listener
 {
 public:
+    /** Constructor */
     AudioInterface (class AcquisitionBoard*, DeviceEditor*);
+
+    /** Destructor */
     ~AudioInterface();
 
+    /** Draw interface labels */
     void paint (Graphics& g);
+
+    /** Called when settings are changed */
     void labelTextChanged (Label* te);
 
+    /** Sets noise slicer level (used to reduce background noise) */
     void setNoiseSlicerLevel (int value);
+
+    /** Returns actual noise slicer level */
     int getNoiseSlicerLevel();
 
 private:
@@ -283,16 +343,33 @@ private:
     int actualNoiseSlicerLevel;
 };
 
+/** 
+    Holds settings for clock divider 
+
+    The clock divider set the ratio of the sample rate
+    at which the digital output on the sync BNC is updated
+
+    For example, if the sample rate is 30 kHz and the clock
+    divider is set to 10, the sync output will be updated at 3 kHz
+
+*/
 class ClockDivideInterface : public Component,
                              public Label::Listener
 {
 public:
+    /** Constructor */
     ClockDivideInterface (class AcquisitionBoard*, DeviceEditor*);
 
+    /** Draws the interface labels */
     void paint (Graphics& g);
+
+    /** Called when settings are changed */
     void labelTextChanged (Label* te);
 
+    /** Sets clock divide ratio */
     void setClockDivideRatio (int value);
+
+    /** Returns actual clock divide ratio */
     int getClockDivideRatio() const { return actualDivideRatio; };
 
 private:

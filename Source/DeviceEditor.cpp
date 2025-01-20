@@ -45,20 +45,21 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 {
     canvas = nullptr;
     noBoardsDetectedLabel = nullptr;
-    board->editor = this;
 
     if (board == nullptr)
     {
         noBoardsDetectedLabel = std::make_unique<Label> ("NoBoardsDetected", "No Boards Detected.");
         noBoardsDetectedLabel->setBounds (0, 15, 340, 125);
         noBoardsDetectedLabel->setAlwaysOnTop (true);
-        noBoardsDetectedLabel->toFront(false);
+        noBoardsDetectedLabel->toFront (false);
         noBoardsDetectedLabel->setJustificationType (Justification::centred);
-        noBoardsDetectedLabel->setColour(Label::textColourId, Colours::black);
+        noBoardsDetectedLabel->setColour (Label::textColourId, Colours::black);
         addAndMakeVisible (noBoardsDetectedLabel.get());
 
         return;
     }
+
+    board->editor = this;
 
     // add headstage-specific controls (currently just a toggle button)
     for (int i = 0; i < 4; i++)
@@ -221,9 +222,8 @@ void DeviceEditor::impedanceMeasurementFinished()
 {
     if (canvas != nullptr)
     {
-		canvas->updateAsync();
-	}
-
+        canvas->updateAsync();
+    }
 }
 
 void DeviceEditor::saveImpedances (File& file)
@@ -367,13 +367,13 @@ void DeviceEditor::startAcquisition()
 
     for (auto headstageOptions : headstageOptionsInterfaces)
     {
-		headstageOptions->setEnabled (false);
-	}
+        headstageOptions->setEnabled (false);
+    }
 
     if (canvas != nullptr)
     {
-		canvas->beginAnimation();
-	}
+        canvas->beginAnimation();
+    }
 
     acquisitionIsActive = true;
 }
@@ -402,11 +402,38 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 {
     if (board == nullptr)
     {
+        xml->setAttribute ("SampleRate", previousSettings->getIntAttribute ("SampleRate"));
+        xml->setAttribute ("LowCut", previousSettings->getDoubleAttribute ("LowCut"));
+        xml->setAttribute ("HighCut", previousSettings->getDoubleAttribute ("HighCut"));
+
+        xml->setAttribute ("AUXsOn", previousSettings->getBoolAttribute ("AUXsOn"));
+        xml->setAttribute ("ADCsOn", previousSettings->getBoolAttribute ("ADCsOn"));
+        xml->setAttribute ("NoiseSlicer", previousSettings->getIntAttribute ("NoiseSlicer"));
+        xml->setAttribute ("TTLFastSettle", previousSettings->getIntAttribute ("TTLFastSettle"));
+        xml->setAttribute ("DAC_TTL", previousSettings->getBoolAttribute ("DAC_TTL"));
+        xml->setAttribute ("DAC_HPF", previousSettings->getIntAttribute ("DAC_HPF"));
+        xml->setAttribute ("DSPOffset", previousSettings->getBoolAttribute ("DSPOffset"));
+        xml->setAttribute ("DSPCutoffFreq", previousSettings->getDoubleAttribute ("DSPCutoffFreq"));
+        xml->setAttribute ("LEDs", previousSettings->getBoolAttribute ("LEDs", true));
+        xml->setAttribute ("ClockDivideRatio", previousSettings->getIntAttribute ("ClockDivideRatio"));
+        xml->setAttribute ("Channel_Naming_Scheme", previousSettings->getIntAttribute ("Channel_Naming_Scheme", 0));
+        xml->setAttribute ("AudioOutputL", previousSettings->getIntAttribute ("AudioOutputL"));
+        xml->setAttribute ("AudioOutputR", previousSettings->getIntAttribute ("AudioOutputR"));
+
+        forEachXmlChildElementWithTagName (*previousSettings, hsOptions, "HSOPTIONS")
+        {
+            XmlElement* newHsOptions = xml->createNewChildElement ("HSOPTIONS");
+            int index = hsOptions->getIntAttribute ("index", -1);
+
+            newHsOptions->setAttribute ("index", index);
+            newHsOptions->setAttribute ("hs1_full_channels", hsOptions->getBoolAttribute ("hs1_full_channels", true));
+            newHsOptions->setAttribute ("hs2_full_channels", hsOptions->getBoolAttribute ("hs2_full_channels", true));
+        }
+
         return;
     }
 
     xml->setAttribute ("SampleRate", sampleRateInterface->getSelectedId());
-    xml->setAttribute ("SampleRateString", sampleRateInterface->getText());
     xml->setAttribute ("LowCut", bandwidthInterface->getLowerBandwidth());
     xml->setAttribute ("HighCut", bandwidthInterface->getUpperBandwidth());
     xml->setAttribute ("AUXsOn", auxButton->getToggleState());
@@ -437,6 +464,40 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 
 void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
 {
+
+    if (board == nullptr)
+    {
+		previousSettings = std::make_unique<XmlElement> ("DeviceEditorSettings");
+        previousSettings->setAttribute ("SampleRate", xml->getIntAttribute ("SampleRate"));
+        previousSettings->setAttribute ("LowCut", xml->getDoubleAttribute ("LowCut"));
+        previousSettings->setAttribute ("HighCut", xml->getDoubleAttribute ("HighCut"));
+        previousSettings->setAttribute ("AUXsOn", xml->getBoolAttribute ("AUXsOn"));
+        previousSettings->setAttribute ("ADCsOn", xml->getBoolAttribute ("ADCsOn"));
+        previousSettings->setAttribute ("NoiseSlicer", xml->getIntAttribute ("NoiseSlicer"));
+        previousSettings->setAttribute ("TTLFastSettle", xml->getIntAttribute ("TTLFastSettle"));
+        previousSettings->setAttribute ("DAC_TTL", xml->getBoolAttribute ("DAC_TTL"));
+        previousSettings->setAttribute ("DAC_HPF", xml->getIntAttribute ("DAC_HPF"));
+        previousSettings->setAttribute ("DSPOffset", xml->getBoolAttribute ("DSPOffset"));
+        previousSettings->setAttribute ("DSPCutoffFreq", xml->getDoubleAttribute ("DSPCutoffFreq"));
+        previousSettings->setAttribute ("LEDs", xml->getBoolAttribute ("LEDs", true));
+        previousSettings->setAttribute ("ClockDivideRatio", xml->getIntAttribute ("ClockDivideRatio"));
+        previousSettings->setAttribute ("Channel_Naming_Scheme", xml->getIntAttribute ("Channel_Naming_Scheme", 0));
+        previousSettings->setAttribute ("AudioOutputL", xml->getIntAttribute ("AudioOutputL"));
+        previousSettings->setAttribute ("AudioOutputR", xml->getIntAttribute ("AudioOutputR"));
+
+        forEachXmlChildElementWithTagName (*xml, hsOptions, "HSOPTIONS")
+        {
+            XmlElement* newHsOptions = previousSettings->createNewChildElement ("HSOPTIONS");
+            int index = hsOptions->getIntAttribute ("index", -1);
+
+            newHsOptions->setAttribute ("index", index);
+            newHsOptions->setAttribute ("hs1_full_channels", hsOptions->getBoolAttribute ("hs1_full_channels", true));
+            newHsOptions->setAttribute ("hs2_full_channels", hsOptions->getBoolAttribute ("hs2_full_channels", true));
+        }
+
+        return;
+	}
+
     sampleRateInterface->setSelectedId (xml->getIntAttribute ("SampleRate"));
     bandwidthInterface->setLowerBandwidth (xml->getDoubleAttribute ("LowCut"));
     bandwidthInterface->setUpperBandwidth (xml->getDoubleAttribute ("HighCut"));
@@ -740,7 +801,7 @@ HeadstageOptionsInterface::~HeadstageOptionsInterface()
 {
 }
 
-void HeadstageOptionsInterface::setEnabled(bool state)
+void HeadstageOptionsInterface::setEnabled (bool state)
 {
     hsButton1->setEnabledState (state);
     hsButton2->setEnabledState (state);
@@ -749,7 +810,7 @@ void HeadstageOptionsInterface::setEnabled(bool state)
 void HeadstageOptionsInterface::checkEnabledState()
 {
     LOGD ("Checking enabled state of HS ", hsNumber1, " and HS ", hsNumber2);
-    
+
     isEnabled = (board->isHeadstageEnabled (hsNumber1) || board->isHeadstageEnabled (hsNumber2));
 
     LOGD ("Is enabled: ", isEnabled);
@@ -817,7 +878,6 @@ void HeadstageOptionsInterface::buttonClicked (Button* button)
             board->setNumHeadstageChannels (hsNumber2, channelsOnHs2);
             CoreServices::updateSignalChain (editor);
         }
-   
     }
 }
 
@@ -857,7 +917,7 @@ void HeadstageOptionsInterface::set32Channel (int hsIndex, bool is32Channel)
 
 void HeadstageOptionsInterface::paint (Graphics& g)
 {
-    g.setColour (findColour (ThemeColours::componentBackground).darker(0.2f));
+    g.setColour (findColour (ThemeColours::componentBackground).darker (0.2f));
 
     g.fillRoundedRectangle (5, 0, getWidth() - 10, getHeight(), 4.0f);
 

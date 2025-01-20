@@ -29,19 +29,19 @@
 #include "../devices/Headstage.h"
 
 ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : board (board_),
-                                                                         editor (editor_),
-                                                                         maxChannels (0)
+                                                                             editor (editor_),
+                                                                             maxChannels (0)
 {
     channelComponents.clear();
 
     FontOptions f = FontOptions ("Small Text", 13, Font::plain);
 
-    numberingSchemeLabel = std::make_unique< Label >("Channel Names:", "Channel Names:");
+    numberingSchemeLabel = std::make_unique<Label> ("Channel Names:", "Channel Names:");
     numberingSchemeLabel->setEditable (false);
     numberingSchemeLabel->setBounds (10, 10, 150, 25);
     addAndMakeVisible (numberingSchemeLabel.get());
 
-    numberingScheme = std::make_unique < ComboBox >("numberingScheme");
+    numberingScheme = std::make_unique<ComboBox> ("numberingScheme");
     numberingScheme->addItem ("Global", 1);
     numberingScheme->addItem ("Stream-Based", 2);
     numberingScheme->setBounds (125, 10, 140, 25);
@@ -49,14 +49,14 @@ ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : boa
     numberingScheme->setSelectedId (1, dontSendNotification);
     addAndMakeVisible (numberingScheme.get());
 
-    impedanceButton = std::make_unique < UtilityButton >("Measure Impedances");
+    impedanceButton = std::make_unique<UtilityButton> ("Measure Impedances");
     impedanceButton->setRadius (3);
     impedanceButton->setBounds (280, 10, 145, 25);
     impedanceButton->setFont (f);
     impedanceButton->addListener (this);
     addAndMakeVisible (impedanceButton.get());
 
-    saveImpedanceButton = std::make_unique < UtilityButton >("Save Impedances");
+    saveImpedanceButton = std::make_unique<UtilityButton> ("Save Impedances");
     saveImpedanceButton->setRadius (3);
     saveImpedanceButton->setBounds (430, 10, 145, 25);
     saveImpedanceButton->setFont (f);
@@ -141,7 +141,7 @@ void ChannelList::update()
         lbl->setEditable (false);
         lbl->setBounds (10 + column * columnWidth, 40, columnWidth, 25);
         lbl->setJustificationType (juce::Justification::centred);
-        lbl->setColour (Label::textColourId, findColour(ThemeColours::defaultText));
+        lbl->setColour (Label::textColourId, findColour (ThemeColours::defaultText));
         staticLabels.add (lbl);
         addAndMakeVisible (lbl);
 
@@ -158,7 +158,7 @@ void ChannelList::update()
 
             comp->setBounds (10 + column * columnWidth, 70 + ch * 22, columnWidth, 22);
 
-            if (hs->hasValidImpedance(ch))
+            if (hs->hasValidImpedance (ch))
             {
                 comp->setImpedanceValues (
                     hs->getImpedanceMagnitude (ch),
@@ -178,10 +178,6 @@ void ChannelList::update()
 
 void ChannelList::disableAll()
 {
-    for (auto channelComponent : channelComponents)
-    {
-        channelComponent->disableEdit();
-    }
 
     impedanceButton->setEnabled (false);
     saveImpedanceButton->setEnabled (false);
@@ -190,33 +186,9 @@ void ChannelList::disableAll()
 
 void ChannelList::enableAll()
 {
-    for (int k = 0; k < channelComponents.size(); k++)
-    {
-        channelComponents[k]->enableEdit();
-    }
     impedanceButton->setEnabled (true);
     saveImpedanceButton->setEnabled (true);
     numberingScheme->setEnabled (true);
-}
-
-void ChannelList::setNewGain (int channel, float gain)
-{
-    //RHD2000Thread* thread = (RHD2000Thread*)proc->getThread();
-    //thread->modifyChannelGain(channel, gain);
-    //if (chainUpdate)
-    //    proc->requestChainUpdate();
-}
-
-void ChannelList::setNewName (int channel, String newName)
-{
-    //RHD2000Thread* thread = (RHD2000Thread*)proc->getThread();
-    //thread->modifyChannelName(channel, newName);
-    //if (chainUpdate)
-    //    proc->requestChainUpdate();
-}
-
-void ChannelList::updateButtons()
-{
 }
 
 void ChannelList::comboBoxChanged (ComboBox* b)
@@ -226,25 +198,5 @@ void ChannelList::comboBoxChanged (ComboBox* b)
         board->setNamingScheme ((ChannelNamingScheme) b->getSelectedId());
 
         CoreServices::updateSignalChain (editor);
-    }
-}
-
-void ChannelList::updateImpedance (Array<int> streams, Array<int> channels, Array<float> magnitude, Array<float> phase)
-{
-    int i = 0;
-    for (int k = 0; k < streams.size(); k++)
-    {
-        if (i >= channelComponents.size())
-            break; //little safety
-
-        if (channelComponents[i]->type != ContinuousChannel::ELECTRODE)
-        {
-            k--;
-        }
-        else
-        {
-            channelComponents[i]->setImpedanceValues (magnitude[k], phase[k]);
-        }
-        i++;
     }
 }

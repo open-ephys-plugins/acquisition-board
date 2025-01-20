@@ -40,11 +40,10 @@ enum BoardType
 */
 class DeviceThread : public DataThread
 {
-
 public:
     /** Currently only ACQUISITION_BOARD is used */
     static BoardType boardType;
-    
+
     /** Constructor; must specify the type of board used */
     DeviceThread (SourceNode* sn, BoardType boardType = ACQUISITION_BOARD);
 
@@ -82,19 +81,16 @@ public:
                          OwnedArray<DeviceInfo>* devices,
                          OwnedArray<ConfigurationObject>* configurationObjects) override;
 
-    
-
     /** Allow the thread to respond to messages sent by other plugins */
     void handleBroadcastMessage (const String& msg, const int64 messageTimeMilliseconds) override;
 
 private:
-
     /** Pointer to device */
     std::unique_ptr<AcquisitionBoard> acquisitionBoard;
 
     /** True if device is available*/
     bool deviceFound = true;
-    
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DeviceThread);
 };
 
