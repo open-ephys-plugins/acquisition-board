@@ -68,6 +68,7 @@ void ChannelCanvas::refreshState()
 void ChannelCanvas::update()
 {
     channelList->update();
+    resized();
 }
 
 void ChannelCanvas::updateAsync()
