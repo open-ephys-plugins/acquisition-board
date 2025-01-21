@@ -27,6 +27,7 @@
 
 #include "Headstage.h"
 #include "ImpedanceMeter.h"
+#include "../DeviceEditor.h"
 
 /** Instructions for settings digital output */
 struct DigitalOutputCommand
@@ -191,6 +192,8 @@ public:
         digitalOutputTimers.add (timer);
     }
 
+    /** Pointer to device editor*/
+    DeviceEditor* editor = nullptr;
     /** Creates buffers for custom streams if the acquisition board type has them */
     virtual void createCustomStreams (OwnedArray<DataBuffer>& otherBuffers) {};
 
@@ -332,6 +335,7 @@ protected:
 
     /** True if change in settings is needed during acquisition*/
     bool updateSettingsDuringAcquisition = false;
+
 };
 
 #endif

@@ -43,18 +43,26 @@ public:
     /** Destructor */
     ~ChannelList() {}
 
+    /** Updates label colors */
     void lookAndFeelChanged() override;
 
-    void setNewName (int channelIndex, String newName);
-    void setNewGain (int channel, float gain);
+    /** Disables all channels */
     void disableAll();
+
+    /** Enables all channels */
     void enableAll();
+
+    /** Button callback */
     void buttonClicked (Button* btn);
-    void update();
-    void updateButtons();
-    int getMaxChannels() { return maxChannels; }
+
+    /** ComboBox callback */
     void comboBoxChanged (ComboBox* b);
-    void updateImpedance (Array<int> streams, Array<int> channels, Array<float> magnitude, Array<float> phase);
+
+    /** Updates layout of channel list */
+    void update();
+
+    /** Returns the maximum number of channels (used for setting layout) */
+    int getMaxChannels() { return maxChannels; }
 
 private:
     Array<float> gains;
@@ -65,11 +73,11 @@ private:
     AcquisitionBoard* board;
     DeviceEditor* editor;
 
-    ScopedPointer<UtilityButton> impedanceButton;
-    ScopedPointer<UtilityButton> saveImpedanceButton;
+    std::unique_ptr<UtilityButton> impedanceButton;
+    std::unique_ptr<UtilityButton> saveImpedanceButton;
 
-    ScopedPointer<ComboBox> numberingScheme;
-    ScopedPointer<Label> numberingSchemeLabel;
+    std::unique_ptr<ComboBox> numberingScheme;
+    std::unique_ptr<Label> numberingSchemeLabel;
 
     OwnedArray<Label> staticLabels;
     OwnedArray<ChannelComponent> channelComponents;

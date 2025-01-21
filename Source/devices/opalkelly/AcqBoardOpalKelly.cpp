@@ -59,7 +59,7 @@ AcqBoardOpalKelly::AcqBoardOpalKelly (DataBuffer* buffer_) : AcquisitionBoard (b
         dacStream.add (0);
         setDACTriggerThreshold (k, 65534);
         dacChannels.add (0);
-        dacThresholds.add (0);
+        dacThresholds.set (k, 0);
     }
 }
 
@@ -192,9 +192,9 @@ bool AcqBoardOpalKelly::initializeBoard()
 
     // Read the resulting single data block from the USB interface. We don't
     // need to do anything with this, since it was only used for ADC calibration
-    ScopedPointer<Rhd2000DataBlock> dataBlock = new Rhd2000DataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000DataBlock> dataBlock = std::make_unique<Rhd2000DataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
-    evalBoard->readDataBlock (dataBlock, INIT_STEP);
+    evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
     // Now that ADC calibration has been performed, we switch to the command sequence
     // that does not execute ADC calibration.
     evalBoard->selectAuxCommandBank (Rhd2000EvalBoard::PortA, Rhd2000EvalBoard::AuxCmd3, settings.fastSettleEnabled ? 2 : 1);
@@ -257,8 +257,7 @@ Array<int> AcqBoardOpalKelly::getAvailableSampleRates()
 
 void AcqBoardOpalKelly::setSampleRate (int desiredSampleRate)
 {
-    impedanceMeter->stopThreadSafely();
-    
+
     Rhd2000EvalBoard::AmplifierSampleRate sampleRate;
 
     switch (desiredSampleRate)
@@ -467,7 +466,6 @@ int AcqBoardOpalKelly::getIntanChipId (Rhd2000DataBlock* dataBlock, int stream, 
 
 void AcqBoardOpalKelly::scanPorts()
 {
-    impedanceMeter->stopThreadSafely();
 
     //Clear previous known streams
     enabledStreams.clear();
@@ -529,8 +527,8 @@ void AcqBoardOpalKelly::scanPorts()
     evalBoard->setMaxTimeStep (INIT_STEP);
     evalBoard->setContinuousRunMode (false);
 
-    ScopedPointer<Rhd2000DataBlock> dataBlock =
-        new Rhd2000DataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000DataBlock> dataBlock =
+        std::make_unique<Rhd2000DataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
     Array<int> sumGoodDelays;
     sumGoodDelays.insertMultiple (0, 0, 8);
@@ -562,13 +560,13 @@ void AcqBoardOpalKelly::scanPorts()
             ;
         }
         // Read the resulting single data block from the USB interface.
-        evalBoard->readDataBlock (dataBlock, INIT_STEP);
+        evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
 
         // Read the Intan chip ID number from each RHD2000 chip found.
         // Record delay settings that yield good communication with the chip.
         for (hs = 0; hs < headstages.size(); ++hs)
         {
-            id = getIntanChipId (dataBlock, hs, register59Value);
+            id = getIntanChipId (dataBlock.get(), hs, register59Value);
 
             if (id == CHIP_ID_RHD2132 || id == CHIP_ID_RHD2216 || (id == CHIP_ID_RHD2164 && register59Value == REGISTER_59_MISO_A))
             {
@@ -842,8 +840,10 @@ void AcqBoardOpalKelly::impedanceMeasurementFinished()
                 hs->setImpedances (impedances);
             }
         }
+
+        editor->impedanceMeasurementFinished();
     }
-}
+ }
 
 void AcqBoardOpalKelly::saveImpedances (File& file)
 {
@@ -873,7 +873,7 @@ void AcqBoardOpalKelly::saveImpedances (File& file)
             xml->addChildElement (headstageXml);
         }
 
-       // xml->writeTo(file, XmlElement::TextFormat());
+       xml->writeTo(file, XmlElement::TextFormat());
     }
 }
 
@@ -917,7 +917,6 @@ bool AcqBoardOpalKelly::areAdcChannelsEnabled() const
 
 double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.analogFilter.upperBandwidth = upper;
 
@@ -928,7 +927,6 @@ double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 
 double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.analogFilter.lowerBandwidth = lower;
 
@@ -939,7 +937,6 @@ double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 
 double AcqBoardOpalKelly::setDspCutoffFreq (double freq)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.dsp.cutoffFreq = freq;
 
@@ -955,7 +952,6 @@ double AcqBoardOpalKelly::getDspCutoffFreq() const
 
 void AcqBoardOpalKelly::setDspOffset (bool state)
 {
-    impedanceMeter->stopThreadSafely();
 
     settings.dsp.enabled = state;
 

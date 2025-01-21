@@ -181,6 +181,12 @@ void AcqBoardSim::saveImpedances (File& file)
 
 void AcqBoardSim::setNamingScheme (ChannelNamingScheme scheme)
 {
+    channelNamingScheme = scheme;
+
+    for (auto hs : headstages)
+    {
+        hs->setNamingScheme (scheme);
+    }
 }
 
 ChannelNamingScheme AcqBoardSim::getNamingScheme()
@@ -292,7 +298,10 @@ int AcqBoardSim::getActiveChannelsInHeadstage (int hsNum) const
 
 int AcqBoardSim::getChannelsInHeadstage (int hsNum) const
 {
-    return headstages[hsNum]->getNumActiveChannels();
+    if (headstages[hsNum]->isConnected())
+        return 32;
+    else
+        return 0;
 }
 
 int AcqBoardSim::getNumDataOutputs (ContinuousChannel::Type type)
@@ -346,9 +355,9 @@ int AcqBoardSim::getNumDataOutputs (ContinuousChannel::Type type)
     return 0;
 }
 
-void AcqBoardSim::setNumHeadstageChannels (int headstageIndex, int channelCount)
+void AcqBoardSim::setNumHeadstageChannels (int hsNum, int numChannels)
 {
-    
+    headstages[hsNum]->setChannelCount (numChannels);
 }
 
 void AcqBoardSim::run()

@@ -49,8 +49,8 @@ AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
         dacChannelsToUpdate.add (true);
         dacStream.add (0);
         setDACTriggerThreshold (k, 65534);
-        dacChannels.add (0);
-        dacThresholds.add (0);
+        dacChannels.add(0);
+        dacThresholds.set(k, 0);
     }
 
     for (int i = 0; i < numberOfPorts; i++)
@@ -69,11 +69,29 @@ bool AcqBoardONI::checkBoardMem() const
 {
     Rhd2000ONIBoard::BoardMemState memState;
     memState = evalBoard->getBoardMemState();
-    if (memState == Rhd2000ONIBoard::BOARDMEM_INVALID)
-        return true; //Firmware does not report memory status
-    if (memState == Rhd2000ONIBoard::BOARDMEM_OK)
+
+    if (memState == Rhd2000ONIBoard::BOARDMEM_INIT)
+    {
+        LOGD ("Memory is still initializing, wait before retrying this operation.");
+        CoreServices::sendStatusMessage ("Acquisition Board: Please wait, memory initializing.");
+        return false;
+    }
+    else if (memState == Rhd2000ONIBoard::BOARDMEM_ERR)
+    {
+        LOGE ("On-board memory error. Try closing the GUI, un-plugging the board from power and usb and plugging everything again. If the problem persists please contact support.");
+        CoreServices::sendStatusMessage ("Acquisition Board: Memory error.");
+        return false;
+    }
+    else if (memState == Rhd2000ONIBoard::BOARDMEM_INVALID)
+    {
+        LOGE ("Invalid memory operation.");
+        CoreServices::sendStatusMessage ("Acquisition Board: Invalid memory operation.");
+        return false;
+    }
+    else if (memState == Rhd2000ONIBoard::BOARDMEM_OK)
         return true;
-    LOGE ("On-board memory error. Try again after 30 seconds or after closing the GUI, un-plugging the board from power and usb and plugging everything again. If the problem persists please contact support");
+
+    LOGD ("Unknown memory state. Board returned ", memState);
     return false;
 }
 
@@ -82,7 +100,7 @@ bool AcqBoardONI::detectBoard()
     LOGC ("Searching for ONI Acquisition Board...");
     const oni_driver_info_t* driverInfo;
     int return_code = evalBoard->open (&driverInfo);
-
+       
     if (return_code == 1) // successfully opened board
     {
         int major, minor, patch;
@@ -194,7 +212,7 @@ bool AcqBoardONI::initializeBoard()
 {
     LOGC ("Initializing ONI Acquisition Board...");
 
-    // Initialize the board
+     // Initialize the board
     LOGD ("Initializing RHD2000 board.");
     LOGDD ("DBG: 0");
     evalBoard->initialize();
@@ -211,7 +229,7 @@ bool AcqBoardONI::initializeBoard()
     //  - clears the ttlOut
     //  - disables all DACs and sets gain to 0
     LOGDD ("DBG: 1");
-
+    
     checkCableDelays = false;
     setSampleRate (30000);
 
@@ -304,7 +322,6 @@ Array<int> AcqBoardONI::getAvailableSampleRates()
 
 void AcqBoardONI::setSampleRate (int desiredSampleRate)
 {
-    impedanceMeter->stopThreadSafely();
 
     Rhd2000ONIBoard::AmplifierSampleRate sampleRate;
 
@@ -390,7 +407,7 @@ void AcqBoardONI::setSampleRate (int desiredSampleRate)
             return;
     }
 
-    {
+     {
         const ScopedLock lock (oniLock);
         // Select per-channel amplifier sampling rate.
         evalBoard->setSampleRate (sampleRate);
@@ -432,8 +449,8 @@ void AcqBoardONI::checkAllCableDelays()
     evalBoard->setMaxTimeStep (128 * INIT_STEP);
     evalBoard->setContinuousRunMode (false);
 
-    ScopedPointer<Rhd2000ONIDataBlock> dataBlock =
-        new Rhd2000ONIDataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000ONIDataBlock> dataBlock =
+        std::make_unique<Rhd2000ONIDataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
     Array<int> sumGoodDelays;
     sumGoodDelays.insertMultiple (0, 0, 8);
@@ -490,7 +507,7 @@ void AcqBoardONI::checkAllCableDelays()
         evalBoard->run();
 
         // Read the resulting single data block from the USB interface.
-        evalBoard->readDataBlock (dataBlock, INIT_STEP);
+        evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
         {
             const ScopedLock lock (oniLock);
             evalBoard->stop();
@@ -502,7 +519,7 @@ void AcqBoardONI::checkAllCableDelays()
         {
             if (headstages[hs]->isConnected())
             {
-                id = getIntanChipId (dataBlock, headstages[hs]->getStreamIndex (0), register59Value);
+                id = getIntanChipId (dataBlock.get(), headstages[hs]->getStreamIndex (0), register59Value);
 
                 //     LOGD("hs ", hs, " id ", id, " r59 ", (int)register59Value);
 
@@ -712,7 +729,6 @@ void AcqBoardONI::scanPortsInThread()
     if (! checkBoardMem())
         return;
     LOGDD ("DBG: SA");
-    impedanceMeter->stopThreadSafely();
 
     if (hasBnoSupport)
     {
@@ -804,8 +820,8 @@ void AcqBoardONI::scanPortsInThread()
     evalBoard->setMaxTimeStep (128 * INIT_STEP);
     evalBoard->setContinuousRunMode (false);
 
-    ScopedPointer<Rhd2000ONIDataBlock> dataBlock =
-        new Rhd2000ONIDataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+    std::unique_ptr<Rhd2000ONIDataBlock> dataBlock =
+        std::make_unique<Rhd2000ONIDataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
 
     Array<int> sumGoodDelays;
     sumGoodDelays.insertMultiple (0, 0, 8);
@@ -839,7 +855,7 @@ void AcqBoardONI::scanPortsInThread()
             ;
         }*/
         // Read the resulting single data block from the USB interface.
-        evalBoard->readDataBlock (dataBlock, INIT_STEP);
+        evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
         {
             const ScopedLock lock (oniLock);
             evalBoard->stop();
@@ -849,7 +865,7 @@ void AcqBoardONI::scanPortsInThread()
         // Record delay settings that yield good communication with the chip.
         for (hs = 0; hs < headstages.size(); ++hs)
         {
-            id = getIntanChipId (dataBlock, hs, register59Value);
+            id = getIntanChipId (dataBlock.get(), hs, register59Value);
 
             //     LOGD("hs ", hs, " id ", id, " r59 ", (int)register59Value);
 
@@ -979,7 +995,7 @@ void AcqBoardONI::setCableLength (int hsNum, float length)
 {
     // Set the MISO sampling delay, which is dependent on the sample rate.
 
-    switch (hsNum)
+     switch (hsNum)
     {
         case 0:
             evalBoard->setCableLengthFeet (Rhd2000ONIBoard::PortA, length);
@@ -1105,6 +1121,9 @@ void AcqBoardONI::impedanceMeasurementFinished()
                 hs->setImpedances (impedances);
             }
         }
+
+        editor->impedanceMeasurementFinished();
+
     }
 }
 
@@ -1136,7 +1155,7 @@ void AcqBoardONI::saveImpedances (File& file)
             xml->addChildElement (headstageXml);
         }
 
-        // xml->writeTo (file, XmlElement::TextFormat());
+       xml->writeTo (file, XmlElement::TextFormat());
     }
 }
 
@@ -1180,8 +1199,6 @@ bool AcqBoardONI::areAdcChannelsEnabled() const
 
 double AcqBoardONI::setUpperBandwidth (double upper)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.analogFilter.upperBandwidth = upper;
 
     updateRegisters();
@@ -1191,8 +1208,6 @@ double AcqBoardONI::setUpperBandwidth (double upper)
 
 double AcqBoardONI::setLowerBandwidth (double lower)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.analogFilter.lowerBandwidth = lower;
 
     updateRegisters();
@@ -1202,8 +1217,6 @@ double AcqBoardONI::setLowerBandwidth (double lower)
 
 double AcqBoardONI::setDspCutoffFreq (double freq)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.dsp.cutoffFreq = freq;
 
     updateRegisters();
@@ -1218,8 +1231,6 @@ double AcqBoardONI::getDspCutoffFreq() const
 
 void AcqBoardONI::setDspOffset (bool state)
 {
-    impedanceMeter->stopThreadSafely();
-
     settings.dsp.enabled = state;
 
     updateRegisters();
@@ -1443,96 +1454,96 @@ void AcqBoardONI::run()
             }
             if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_RHYTHM)
             {
-                int channel = -1;
+            int channel = -1;
 
-                bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
+            bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
 
-                if (! Rhd2000ONIDataBlock::checkUsbHeader (bufferPtr, index))
+            if (! Rhd2000ONIDataBlock::checkUsbHeader (bufferPtr, index))
+            {
+                LOGE ("Error in Rhd2000ONIBoard::readDataBlock: Incorrect header.");
+                oni_destroy_frame (frame);
+                break;
+            }
+
+            index += 8; // magic number header width (bytes)
+            int64 timestamp = Rhd2000ONIDataBlock::convertUsbTimeStamp (bufferPtr, index);
+            index += 4; // timestamp width
+            auxIndex = index; // aux chans start at this offset
+            index += 6 * numStreams; // width of the 3 aux chans
+
+            for (int dataStream = 0; dataStream < numStreams; dataStream++)
+            {
+                int nChans = numChannelsPerDataStream[dataStream];
+
+                chanIndex = index + 2 * dataStream;
+
+                if ((chipId[dataStream] == CHIP_ID_RHD2132) && (nChans == 16)) //RHD2132 16ch. headstage
                 {
-                    LOGE ("Error in Rhd2000ONIBoard::readDataBlock: Incorrect header.");
-                    oni_destroy_frame (frame);
-                    break;
+                    chanIndex += 2 * RHD2132_16CH_OFFSET * numStreams;
                 }
 
-                index += 8; // magic number header width (bytes)
-                int64 timestamp = Rhd2000ONIDataBlock::convertUsbTimeStamp (bufferPtr, index);
-                index += 4; // timestamp width
-                auxIndex = index; // aux chans start at this offset
-                index += 6 * numStreams; // width of the 3 aux chans
-
+                for (int chan = 0; chan < nChans; chan++)
+                {
+                    channel++;
+                    thisSample[channel] = float (*(uint16*) (bufferPtr + chanIndex) - 32768) * 0.195f;
+                    chanIndex += 2 * numStreams; // single chan width (2 bytes)
+                }
+            }
+            index += 64 * numStreams; // neural data width
+            auxIndex += 2 * numStreams; // skip AuxCmd1 slots (see updateRegisters())
+            // copy the 3 aux channels
+            if (settings.acquireAux)
+            {
                 for (int dataStream = 0; dataStream < numStreams; dataStream++)
                 {
-                    int nChans = numChannelsPerDataStream[dataStream];
-
-                    chanIndex = index + 2 * dataStream;
-
-                    if ((chipId[dataStream] == CHIP_ID_RHD2132) && (nChans == 16)) //RHD2132 16ch. headstage
+                    if (chipId[dataStream] != CHIP_ID_RHD2164_B)
                     {
-                        chanIndex += 2 * RHD2132_16CH_OFFSET * numStreams;
-                    }
-
-                    for (int chan = 0; chan < nChans; chan++)
-                    {
-                        channel++;
-                        thisSample[channel] = float (*(uint16*) (bufferPtr + chanIndex) - 32768) * 0.195f;
-                        chanIndex += 2 * numStreams; // single chan width (2 bytes)
-                    }
-                }
-                index += 64 * numStreams; // neural data width
-                auxIndex += 2 * numStreams; // skip AuxCmd1 slots (see updateRegisters())
-                // copy the 3 aux channels
-                if (settings.acquireAux)
-                {
-                    for (int dataStream = 0; dataStream < numStreams; dataStream++)
-                    {
-                        if (chipId[dataStream] != CHIP_ID_RHD2164_B)
+                        int auxNum = (samp + 3) % 4;
+                        if (auxNum < 3)
                         {
-                            int auxNum = (samp + 3) % 4;
-                            if (auxNum < 3)
-                            {
-                                auxSamples[dataStream][auxNum] = float (*(uint16*) (bufferPtr + auxIndex) - 32768) * 0.0000374;
-                            }
-                            for (int chan = 0; chan < 3; chan++)
-                            {
-                                channel++;
-                                if (auxNum == 3)
-                                {
-                                    auxBuffer[channel] = auxSamples[dataStream][chan];
-                                }
-                                thisSample[channel] = auxBuffer[channel];
-                            }
+                            auxSamples[dataStream][auxNum] = float (*(uint16*) (bufferPtr + auxIndex) - 32768) * 0.0000374;
                         }
-                        auxIndex += 2; // single chan width (2 bytes)
+                        for (int chan = 0; chan < 3; chan++)
+                        {
+                            channel++;
+                            if (auxNum == 3)
+                            {
+                                auxBuffer[channel] = auxSamples[dataStream][chan];
+                            }
+                            thisSample[channel] = auxBuffer[channel];
+                        }
                     }
+                    auxIndex += 2; // single chan width (2 bytes)
                 }
-                index += 2 * numStreams; // skip over filler word at the end of each data stream
-                // copy the 8 ADC channels
-                if (settings.acquireAdc)
+            }
+            index += 2 * numStreams; // skip over filler word at the end of each data stream
+            // copy the 8 ADC channels
+            if (settings.acquireAdc)
+            {
+                for (int adcChan = 0; adcChan < 8; ++adcChan)
                 {
-                    for (int adcChan = 0; adcChan < 8; ++adcChan)
-                    {
-                        channel++;
-                        // ADC waveform units = volts
+                    channel++;
+                    // ADC waveform units = volts
 
-                        thisSample[channel] = getBitVolts (ContinuousChannel::ADC) * float (*(uint16*) (bufferPtr + index)) - 5 - 0.4096;
+                    thisSample[channel] = getBitVolts (ContinuousChannel::ADC) * float (*(uint16*) (bufferPtr + index)) - 5 - 0.4096;
 
-                        index += 2; // single chan width (2 bytes)
-                    }
+                    index += 2; // single chan width (2 bytes)
                 }
-                else
-                {
-                    index += 16; // skip ADC chans (8 * 2 bytes)
-                }
+            }
+            else
+            {
+                index += 16; // skip ADC chans (8 * 2 bytes)
+            }
 
-                uint64 ttlEventWord = *(uint64*) (bufferPtr + index) & 65535;
+            uint64 ttlEventWord = *(uint64*) (bufferPtr + index) & 65535;
 
-                index += 4;
+            index += 4;
 
-                buffer->addToBuffer (thisSample,
-                                     &timestamp,
-                                     &ts,
-                                     &ttlEventWord,
-                                     1);
+            buffer->addToBuffer (thisSample,
+                                           &timestamp,
+                                           &ts,
+                                           &ttlEventWord,
+                                           1);
             }
             else if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_MEMORY)
             {

@@ -185,8 +185,8 @@ bool Rhd2000EvalBoard::uploadFpgaBitfile(std::string filename)
         std::cerr << "FPGA configuration does not support Rhythm.  Incorrect board ID: " << boardId << std::endl;
         return(false);
     } else {
-        std::cout << "Rhythm configuration file successfully loaded.  Rhythm version number: " <<
-                boardVersion << std::endl << std::endl;
+       // std::cout << "Rhythm configuration file successfully loaded.  Rhythm version number: " <<
+        //        boardVersion << std::endl << std::endl;
     }
 
     return(true);
@@ -695,11 +695,9 @@ void Rhd2000EvalBoard::resetBoard()
         dev->SetWireInValue(WireInMultiUse, USB3_BLOCK_SIZE / 4);
         dev->UpdateWireIns();
         dev->ActivateTriggerIn(TrigInOpenEphys, 16);
-        std::cout << "Blocksize set to " << USB3_BLOCK_SIZE << std::endl;
         dev->SetWireInValue(WireInMultiUse, DDR_BLOCK_SIZE);
         dev->UpdateWireIns();
         dev->ActivateTriggerIn(TrigInOpenEphys, 17);
-        std::cout << "DDR burst set to " << DDR_BLOCK_SIZE << std::endl;
     }
 }
 

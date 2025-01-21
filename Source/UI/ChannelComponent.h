@@ -28,10 +28,10 @@
 
 class ChannelList;
 
-class ChannelComponent : public Component,
-                         public Button::Listener,
-                         public ComboBox::Listener,
-                         public Label::Listener
+/** 
+    Holds information about a single channel.
+*/
+class ChannelComponent : public Component
 {
 public:
     /** Constructor */
@@ -48,32 +48,20 @@ public:
     /** Called when look and feel is updated*/
     void lookAndFeelChanged() override;
 
-    Colour getDefaultColor (int ID);
+    /** Updates impedance values for this channel */
     void setImpedanceValues (float mag, float phase);
-    void disableEdit();
-    void enableEdit();
 
-    void setEnabledState (bool);
-    bool getEnabledState()
-    {
-        return isEnabled;
-    }
-    void buttonClicked (Button* btn);
-    void setUserDefinedData (int d);
-    int getUserDefinedData();
-    void comboBoxChanged (ComboBox* comboBox);
-    void labelTextChanged (Label* lbl);
-
+    /** Sets layout */
     void resized();
 
+    /** Holds channel type */
     const ContinuousChannel::Type type;
 
 private:
     Array<float> gains;
     ChannelList* channelList;
 
-    ScopedPointer<Label> staticLabel, editName, impedance;
-    ScopedPointer<ComboBox> rangeComboBox;
+    std::unique_ptr<Label> staticLabel, nameLabel, impedanceLabel;
 
     int channel;
     String name;

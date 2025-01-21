@@ -46,7 +46,7 @@ public:
     /** Destructor*/
     ~HeadstageOpalKelly() {}
 
-     /** Returns the number of channels this headstage sends*/
+    /** Returns the number of channels this headstage sends*/
     int getNumActiveChannels() const;
 
     /** Returns the name of a channel at a given index*/
@@ -108,7 +108,7 @@ private:
     bool halfChannels;
 
     int MAX_NUM_HEADSTAGES;
-    
+
     ChannelNamingScheme channelNamingScheme = GLOBAL_INDEX;
 
     Array<float> impedanceMagnitudes;

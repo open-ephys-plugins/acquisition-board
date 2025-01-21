@@ -26,9 +26,9 @@
 
 #include <VisualizerEditorHeaders.h>
 
+#include "../devices/AcquisitionBoard.h"
 #include "ChannelComponent.h"
 #include "ChannelList.h"
-#include "../devices/AcquisitionBoard.h"
 
 /**
 
@@ -60,6 +60,9 @@ public:
 
     /** Called when parameters of the underlying data processor are changed*/
     void update();
+
+    /** Calls update after a delay*/
+    void updateAsync();
 
     /** Called instead of repaint to avoid redrawing underlying components*/
     void refresh();
