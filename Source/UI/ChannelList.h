@@ -53,10 +53,10 @@ public:
     void enableAll();
 
     /** Button callback */
-    void buttonClicked (Button* btn);
+    void buttonClicked (Button* btn) override;
 
     /** ComboBox callback */
-    void comboBoxChanged (ComboBox* b);
+    void comboBoxChanged (ComboBox* b) override;
 
     /** Updates layout of channel list */
     void update();

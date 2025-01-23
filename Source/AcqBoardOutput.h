@@ -56,7 +56,7 @@ public:
     void triggerOutput (uint16 streamId);
 
     /** Responds to change in parameter trigger value */
-    void parameterValueChanged (Parameter*);
+    void parameterValueChanged (Parameter*) override;
 
 private:
     bool gateIsOpen;

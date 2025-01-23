@@ -293,6 +293,11 @@ void DeviceEditor::channelStateChanged (Array<int> newChannels)
     }
 }
 
+int DeviceEditor::getChannelCount()
+{
+    return board->getNumDataOutputs (ContinuousChannel::ELECTRODE);
+}
+
 void DeviceEditor::buttonClicked (Button* button)
 {
     if (button == rescanButton.get() && ! acquisitionIsActive)

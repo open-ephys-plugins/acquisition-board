@@ -52,7 +52,7 @@ public:
     void setImpedanceValues (float mag, float phase);
 
     /** Sets layout */
-    void resized();
+    void resized() override;
 
     /** Holds channel type */
     const ContinuousChannel::Type type;
