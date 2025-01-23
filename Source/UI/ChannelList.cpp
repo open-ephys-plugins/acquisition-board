@@ -34,9 +34,8 @@ ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : boa
 {
     channelComponents.clear();
 
-    FontOptions f = FontOptions ("Small Text", 13, Font::plain);
-
     numberingSchemeLabel = std::make_unique<Label> ("Channel Names:", "Channel Names:");
+    numberingSchemeLabel->setFont (FontOptions ("Inter", "Semi Bold", 15.0f));
     numberingSchemeLabel->setEditable (false);
     numberingSchemeLabel->setBounds (10, 10, 150, 25);
     addAndMakeVisible (numberingSchemeLabel.get());
@@ -52,14 +51,14 @@ ChannelList::ChannelList (AcquisitionBoard* board_, DeviceEditor* editor_) : boa
     impedanceButton = std::make_unique<UtilityButton> ("Measure Impedances");
     impedanceButton->setRadius (3);
     impedanceButton->setBounds (280, 10, 145, 25);
-    impedanceButton->setFont (f);
+    impedanceButton->setFont (FontOptions (14.0f));
     impedanceButton->addListener (this);
     addAndMakeVisible (impedanceButton.get());
 
     saveImpedanceButton = std::make_unique<UtilityButton> ("Save Impedances");
     saveImpedanceButton->setRadius (3);
     saveImpedanceButton->setBounds (430, 10, 145, 25);
-    saveImpedanceButton->setFont (f);
+    saveImpedanceButton->setFont (FontOptions (14.0f));
     saveImpedanceButton->addListener (this);
     saveImpedanceButton->setEnabled (false);
     addAndMakeVisible (saveImpedanceButton.get());
@@ -178,7 +177,6 @@ void ChannelList::update()
 
 void ChannelList::disableAll()
 {
-
     impedanceButton->setEnabled (false);
     saveImpedanceButton->setEnabled (false);
     numberingScheme->setEnabled (false);
