@@ -48,7 +48,7 @@ public:
     ~AcqBoardOutputEditor() {}
 
     /** Responds to trigger button press*/
-    void buttonClicked (Button* button);
+    void buttonClicked (Button* button) override;
 
 private:
     std::unique_ptr<UtilityButton> triggerButton;
