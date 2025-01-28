@@ -99,6 +99,8 @@ bool AcqBoardONI::detectBoard()
 
     if (return_code == 1) // successfully opened board
     {
+        LOGC ("Board opened successfully.");
+
         int major, minor, patch;
         evalBoard->getONIVersion (&major, &minor, &patch);
         LOGC ("ONI Library version: ", major, ".", minor, ".", patch);
@@ -121,7 +123,7 @@ bool AcqBoardONI::detectBoard()
 
 bool AcqBoardONI::initializeBoard()
 {
-    LOGC ("Initializing Opal Kelly Acquisition Board...");
+    LOGC ("Initializing ONI Acquisition Board...");
 
      // Initialize the board
     LOGD ("Initializing RHD2000 board.");
