@@ -407,6 +407,11 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 {
     if (board == nullptr)
     {
+        if (previousSettings == nullptr)
+        {
+            return;
+        }
+
         xml->setAttribute ("SampleRate", previousSettings->getIntAttribute ("SampleRate"));
         xml->setAttribute ("LowCut", previousSettings->getDoubleAttribute ("LowCut"));
         xml->setAttribute ("HighCut", previousSettings->getDoubleAttribute ("HighCut"));
