@@ -66,6 +66,7 @@ jobs:
         /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" -v plugins/acquisition-board.bundle --deep --strict --timestamp --options=runtime
         /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" -v shared/liboni.dylib --deep --strict --timestamp --options=runtime
         /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" -v shared/libonidriver_ft600.dylib --deep --strict --timestamp --options=runtime
+        /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" -v shared/libokFrontPanel.1.dylib --deep --strict --timestamp --options=runtime
 
         /usr/bin/codesign -dv --verbose=4 plugins/acquisition-board.bundle
 
