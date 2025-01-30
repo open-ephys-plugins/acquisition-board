@@ -117,6 +117,14 @@ bool AcqBoardONI::detectBoard()
         deviceFound = true;
         return true;
     } else {
+        if (return_code == -1)
+        {
+            LOGC ("ONI FT600 driver library not found.");
+        }
+        else if (return_code == -2)
+        {
+            LOGC ("No ONI Acquisition Board found.");
+        }
         return false;
     }
 }
