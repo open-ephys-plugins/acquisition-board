@@ -125,8 +125,6 @@ bool AcqBoardSim::enableHeadstage (int hsNum, bool enabled, int nStr, int strCha
         headstages[hsNum]->setChannelCount (0);
     }
 
-    buffer->resize (getNumChannels(), 10000);
-
     return true;
 }
 
