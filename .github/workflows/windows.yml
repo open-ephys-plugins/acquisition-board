@@ -1,0 +1,62 @@
+name: Windows
+
+on: 
+  push:
+  pull_request:
+
+jobs:
+
+  build-windows:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: setup
+      run: |
+        cd ../..
+        git clone https://github.com/open-ephys/plugin-GUI.git --branch testing-juce8
+        cd plugin-GUI/Build
+        cmake -G "Visual Studio 17 2022" -A x64 .. 
+        mkdir Release && cd Release
+        curl -L https://openephys.jfrog.io/artifactory/GUI-binaries/Libraries/open-ephys-lib-v1.0.0-alpha.zip --output open-ephys-lib.zip
+        unzip open-ephys-lib.zip
+      shell: bash
+    - name: configure
+      run: |
+        cd Build
+        cmake -G "Visual Studio 17 2022" -A x64 .. 
+      shell: bash
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
+    - name: build-plugin
+      run: |
+        cd Build
+        msbuild INSTALL.vcxproj -p:Configuration=Release -p:Platform=x64
+      shell: cmd
+# TODO: Perform some basic testing before publishing...
+#    - name: test
+#      run: cd build && ctest
+    - name: deploy
+      if: github.ref == 'refs/heads/main'
+      env:
+        ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
+        build_dir: "Build/Release"
+        package: AcquisitionBoard-windows
+      run: |
+        plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
+        tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
+        new_plugin_ver=$tag-API$plugin_api
+        mkdir plugins
+        cp $build_dir/*.dll plugins
+        mkdir shared
+        cp libONI/win64/*.dll shared
+        cp Resources/okFrontPanel.dll shared
+        zipfile=${package}_${new_plugin_ver}.zip
+        powershell Compress-Archive -Path "plugins" -DestinationPath ${zipfile}
+        powershell Compress-Archive -U -Path "shared" -DestinationPath ${zipfile}
+        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/AcquisitionBoard-plugin/windows/$zipfile"
+      shell: bash
