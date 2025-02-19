@@ -42,19 +42,44 @@
 
 #define MAX_NUM_CHANNELS MAX_NUM_DATA_STREAMS_USB3 * 35 + 16
 
+/**
+    Background thread with progress window for scanning ports
+*/
 class PortScanner : public ThreadWithProgressWindow
 {
 public:
-    PortScanner(AcqBoardONI* board_) : 
-        ThreadWithProgressWindow("Scanning ports...", true, false), board(board_)
+    PortScanner (AcqBoardONI* board_) : ThreadWithProgressWindow ("Scanning ports...", true, false), board (board_)
     {
-	}
+    }
 
     ~PortScanner()
     {
-		signalThreadShouldExit();
-		waitForThreadToExit(1000);
-	}
+        signalThreadShouldExit();
+        waitForThreadToExit (1000);
+    }
+
+    void run() override;
+
+private:
+    AcqBoardONI* board;
+};
+
+/**
+    Background thread with progress window for initializing the board
+*/
+class InitializerThread : public juce::ThreadWithProgressWindow
+{
+public:
+    InitializerThread (AcqBoardONI* board_)
+        : ThreadWithProgressWindow ("Initializing ONI Acquisition Board...", true, false), board (board_)
+    {
+    }
+
+    ~InitializerThread()
+    {
+        signalThreadShouldExit();
+        waitForThreadToExit (1000);
+    }
 
     void run() override;
 
@@ -82,13 +107,16 @@ public:
     virtual ~AcqBoardONI();
 
     /** Detects whether a board is present */
-    bool detectBoard();
+    bool detectBoard() override;
 
     /** Initializes board after successful detection */
-    bool initializeBoard();
+    bool initializeBoard() override;
+
+    /** Initializes board in background thread */
+    bool initializeBoardInThread();
 
     /** Returns true if the device is connected */
-    bool foundInputSource() const;
+    bool foundInputSource() const override;
 
     /** Returns an array of connected headstages for this board */
     Array<const Headstage*> getHeadstages();
