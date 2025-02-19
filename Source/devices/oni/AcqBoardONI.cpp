@@ -125,11 +125,27 @@ bool AcqBoardONI::detectBoard()
         {
             LOGC ("No ONI Acquisition Board found.");
         }
+        deviceFound = false;
         return false;
     }
 }
 
+
+void InitializerThread::run()
+{
+    setProgress(-1.0); // Show an indeterminate progress bar
+    board->initializeBoardInThread();
+}
+
 bool AcqBoardONI::initializeBoard()
+{
+    InitializerThread initializer(this);
+    initializer.runThread();
+
+    return true;
+}
+
+bool AcqBoardONI::initializeBoardInThread()
 {
     LOGC ("Initializing ONI Acquisition Board...");
 
