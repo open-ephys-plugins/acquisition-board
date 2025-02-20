@@ -298,8 +298,10 @@ private:
     bool varSampleRateCapable = false;
     bool commonCommandsSet = false;
     bool initialScan = true;
-    bool hasBNO[numberOfPorts];
-    bool hasBnoSupport = false;
+    bool hasBNO[numberOfPorts]; // Tracks if there is a BNO on any of the available ports
+    bool hasI2c[numberOfPorts]; // Tracks if there is an I2C-capable device on any of the available ports
+    uint32_t headstageId[numberOfPorts];
+    bool hasI2cSupport = false;
 
     DataBuffer* memBuffer;
     Array<DataBuffer*, juce::DummyCriticalSection, numberOfPorts> bnoBuffers;

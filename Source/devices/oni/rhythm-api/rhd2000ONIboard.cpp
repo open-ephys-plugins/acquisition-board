@@ -1170,28 +1170,74 @@ Rhd2000ONIBoard::BoardMemState Rhd2000ONIBoard::getBoardMemState() const
     return static_cast<BoardMemState> (val & 0x03);
 }
 
-bool Rhd2000ONIBoard::enableBnoSupport (bool connected[4])
+bool Rhd2000ONIBoard::enableI2cMode (bool enablePort[4])
 {
     if (! ctx)
         return false;
 
-    const oni_reg_addr_t ENABLE_BNO_ADDRESS = 0x00001001;
+    const oni_reg_addr_t ENABLE_I2C_ADDRESS = 0x00001001;
     oni_reg_val_t val = 0x0;
 
     for (int i = 3; i >= 0; i--)
     {
-        val |= static_cast<int>(connected[i]) << i;
+        val |= static_cast<int> (enablePort[i]) << i;
     }
 
-    if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_BNO_ADDRESS, val) != ONI_ESUCCESS)
+    if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_I2C_ADDRESS, val) != ONI_ESUCCESS)
         return false;
 
     return true;
 }
 
+bool Rhd2000ONIBoard::isI2cCapable(oni_dev_idx_t device)
+{
+    if (! ctx || (device != DEVICE_I2C_RAW_A && device != DEVICE_I2C_RAW_B && device != DEVICE_I2C_RAW_C && device != DEVICE_I2C_RAW_D))
+        return false;
+
+    oni_reg_val_t val;
+
+    int result = oni_read_reg(ctx, device, (oni_reg_addr_t)I2cRawRegisters::I2C_BUS_READY, &val);
+
+    if (result != ONI_ESUCCESS)
+        return false;
+
+    return val > 0;
+}
+
+int Rhd2000ONIBoard::readByte(uint32_t address, oni_reg_addr_t i2cRawAddress, oni_reg_val_t* value, bool sixteenBitAddress)
+{
+    uint32_t i2cAddress = 0x50; 
+
+    uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
+    registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
+
+    int result = oni_read_reg (ctx, i2cRawAddress, registerAddress, value);
+
+    return result;
+}
+
+uint32_t Rhd2000ONIBoard::getDeviceIdOnEeprom (oni_reg_addr_t i2cRawAddress)
+{
+    if (i2cRawAddress != DEVICE_I2C_RAW_A && i2cRawAddress != DEVICE_I2C_RAW_B && i2cRawAddress != DEVICE_I2C_RAW_C && i2cRawAddress != DEVICE_I2C_RAW_D)
+        return 0;
+
+    const uint32_t deviceIdStartAddress = 7;
+    uint32_t data = 0;
+
+    for (unsigned int i = 0; i < sizeof (uint32_t); i++)
+    {
+        oni_reg_val_t val;
+        int res;
+        res = readByte (deviceIdStartAddress + i, i2cRawAddress, &val, true);
+        data += (val & 0xFF) << (8 * i);
+    }
+
+    return data;
+}
+
 bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device)
 {
-    if (! ctx)
+    if (! ctx || (device != DEVICE_BNO_A && device != DEVICE_BNO_B && device != DEVICE_BNO_C && device != DEVICE_BNO_D))
         return false;
 
     oni_reg_val_t val = 2; // Value == 2 means there is a BNO scan in progress
@@ -1199,7 +1245,7 @@ bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device)
 
     while (val == 2)
     {
-        result = oni_read_reg (ctx, device, 0x1, &val);
+        result = oni_read_reg (ctx, device, (oni_reg_addr_t)BnoRegisters::BNO_STATUS, &val);
 
         if (result != ONI_ESUCCESS)
             return false;
@@ -1208,20 +1254,29 @@ bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device)
     return val == 1;
 }
 
-void Rhd2000ONIBoard::enableBnoStream (unsigned int bnoIndex, bool enabled)
+void Rhd2000ONIBoard::enableBnoStream(oni_dev_idx_t bnoIndex, bool enabled)
 {
-    if (bnoIndex > 3)
+    if (bnoIndex != DEVICE_BNO_A && bnoIndex != DEVICE_BNO_B && bnoIndex != DEVICE_BNO_C && bnoIndex != DEVICE_BNO_D)
         return;
 
-    oni_write_reg (ctx, DEVICE_BNO_A + bnoIndex, 0, static_cast<int> (enabled));
+    oni_write_reg (ctx, bnoIndex, 0, static_cast<int> (enabled));
 }
 
-bool Rhd2000ONIBoard::isBnoEnabled (unsigned int bnoIndex)
+bool Rhd2000ONIBoard::isBnoEnabled (oni_dev_idx_t bnoIndex)
 {
-    if (bnoIndex > 3)
+    if (bnoIndex != DEVICE_BNO_A && bnoIndex != DEVICE_BNO_B && bnoIndex != DEVICE_BNO_C && bnoIndex != DEVICE_BNO_D)
         return false;
+
     oni_reg_val_t val;
-    if (oni_read_reg (ctx, DEVICE_BNO_A + bnoIndex, 0, &val) != ONI_ESUCCESS)
+    if (oni_read_reg (ctx, bnoIndex, 0, &val) != ONI_ESUCCESS)
         return false;
     return static_cast<bool>(val);
+}
+
+void Rhd2000ONIBoard::setBnoAxisMap(oni_dev_idx_t device, int axisMap)
+{
+    if (! ctx || (device != DEVICE_BNO_A && device != DEVICE_BNO_B && device != DEVICE_BNO_C && device != DEVICE_BNO_D))
+        return;
+
+    oni_write_reg (ctx, device, (uint32_t)BnoRegisters::AXIS_MAP, axisMap);
 }

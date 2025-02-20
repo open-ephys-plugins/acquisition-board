@@ -14,6 +14,7 @@ public:
     ~Rhd2000ONIBoard();
 
     int MAX_NUM_DATA_STREAMS;
+
     enum AuxCmdSlot
     {
         AuxCmd1,
@@ -66,6 +67,19 @@ public:
         SampleRate20000Hz,
         SampleRate25000Hz,
         SampleRate30000Hz
+    };
+
+    enum class BnoRegisters : oni_reg_addr_t
+    {
+        ENABLE_BNO = 0x0,
+        AXIS_MAP = 0x1,
+        BNO_STATUS = 0x2
+    };
+
+    enum class I2cRawRegisters : oni_reg_addr_t
+    {
+        ENABLE = 0x0,
+        I2C_BUS_READY = 0x1
     };
 
     bool isUSB3();
@@ -138,11 +152,15 @@ public:
     bool getFTDriverInfo (int* major, int* minor, int* patch);
     bool getFTLibInfo (int* major, int* minor, int* patch);
 
-    /** Enables support for the specified BNOs across all ports */
-    bool enableBnoSupport (bool[4]);
+    bool enableI2cMode (bool[4]);
+    bool isI2cCapable (const oni_dev_idx_t);
     bool isBnoConnected (const oni_dev_idx_t);
-    void enableBnoStream (unsigned int bnoIndex, bool enabled);
-    bool isBnoEnabled (unsigned int bnoIndex);
+    void enableBnoStream (oni_dev_idx_t bnoIndex, bool enabled);
+    bool isBnoEnabled (oni_dev_idx_t bnoIndex);
+    void setBnoAxisMap (oni_dev_idx_t, int);
+
+    int readByte (uint32_t, oni_reg_addr_t, oni_reg_val_t*, bool);
+    uint32_t getDeviceIdOnEeprom (oni_reg_addr_t);
 
     enum BoardMemState
     {
@@ -162,9 +180,13 @@ public:
     static const oni_dev_idx_t DEVICE_HEARTBEAT = 0x0000;
     static const oni_dev_idx_t DEVICE_MEMORY = 0x0001;
     static const oni_dev_idx_t DEVICE_BNO_A = 0x0002;
-    static const oni_dev_idx_t DEVICE_BNO_B = 0x0003;
-    static const oni_dev_idx_t DEVICE_BNO_C = 0x0004;
-    static const oni_dev_idx_t DEVICE_BNO_D = 0x0005;
+    static const oni_dev_idx_t DEVICE_I2C_RAW_A = 0x0003;
+    static const oni_dev_idx_t DEVICE_BNO_B = 0x0004;
+    static const oni_dev_idx_t DEVICE_I2C_RAW_B = 0x0005;
+    static const oni_dev_idx_t DEVICE_BNO_C = 0x0006;
+    static const oni_dev_idx_t DEVICE_I2C_RAW_C = 0x0007;
+    static const oni_dev_idx_t DEVICE_BNO_D = 0x0008;
+    static const oni_dev_idx_t DEVICE_I2C_RAW_D = 0x0009;
 
 private:
     const oni_size_t usbReadBlockSize = 24 * 1024;
@@ -223,8 +245,6 @@ private:
         TTL_OUT_MODE = 3,
         LED_ENABLE = 4
     };
-
-    
 
     const oni_dev_idx_t RHYTHM_HUB_MANAGER = 0x01FE;
     const oni_reg_addr_t HUB_CLOCK_SEL = 0x2000;

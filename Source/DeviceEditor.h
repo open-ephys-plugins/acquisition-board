@@ -86,6 +86,9 @@ public:
     /** Called by PopupChannelSelector */
     void channelStateChanged (Array<int> newChannels) override;
 
+    /** Called by PopupChannelSelector */
+    int getChannelCount() override;
+
     virtual Array<int> getSelectedChannels() { return Array<int>(); }
 
 private:
