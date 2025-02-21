@@ -153,14 +153,13 @@ public:
     bool getFTLibInfo (int* major, int* minor, int* patch);
 
     bool enableI2cMode (bool[4]);
-    bool isI2cCapable (const oni_dev_idx_t);
-    bool isBnoConnected (const oni_dev_idx_t);
-    void enableBnoStream (oni_dev_idx_t bnoIndex, bool enabled);
-    bool isBnoEnabled (oni_dev_idx_t bnoIndex);
-    void setBnoAxisMap (oni_dev_idx_t, int);
+    bool isI2cCapable (const uint32_t);
+    bool isBnoConnected (const uint32_t);
+    void enableBnoStream (const uint32_t, bool);
+    bool isBnoEnabled (const uint32_t);
+    void setBnoAxisMap (const uint32_t, int);
 
-    int readByte (uint32_t, oni_reg_addr_t, oni_reg_val_t*, bool);
-    uint32_t getDeviceIdOnEeprom (oni_reg_addr_t);
+    uint32_t getDeviceIdOnEeprom (const uint32_t);
 
     enum BoardMemState
     {
@@ -192,6 +191,9 @@ private:
     const oni_size_t usbReadBlockSize = 24 * 1024;
 
     static int oni_write_reg_mask (const oni_ctx ctx, oni_dev_idx_t dev_idx, oni_reg_addr_t addr, oni_reg_val_t value, unsigned int mask);
+
+    int readByte (oni_dev_idx_t, uint32_t, oni_reg_val_t*);
+    int readEepromByte (oni_dev_idx_t, uint32_t, uint8_t&);
 
     enum Rhythm_Registers
     {

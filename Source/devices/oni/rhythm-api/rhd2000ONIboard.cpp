@@ -1189,12 +1189,14 @@ bool Rhd2000ONIBoard::enableI2cMode (bool enablePort[4])
     return true;
 }
 
-bool Rhd2000ONIBoard::isI2cCapable(oni_dev_idx_t device)
+bool Rhd2000ONIBoard::isI2cCapable(const uint32_t port)
 {
-    if (! ctx || (device != DEVICE_I2C_RAW_A && device != DEVICE_I2C_RAW_B && device != DEVICE_I2C_RAW_C && device != DEVICE_I2C_RAW_D))
+    if (! ctx || port > 3)
         return false;
 
     oni_reg_val_t val;
+
+    oni_dev_idx_t device = DEVICE_I2C_RAW_A + port * 2;
 
     int result = oni_read_reg(ctx, device, (oni_reg_addr_t)I2cRawRegisters::I2C_BUS_READY, &val);
 
@@ -1204,43 +1206,80 @@ bool Rhd2000ONIBoard::isI2cCapable(oni_dev_idx_t device)
     return val > 0;
 }
 
-int Rhd2000ONIBoard::readByte(uint32_t address, oni_reg_addr_t i2cRawAddress, oni_reg_val_t* value, bool sixteenBitAddress)
+int Rhd2000ONIBoard::readByte (oni_dev_idx_t device, uint32_t address, oni_reg_val_t* value)
 {
-    uint32_t i2cAddress = 0x50; 
+    if (! ctx)
+        return 0;
 
-    uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
-    registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
-
-    int result = oni_read_reg (ctx, i2cRawAddress, registerAddress, value);
+    int result = oni_read_reg (ctx, device, address, value);
 
     return result;
 }
 
-uint32_t Rhd2000ONIBoard::getDeviceIdOnEeprom (oni_reg_addr_t i2cRawAddress)
+int Rhd2000ONIBoard::readEepromByte (oni_dev_idx_t i2cRawAddress, uint32_t address, uint8_t& byte)
 {
-    if (i2cRawAddress != DEVICE_I2C_RAW_A && i2cRawAddress != DEVICE_I2C_RAW_B && i2cRawAddress != DEVICE_I2C_RAW_C && i2cRawAddress != DEVICE_I2C_RAW_D)
+    uint32_t i2cAddress = 0x50;
+
+    uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
+    registerAddress |= 0x80000000;
+
+    oni_reg_val_t value;
+
+    int result = readByte (i2cRawAddress, registerAddress, &value);
+
+    if (result == 0)
+        byte = (uint8_t) (value & 0xFF);
+    else
+        byte = 0;
+
+    return result;
+}
+
+uint32_t Rhd2000ONIBoard::getDeviceIdOnEeprom (const uint32_t port)
+{
+    if (!ctx || port > 3)
         return 0;
+
+    oni_dev_idx_t i2cRawAddress = DEVICE_I2C_RAW_A + port * 2;
+
+    // NB: Confirm EEPROM first four bytes contains OESH
+    const char identifier[] = "OESH";
+
+    for (unsigned int i = 0; i < strlen(identifier); i += 1)
+    {
+        uint8_t val;
+        int res;
+        res = readEepromByte (i2cRawAddress, i, val);
+
+        if (res != 0 || val != identifier[i])
+            return 0;
+    }
 
     const uint32_t deviceIdStartAddress = 7;
     uint32_t data = 0;
 
     for (unsigned int i = 0; i < sizeof (uint32_t); i++)
     {
-        oni_reg_val_t val;
+        uint8_t val;
         int res;
-        res = readByte (deviceIdStartAddress + i, i2cRawAddress, &val, true);
-        data += (val & 0xFF) << (8 * i);
+        res = readEepromByte (i2cRawAddress, deviceIdStartAddress + i, val);
+
+        if (res != 0)
+            return 0;
+
+        data += val << (8 * i);
     }
 
     return data;
 }
 
-bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device)
+bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
 {
-    if (! ctx || (device != DEVICE_BNO_A && device != DEVICE_BNO_B && device != DEVICE_BNO_C && device != DEVICE_BNO_D))
+    if (! ctx || port > 3)
         return false;
 
     oni_reg_val_t val = 2; // Value == 2 means there is a BNO scan in progress
+    oni_dev_idx_t device = DEVICE_I2C_RAW_A + port * 2;
     int result;
 
     while (val == 2)
@@ -1254,29 +1293,36 @@ bool Rhd2000ONIBoard::isBnoConnected (oni_dev_idx_t device)
     return val == 1;
 }
 
-void Rhd2000ONIBoard::enableBnoStream(oni_dev_idx_t bnoIndex, bool enabled)
+void Rhd2000ONIBoard::enableBnoStream(const uint32_t port, bool enabled)
 {
-    if (bnoIndex != DEVICE_BNO_A && bnoIndex != DEVICE_BNO_B && bnoIndex != DEVICE_BNO_C && bnoIndex != DEVICE_BNO_D)
+    if (! ctx || port > 3)
         return;
 
-    oni_write_reg (ctx, bnoIndex, 0, static_cast<int> (enabled));
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
+
+    oni_write_reg (ctx, device, 0, static_cast<int> (enabled));
 }
 
-bool Rhd2000ONIBoard::isBnoEnabled (oni_dev_idx_t bnoIndex)
+bool Rhd2000ONIBoard::isBnoEnabled (const uint32_t port)
 {
-    if (bnoIndex != DEVICE_BNO_A && bnoIndex != DEVICE_BNO_B && bnoIndex != DEVICE_BNO_C && bnoIndex != DEVICE_BNO_D)
+    if (! ctx || port > 3)
         return false;
 
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
     oni_reg_val_t val;
-    if (oni_read_reg (ctx, bnoIndex, 0, &val) != ONI_ESUCCESS)
+    
+    if (oni_read_reg (ctx, device, 0, &val) != ONI_ESUCCESS)
         return false;
+    
     return static_cast<bool>(val);
 }
 
-void Rhd2000ONIBoard::setBnoAxisMap(oni_dev_idx_t device, int axisMap)
+void Rhd2000ONIBoard::setBnoAxisMap (const uint32_t port, int axisMap)
 {
-    if (! ctx || (device != DEVICE_BNO_A && device != DEVICE_BNO_B && device != DEVICE_BNO_C && device != DEVICE_BNO_D))
+    if (! ctx || port > 3)
         return;
+
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
 
     oni_write_reg (ctx, device, (uint32_t)BnoRegisters::AXIS_MAP, axisMap);
 }
