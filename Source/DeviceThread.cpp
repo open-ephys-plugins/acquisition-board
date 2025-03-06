@@ -249,8 +249,6 @@ void DeviceThread::handleBroadcastMessage (const String& msg, const int64 messag
 {
     StringArray parts = StringArray::fromTokens (msg, " ", "");
 
-    //std::cout << "Received " << msg << std::endl;
-
     if (parts[0].equalsIgnoreCase ("ACQBOARD"))
     {
         if (parts.size() > 1)

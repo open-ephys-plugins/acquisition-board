@@ -29,17 +29,24 @@ AcqBoardOutputEditor::AcqBoardOutputEditor (GenericProcessor* parentNode)
     : GenericEditor (parentNode)
 
 {
-    desiredWidth = 250;
+    desiredWidth = 190;
 
     board = (AcqBoardOutput*) parentNode;
 
-    addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "ttl_out", 10, 30);
-    addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "trigger_line", 10, 76);
-    addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "gate_line", 100, 76);
-    addTextBoxParameterEditor (Parameter::GLOBAL_SCOPE, "event_duration", 100, 30);
+    addTtlLineParameterEditor (Parameter::STREAM_SCOPE, "ttl_out", 10, 25);
+    addTtlLineParameterEditor (Parameter::STREAM_SCOPE, "trigger_line", 10, 65);
+    addTtlLineParameterEditor (Parameter::STREAM_SCOPE, "gate_line", 100, 65);
+    addBoundedValueParameterEditor (Parameter::PROCESSOR_SCOPE, "event_duration", 100, 25);
+
+    for (auto ed : parameterEditors)
+    {
+        ed->setLayout (ParameterEditor::Layout::nameOnTop);
+        ed->setSize (80, 36);
+    }
 
     triggerButton = std::make_unique<UtilityButton> ("Trigger");
-    triggerButton->setBounds (190, 95, 55, 25);
+    triggerButton->setBounds (55, 105, 80, 20);
+    triggerButton->setFont (FontOptions(12.0f));
     triggerButton->addListener (this);
     addAndMakeVisible (triggerButton.get());
 }
@@ -49,6 +56,6 @@ void AcqBoardOutputEditor::buttonClicked (Button* button)
     if (button == triggerButton.get())
     {
         AcqBoardOutput* processor = (AcqBoardOutput*) getProcessor();
-        processor->triggerOutput (getCurrentStream());
+        processor->triggerOutput ();
     }
 }

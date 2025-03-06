@@ -43,6 +43,9 @@ public:
     /** Destructor*/
     ~AcqBoardOutput() {}
 
+    /** Registers the parameters*/
+    void registerParameters() override;
+
     /** Searches for events and triggers the Arduino output when appropriate. */
     void process (AudioBuffer<float>& buffer) override;
 
@@ -53,7 +56,7 @@ public:
     AudioProcessorEditor* createEditor() override;
 
     /** Manually triggers output when editor button is clicked */
-    void triggerOutput (uint16 streamId);
+    void triggerOutput ();
 
     /** Responds to change in parameter trigger value */
     void parameterValueChanged (Parameter*) override;

@@ -30,13 +30,21 @@ AcqBoardOutput::AcqBoardOutput()
     : GenericProcessor ("Acq Board Output"),
       gateIsOpen (true)
 {
-    addIntParameter (Parameter::STREAM_SCOPE, "ttl_out", "TTL Out", "The digital output to trigger", 1, 1, 8);
-    addIntParameter (Parameter::STREAM_SCOPE, "trigger_line", "Trigger Line", "The TTL bit for triggering output", 1, 1, 16);
-    addIntParameter (Parameter::STREAM_SCOPE, "gate_line", "Gate Line", "The TTL bit for gating the output", 0, 0, 16);
-    addNotificationParameter (Parameter::GLOBAL_SCOPE, "trigger", "Trigger", "Manually triggers output", false);
+}
+
+void AcqBoardOutput::registerParameters()
+{
+    addTtlLineParameter (Parameter::STREAM_SCOPE, "ttl_out", "TTL Out", "The digital output to trigger");
+
+    addTtlLineParameter (Parameter::STREAM_SCOPE, "trigger_line", "Trigger Line", "The TTL bit for triggering output");
+
+    addTtlLineParameter (Parameter::STREAM_SCOPE, "gate_line", "Gate Line", "The TTL bit for gating the output", 8, false, true);
+    dataStreamParameters.getLast()->currentValue = -1;
+
+    addNotificationParameter (Parameter::PROCESSOR_SCOPE, "trigger", "Trigger", "Manually triggers output", false);
 
     addFloatParameter (
-        Parameter::GLOBAL_SCOPE,
+        Parameter::PROCESSOR_SCOPE,
         "event_duration",
         "Duration",
         "The amount of time (in ms) the output stays high",
@@ -53,28 +61,38 @@ AudioProcessorEditor* AcqBoardOutput::createEditor()
     return editor.get();
 }
 
-void AcqBoardOutput::triggerOutput (uint16 streamId)
+void AcqBoardOutput::triggerOutput()
 {
-    DataStream* stream = getDataStream (streamId);
-
-    stream->getParameter ("trigger")->setNextValue (true);
+    getParameter ("trigger")->setNextValue (true);
 }
 
 void AcqBoardOutput::parameterValueChanged (Parameter* param)
 {
     if (param->getName().equalsIgnoreCase ("trigger"))
     {
-        DataStream* stream = getDataStream (param->getStreamId());
+        DataStream* stream = nullptr;
+        if (getEditor() != nullptr)
+        {
+            stream = getDataStream (getEditor()->getCurrentStream());
+        }
+        else if (dataStreams.size() > 0)
+        {
+            stream = dataStreams.getFirst();
+        }
 
-        broadcastMessage ("ACQBOARD TRIGGER "
-                          + (*stream)["ttl_out"].toString()
-                          + " "
-                          + (*stream)["event_duration"].toString());
+        if (stream != nullptr)
+        {
+            auto ttlOut = ((TtlLineParameter*) stream->getParameter ("ttl_out"))->getSelectedLine() + 1;
+            broadcastMessage ("ACQBOARD TRIGGER "
+                              + String (ttlOut)
+                              + " "
+                              + getParameter ("event_duration")->getValue().toString());
+        }
     }
     else if (param->getName().equalsIgnoreCase ("gate_line"))
     {
-        IntParameter* p = (IntParameter*) param;
-        if (p->getIntValue() > 0)
+        TtlLineParameter* p = (TtlLineParameter*) param;
+        if (p->getSelectedLine() >= 0)
             gateIsOpen = false;
         else
             gateIsOpen = true;
@@ -83,7 +101,7 @@ void AcqBoardOutput::parameterValueChanged (Parameter* param)
 
 void AcqBoardOutput::handleTTLEvent (TTLEventPtr event)
 {
-    const int eventBit = event->getLine() + 1;
+    const int eventBit = event->getLine();
     DataStream* stream = getDataStream (event->getStreamId());
 
     //std::cout << "Event on line " << eventBit << " for stream " << stream->getStreamId() << std::endl;
@@ -99,10 +117,11 @@ void AcqBoardOutput::handleTTLEvent (TTLEventPtr event)
         {
             if (event->getState())
             {
+                auto ttlOut = ((TtlLineParameter*) stream->getParameter ("ttl_out"))->getSelectedLine() + 1;
                 String msg = "ACQBOARD TRIGGER "
-                             + (*stream)["ttl_out"].toString()
+                             + String (ttlOut)
                              + " "
-                             + (*stream)["event_duration"].toString();
+                             + getParameter ("event_duration")->getValue().toString();
                 broadcastMessage (msg);
 
                 //std::cout << "Sending message " << msg << std::endl;
