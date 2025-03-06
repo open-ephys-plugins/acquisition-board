@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "AcqBoardOutput.h"
 
 #include <string>
-#ifdef WIN32
+#ifdef _WIN32
 #include <Windows.h>
 #define EXPORT __declspec(dllexport)
 #else
@@ -41,7 +41,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
 	info->apiVersion = PLUGIN_API_VER;
 	info->name = "Acquisition Board";
-	info->libVersion = "0.1.1";
+	info->libVersion = "0.1.2";
 	info->numPlugins = NUM_PLUGINS;
 }
 
