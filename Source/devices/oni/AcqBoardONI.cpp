@@ -750,7 +750,7 @@ void AcqBoardONI::scanPortsInThread()
               {
                 evalBoard->setBnoAxisMap (i, 0b00100100);
               }
-              else if (hasI2c[i])
+              else
               {
                   switch (headstageId[i])
                   {

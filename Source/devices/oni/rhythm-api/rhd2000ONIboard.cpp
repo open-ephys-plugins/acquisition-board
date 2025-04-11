@@ -1206,12 +1206,15 @@ bool Rhd2000ONIBoard::isI2cCapable(const uint32_t port)
     return val > 0;
 }
 
-int Rhd2000ONIBoard::readByte (oni_dev_idx_t device, uint32_t address, oni_reg_val_t* value)
+int Rhd2000ONIBoard::readByte (oni_dev_idx_t device, uint32_t i2cDevAddress, oni_reg_addr_t i2cRegAddress, oni_reg_val_t* value, bool sixteenBitAddress)
 {
     if (! ctx)
         return 0;
 
-    int result = oni_read_reg (ctx, device, address, value);
+    uint32_t registerAddress = (i2cRegAddress << 7) | (i2cDevAddress & 0x7F);
+    registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
+
+    int result = oni_read_reg (ctx, device, registerAddress, value);
 
     return result;
 }
@@ -1220,12 +1223,9 @@ int Rhd2000ONIBoard::readEepromByte (oni_dev_idx_t i2cRawAddress, uint32_t addre
 {
     uint32_t i2cAddress = 0x50;
 
-    uint32_t registerAddress = (address << 7) | (i2cAddress & 0x7F);
-    registerAddress |= 0x80000000;
-
     oni_reg_val_t value;
 
-    int result = readByte (i2cRawAddress, registerAddress, &value);
+    int result = readByte (i2cRawAddress, i2cAddress, address, &value, true);
 
     if (result == 0)
         byte = (uint8_t) (value & 0xFF);
@@ -1242,8 +1242,8 @@ uint32_t Rhd2000ONIBoard::getDeviceIdOnEeprom (const uint32_t port)
 
     oni_dev_idx_t i2cRawAddress = DEVICE_I2C_RAW_A + port * 2;
 
-    // NB: Confirm EEPROM first four bytes contains OESH
-    const char identifier[] = "OESH";
+    // NB: Confirm EEPROM first bytes contain OESH\x01
+    const char identifier[] = "OESH\x01";
 
     for (unsigned int i = 0; i < strlen(identifier); i += 1)
     {
@@ -1279,7 +1279,7 @@ bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
         return false;
 
     oni_reg_val_t val = 2; // Value == 2 means there is a BNO scan in progress
-    oni_dev_idx_t device = DEVICE_I2C_RAW_A + port * 2;
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
     int result;
 
     while (val == 2)

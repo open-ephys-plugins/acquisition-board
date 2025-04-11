@@ -192,7 +192,7 @@ private:
 
     static int oni_write_reg_mask (const oni_ctx ctx, oni_dev_idx_t dev_idx, oni_reg_addr_t addr, oni_reg_val_t value, unsigned int mask);
 
-    int readByte (oni_dev_idx_t, uint32_t, oni_reg_val_t*);
+    int readByte (oni_dev_idx_t, uint32_t, oni_reg_addr_t, oni_reg_val_t*, bool);
     int readEepromByte (oni_dev_idx_t, uint32_t, uint8_t&);
 
     enum Rhythm_Registers
