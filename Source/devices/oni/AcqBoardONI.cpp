@@ -53,7 +53,7 @@ AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
         dacThresholds.set (k, 0);
     }
 
-    for (int i = 0; i < numberOfPorts; i++)
+    for (int i = 0; i < NUMBER_OF_PORTS; i++)
     {
         hasBNO[i] = false;
         bnoBuffers.add (nullptr);
@@ -134,7 +134,7 @@ void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
 {
     memBuffer = otherBuffers.add (new DataBuffer (1, 10000)); // Memory device
 
-    for (int i = 0; i < numberOfPorts; i++)
+    for (int i = 0; i < NUMBER_OF_PORTS; i++)
     {
         if (hasBNO[i])
             bnoBuffers.set (i, otherBuffers.add (new DataBuffer (4, 10000)));
@@ -173,7 +173,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
     String port = "ABCD";
 
     //BNO
-    for (int k = 0; k < numberOfPorts; k++)
+    for (int k = 0; k < NUMBER_OF_PORTS; k++)
     {
         if (hasBNO[k])
         {
@@ -734,7 +734,7 @@ void AcqBoardONI::scanPortsInThread()
         evalBoard->enableI2cMode (enableI2c);
         evalBoard->resetBoard();
 
-        for (int i = 0; i < numberOfPorts; i += 1)
+        for (int i = 0; i < NUMBER_OF_PORTS; i += 1)
         {
             hasBNO[i] = evalBoard->isBnoConnected (i);
             evalBoard->enableBnoStream (i, hasBNO[i]);
@@ -954,6 +954,10 @@ void AcqBoardONI::scanPortsInThread()
                 enableHeadstage (hs, true, 1, tmpChipId[hs] == 1 ? 32 : 16);
             }
         }
+        else if (hs % 2 == 0 && hasBNO[hs / 2])
+        {
+            enableHeadstage (hs, true, 0, 0, true);
+        }
         else
         {
             enableHeadstage (hs, false);
@@ -1026,7 +1030,7 @@ void AcqBoardONI::setCableLength (int hsNum, float length)
     }
 }
 
-bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strChans)
+bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strChans, bool hasBNO)
 {
     LOGD ("Headstage ", hsNum, ", enabled: ", enabled, ", num streams: ", nStr, ", stream channels: ", strChans);
     LOGD ("Max num headstages: ", MAX_NUM_HEADSTAGES);
@@ -1035,6 +1039,7 @@ bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strCha
     {
         headstages[hsNum]->setFirstChannel (getNumDataOutputs (ContinuousChannel::ELECTRODE));
         headstages[hsNum]->setNumStreams (nStr);
+        headstages[hsNum]->setHasBno (hasBNO);
         headstages[hsNum]->setChannelsPerStream (strChans);
         headstages[hsNum]->setFirstStreamIndex (enabledStreams.size());
         enabledStreams.add (headstages[hsNum]->getDataStream (0));

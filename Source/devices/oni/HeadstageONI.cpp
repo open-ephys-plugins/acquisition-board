@@ -30,7 +30,8 @@ HeadstageONI::HeadstageONI (Rhd2000ONIBoard::BoardDataSource dataSource_,
                                          numStreams (0),
                                          channelsPerStream (32),
                                          halfChannels (false),
-                                         streamIndex (-1)
+                                         streamIndex (-1),
+                                         m_hasBno (false)
 {
 }
 
@@ -52,6 +53,11 @@ void HeadstageONI::setNumStreams (int num)
 
         generateChannelNames (channelNamingScheme);
     }
+}
+
+void HeadstageONI::setHasBno (bool hasBno)
+{
+    m_hasBno = hasBno;
 }
 
 void HeadstageONI::setChannelsPerStream (int nchan)
@@ -108,7 +114,7 @@ Rhd2000ONIBoard::BoardDataSource HeadstageONI::getDataStream (int index) const
 
 bool HeadstageONI::isConnected() const
 {
-    return (numStreams > 0);
+    return numStreams > 0 || m_hasBno;
 }
 
 String HeadstageONI::getChannelName (int ch) const
