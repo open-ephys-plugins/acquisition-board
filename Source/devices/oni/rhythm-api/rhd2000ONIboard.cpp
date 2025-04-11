@@ -1148,15 +1148,16 @@ void Rhd2000ONIBoard::setDacManual (int value)
         std::cerr << "Error creating frame for DAC writing " << res << ": " << oni_error_str (res) << std::endl;
 }
 
-bool Rhd2000ONIBoard::getFirmwareVersion (int* major, int* minor) const
+bool Rhd2000ONIBoard::getFirmwareVersion (int* major, int* minor, int* patch) const
 {
     if (! ctx)
         return false;
     oni_reg_val_t val;
     if (oni_read_reg (ctx, 254, 2, &val) != ONI_ESUCCESS)
         return false;
-    *minor = val & 0xFF;
-    *major = (val >> 8) & 0xFF;
+    *patch = val & 0xFF;
+    *minor = (val >> 8) & 0xFF;
+    *major = (val >> 16) & 0xFF;
     return true;
 }
 

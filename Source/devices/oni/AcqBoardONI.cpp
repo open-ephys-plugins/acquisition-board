@@ -115,12 +115,10 @@ bool AcqBoardONI::detectBoard()
         {
             LOGC ("FTDI Library version: ", major, ".", minor, ".", patch);
         }
-        if (evalBoard->getFirmwareVersion (&major, &minor))
+        if (evalBoard->getFirmwareVersion (&major, &minor, &patch))
         {
-            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor);
-            //if (major >= 16) //For now we use this, we will use the proper versioning
-            //    hasBNO[0] = true;
-            hasI2cSupport = major >= 2;
+            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor + "." + patch);
+            hasI2cSupport = major >= 1 && minor > 5;
         }
 
         deviceFound = true;
