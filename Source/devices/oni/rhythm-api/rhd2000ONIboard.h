@@ -152,6 +152,8 @@ public:
     bool getFTDriverInfo (int* major, int* minor, int* patch);
     bool getFTLibInfo (int* major, int* minor, int* patch);
 
+    bool getAcquisitionClockHz (uint32_t*) const;
+
     bool enableI2cMode (bool[4]);
     bool isI2cCapable (const uint32_t);
     bool isBnoConnected (const uint32_t);

@@ -272,6 +272,8 @@ bool AcqBoardONI::initializeBoard()
     evalBoard->selectAuxCommandBank (Rhd2000ONIBoard::PortC, Rhd2000ONIBoard::AuxCmd3, settings.fastSettleEnabled ? 2 : 1);
     evalBoard->selectAuxCommandBank (Rhd2000ONIBoard::PortD, Rhd2000ONIBoard::AuxCmd3, settings.fastSettleEnabled ? 2 : 1);
 
+    evalBoard->getAcquisitionClockHz (&acquisitionClockHz);
+
     return true;
 }
 
@@ -683,6 +685,9 @@ int AcqBoardONI::getIntanChipId (
     int& register59Value)
 {
     bool intanChipPresent;
+
+    if (stream < 0)
+        return 0;
 
     // First, check ROM registers 32-36 to verify that they hold 'INTAN', and
     // the initial chip name ROM registers 24-26 that hold 'RHD'.
@@ -1571,7 +1576,7 @@ void AcqBoardONI::run()
                 float memf = membytes * 0.1f;
                 uint64 zero = 0;
                 int64 tst = frame->time;
-                double tsd = frame->time / 50e6;
+                double tsd = static_cast<double>(frame->time) / acquisitionClockHz;
                 memBuffer->addToBuffer (
                     &memf,
                     &tst,
@@ -1661,7 +1666,7 @@ void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
     unsigned char* bufferPtr = (unsigned char*) frame->data + 8 + 6;
     uint64 zero = 0;
     int64 tst = frame->time;
-    double tsd = frame->time / 50e6;
+    double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
     float quatdata[4];
     for (int i = 0; i < 4; i++)
     {

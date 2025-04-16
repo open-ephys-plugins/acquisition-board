@@ -91,6 +91,20 @@ bool Rhd2000ONIBoard::getFTLibInfo (int* major, int* minor, int* patch)
         return false;
 }
 
+bool Rhd2000ONIBoard::getAcquisitionClockHz(uint32_t* acqClkHz) const
+{
+    uint32_t val;
+    size_t size = sizeof (val);
+
+    if (oni_get_opt(ctx, ONI_OPT_ACQCLKHZ, &val, &size) == ONI_ESUCCESS)
+    {
+        *acqClkHz = val;
+        return true;
+    }
+
+    return false;
+}
+
 void Rhd2000ONIBoard::initialize()
 {
     int i;

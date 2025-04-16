@@ -306,6 +306,8 @@ private:
     uint32_t headstageId[NUMBER_OF_PORTS];
     bool hasI2cSupport = false;
 
+    uint32_t acquisitionClockHz;
+
     DataBuffer* memBuffer;
     Array<DataBuffer*, juce::DummyCriticalSection, NUMBER_OF_PORTS> bnoBuffers;
 };
