@@ -110,6 +110,8 @@ public:
     /** Gets the method for determining channel names*/
     virtual ChannelNamingScheme getNamingScheme() = 0;
 
+    virtual bool isReady() = 0;
+
     /** Initiates data transfer */
     virtual bool startAcquisition() = 0;
 

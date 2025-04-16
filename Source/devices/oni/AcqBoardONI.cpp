@@ -1362,14 +1362,17 @@ void AcqBoardONI::connectHeadstageChannelToDAC (int headstageChannelIndex, int d
     }
 }
 
-bool AcqBoardONI::startAcquisition()
+bool AcqBoardONI::isReady()
 {
     if (! deviceFound || (getNumChannels() == 0))
         return false;
 
     if (! checkBoardMem())
         return false;
+}
 
+bool AcqBoardONI::startAcquisition()
+{
     impedanceMeter->waitSafely();
     dataBlock.reset (new Rhd2000ONIDataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3()));
 

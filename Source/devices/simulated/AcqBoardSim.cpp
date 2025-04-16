@@ -194,6 +194,11 @@ ChannelNamingScheme AcqBoardSim::getNamingScheme()
     return channelNamingScheme;
 }
 
+bool AcqBoardSim::isReady()
+{
+    return true;
+}
+
 bool AcqBoardSim::startAcquisition()
 {
     startThread();

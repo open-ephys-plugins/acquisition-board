@@ -128,6 +128,11 @@ bool DeviceThread::foundInputSource()
     return deviceFound;
 }
 
+bool DeviceThread::isReady()
+{
+    return acquisitionBoard->isReady();
+}
+
 bool DeviceThread::startAcquisition()
 {
     return acquisitionBoard->startAcquisition();

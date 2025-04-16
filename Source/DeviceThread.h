@@ -67,6 +67,8 @@ public:
     /** Informs Source Node whether a device is available */
     bool foundInputSource() override;
 
+    bool isReady() override;
+
     /** Initializes data transfer*/
     bool startAcquisition() override;
 

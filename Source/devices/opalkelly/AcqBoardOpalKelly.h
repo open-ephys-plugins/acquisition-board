@@ -115,6 +115,8 @@ public:
     /** Gets the method for determining channel names*/
     ChannelNamingScheme getNamingScheme();
 
+    bool isReady() override;
+
     /** Initializes data transfer*/
     bool startAcquisition();
 

@@ -1070,6 +1070,11 @@ void AcqBoardOpalKelly::connectHeadstageChannelToDAC (int headstageChannelIndex,
     }
 }
 
+bool AcqBoardOpalKelly::isReady()
+{
+    return true;
+}
+
 bool AcqBoardOpalKelly::startAcquisition()
 {
     impedanceMeter->waitSafely();
