@@ -78,8 +78,8 @@ public:
 
     enum class I2cRawRegisters : oni_reg_addr_t
     {
-        ENABLE = 0x0,
-        I2C_BUS_READY = 0x1
+        ENABLE = 0x0 + (1 << 15),
+        I2C_BUS_READY = 0x1 + (1 << 15)
     };
 
     enum class MemoryMonitorRegisters : uint32_t
