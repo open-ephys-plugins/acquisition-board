@@ -4,6 +4,9 @@
 #include <oni.h>
 #include <queue>
 #include <vector>
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 #define MAX_NUM_DATA_STREAMS_USB3 16
 

@@ -1311,11 +1311,14 @@ bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
     if (! ctx || port > 3)
         return false;
 
-    oni_reg_val_t val = 2; // Value == 2 means there is a BNO scan in progress
+    oni_reg_val_t val = 2; // Value >= 2 means there is a BNO scan in progress
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
     int result;
 
-    while (val >= 2)
+    using namespace std::chrono;
+    auto startTime = high_resolution_clock::now();
+
+    while (val >= 2 && duration_cast<seconds>(duration<double>(startTime - high_resolution_clock::now())) < 1s)
     {
         result = oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::BNO_STATUS, &val);
 
