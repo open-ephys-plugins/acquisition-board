@@ -82,6 +82,14 @@ public:
         I2C_BUS_READY = 0x1
     };
 
+    enum class MemoryMonitorRegisters : uint32_t
+    {
+        ENABLE = 0,
+        CLK_DIV = 1,
+        CLK_HZ = 2,
+        TOTAL_MEM = 3
+    };
+
     bool isUSB3();
     int open (const oni_driver_info_t** driverInfo = nullptr);
     void initialize();
@@ -114,6 +122,9 @@ public:
 
     bool setSampleRate (AmplifierSampleRate newSampleRate);
     double getSampleRate() const;
+
+    bool setMemoryMonitorSampleRate (int sampleRate);
+    bool getTotalMemory (uint32_t*);
 
     void setDspSettle (bool enabled);
 

@@ -122,6 +122,10 @@ bool AcqBoardONI::detectBoard()
         }
 
         deviceFound = true;
+
+        evalBoard->setMemoryMonitorSampleRate (MEMORY_MONITOR_FS);
+        evalBoard->getTotalMemory (&totalMemory);
+
         return true;
     }
     else
@@ -153,7 +157,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         "Hardware buffer usage on an acquisition board",
         "rhythm-fpga-device.memory",
 
-        100
+        MEMORY_MONITOR_FS
 
     };
 
@@ -165,7 +169,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         "MEM",
         "Hardware buffer usage",
         "rhythm-fpga-device.continuous.mem",
-        0.1f, //some scaling so it does not overflow too easily
+        1.0f, //some scaling so it does not overflow too easily
         stream
     };
     otherChannels.add (new ContinuousChannel (channelSettings));
@@ -734,7 +738,7 @@ void AcqBoardONI::scanPortsInThread()
 
     if (hasI2cSupport)
     {
-        bool enableI2c[4] = { true, true, true, true };
+        bool enableI2c[NUMBER_OF_PORTS] = { true, true, true, true };
 
         evalBoard->enableI2cMode (enableI2c);
         evalBoard->resetBoard();
@@ -1571,9 +1575,8 @@ void AcqBoardONI::run()
             }
             else if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_MEMORY)
             {
-                bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
-                uint32 membytes = (uint32 (*(uint16*) bufferPtr) << 16) + (uint32 (*(uint16*) (bufferPtr + 2)));
-                float memf = membytes * 0.1f;
+                auto data = (uint32_t*) frame->data;
+                float memf = 100.0f * float(*(data + 2)) / totalMemory;
                 uint64 zero = 0;
                 int64 tst = frame->time;
                 double tsd = static_cast<double>(frame->time) / acquisitionClockHz;
@@ -1667,7 +1670,7 @@ void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
     uint64 zero = 0;
     int64 tst = frame->time;
     double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
-    float quatdata[4];
+    float quatdata[4] {};
     for (int i = 0; i < 4; i++)
     {
         quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;

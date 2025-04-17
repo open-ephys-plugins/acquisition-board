@@ -296,6 +296,7 @@ private:
 
     static constexpr int NUMBER_OF_PORTS = 4;
     static constexpr int BNO_CHANNELS = 4;
+    static constexpr int MEMORY_MONITOR_FS = 100;
 
     int regOffset;
     bool varSampleRateCapable = false;
@@ -307,6 +308,7 @@ private:
     bool hasI2cSupport = false;
 
     uint32_t acquisitionClockHz;
+    uint32_t totalMemory;
 
     DataBuffer* memBuffer;
     Array<DataBuffer*, juce::DummyCriticalSection, NUMBER_OF_PORTS> bnoBuffers;
