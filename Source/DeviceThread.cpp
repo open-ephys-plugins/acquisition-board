@@ -38,7 +38,6 @@ DeviceThread::DeviceThread (SourceNode* sn, BoardType boardType_) : DataThread (
     boardType = boardType_;
 
     sourceBuffers.add (new DataBuffer (2, 10000)); // start with 2 channels and automatically resize
-
     acquisitionBoard.reset (detectBoard()); // detect which board is connected
 
     if (acquisitionBoard == nullptr) // no board detected, and not running in simulation mode
@@ -46,12 +45,6 @@ DeviceThread::DeviceThread (SourceNode* sn, BoardType boardType_) : DataThread (
         deviceFound = false;
         return;
     }
-
-    OwnedArray<DataBuffer> otherBuffers;
-    acquisitionBoard->createCustomStreams (otherBuffers);
-    sourceBuffers.addArray (otherBuffers);
-    otherBuffers.clearQuick (false);
-
 
     deviceFound = acquisitionBoard->initializeBoard(); // returns false if initialization fails
 
@@ -81,10 +74,10 @@ AcquisitionBoard* DeviceThread::detectBoard()
 {
     if (forceSimulationMode)
     {
-        return new AcqBoardSim (sourceBuffers.getFirst());
+        return new AcqBoardSim();
     }
 
-    std::unique_ptr<AcqBoardOpalKelly> opalKellyBoard = std::make_unique<AcqBoardOpalKelly> (sourceBuffers.getFirst());
+    std::unique_ptr<AcqBoardOpalKelly> opalKellyBoard = std::make_unique<AcqBoardOpalKelly>();
 
     if (opalKellyBoard->detectBoard())
     {
@@ -95,7 +88,7 @@ AcquisitionBoard* DeviceThread::detectBoard()
         opalKellyBoard.reset();
     }
 
-    std::unique_ptr<AcqBoardONI> oniBoard = std::make_unique<AcqBoardONI> (sourceBuffers.getFirst());
+    std::unique_ptr<AcqBoardONI> oniBoard = std::make_unique<AcqBoardONI>();
 
     if (oniBoard->detectBoard())
     {
@@ -116,7 +109,7 @@ AcquisitionBoard* DeviceThread::detectBoard()
 
     if (response)
     {
-        return new AcqBoardSim (sourceBuffers.getFirst());
+        return new AcqBoardSim();
     }
 
     // if we reach this point, we have no device connected
@@ -159,102 +152,107 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
     sourceStreams->clear();
     devices->clear();
     configurationObjects->clear();
-    sourceBuffers.removeLast (sourceBuffers.size() - 1);
+    sourceBuffers.clear();
 
-    DataStream::Settings dataStreamSettings {
-        "acquisition_board",
-        "Continuous and event data from an Open Ephys Acquisition Board",
-        "acq-board.data",
-
-        static_cast<float> (acquisitionBoard->getSampleRate())
-
-    };
-
-    DataStream* stream = new DataStream (dataStreamSettings);
-
-    sourceStreams->add (stream);
-
-    for (auto headstage : acquisitionBoard->getHeadstages())
+    if (acquisitionBoard->getNumChannels() > 0)
     {
-        for (int ch = 0; ch < headstage->getNumActiveChannels(); ch++)
-        {
-            ContinuousChannel::Settings channelSettings {
-                ContinuousChannel::ELECTRODE,
-                headstage->getChannelName (ch),
-                "Headstage channel from an Open Ephys Acquisition Board",
-                "acq-board.continuous.headstage",
+        sourceBuffers.add (acquisitionBoard->getBuffer());
 
-                acquisitionBoard->getBitVolts (ContinuousChannel::Type::ELECTRODE),
+        DataStream::Settings dataStreamSettings {
+            "acquisition_board",
+            "Continuous and event data from an Open Ephys Acquisition Board",
+            "acq-board.data",
 
-                stream
-            };
+            static_cast<float> (acquisitionBoard->getSampleRate())
 
-            continuousChannels->add (new ContinuousChannel (channelSettings));
-            continuousChannels->getLast()->setUnits ("uV");
+        };
 
-            if (headstage->hasValidImpedance (ch))
-            {
-                continuousChannels->getLast()->impedance.magnitude = headstage->getImpedanceMagnitude (ch);
-                continuousChannels->getLast()->impedance.phase = headstage->getImpedancePhase (ch);
-            }
-        }
-    }
+        DataStream* stream = new DataStream (dataStreamSettings);
 
-    if (acquisitionBoard->areAuxChannelsEnabled())
-    {
+        sourceStreams->add (stream);
+
         for (auto headstage : acquisitionBoard->getHeadstages())
         {
-            for (int ch = 0; ch < 3; ch++)
+            for (int ch = 0; ch < headstage->getNumActiveChannels(); ch++)
             {
                 ContinuousChannel::Settings channelSettings {
-                    ContinuousChannel::AUX,
-                    headstage->getStreamPrefix() + "_AUX" + String (ch + 1),
-                    "Aux input channel from an Open Ephys Acquisition Board",
-                    "acq-board.continuous.aux",
+                    ContinuousChannel::ELECTRODE,
+                    headstage->getChannelName (ch),
+                    "Headstage channel from an Open Ephys Acquisition Board",
+                    "acq-board.continuous.headstage",
 
-                    acquisitionBoard->getBitVolts (ContinuousChannel::Type::AUX),
+                    acquisitionBoard->getBitVolts (ContinuousChannel::Type::ELECTRODE),
 
                     stream
                 };
 
                 continuousChannels->add (new ContinuousChannel (channelSettings));
-                continuousChannels->getLast()->setUnits ("mV");
+                continuousChannels->getLast()->setUnits ("uV");
+
+                if (headstage->hasValidImpedance (ch))
+                {
+                    continuousChannels->getLast()->impedance.magnitude = headstage->getImpedanceMagnitude (ch);
+                    continuousChannels->getLast()->impedance.phase = headstage->getImpedancePhase (ch);
+                }
             }
         }
-    }
 
-    if (acquisitionBoard->areAdcChannelsEnabled())
-    {
-        for (int ch = 0; ch < 8; ch++)
+        if (acquisitionBoard->areAuxChannelsEnabled())
         {
-            String name = "ADC" + String (ch + 1);
+            for (auto headstage : acquisitionBoard->getHeadstages())
+            {
+                for (int ch = 0; ch < 3; ch++)
+                {
+                    ContinuousChannel::Settings channelSettings {
+                        ContinuousChannel::AUX,
+                        headstage->getStreamPrefix() + "_AUX" + String (ch + 1),
+                        "Aux input channel from an Open Ephys Acquisition Board",
+                        "acq-board.continuous.aux",
 
-            ContinuousChannel::Settings channelSettings {
-                ContinuousChannel::ADC,
-                name,
-                "ADC input channel from an Open Ephys Acquisition Board",
-                "acq-board.continuous.adc",
+                        acquisitionBoard->getBitVolts (ContinuousChannel::Type::AUX),
 
-                acquisitionBoard->getBitVolts (ContinuousChannel::Type::ADC),
+                        stream
+                    };
 
-                stream
-            };
-
-            continuousChannels->add (new ContinuousChannel (channelSettings));
-            continuousChannels->getLast()->setUnits ("V");
+                    continuousChannels->add (new ContinuousChannel (channelSettings));
+                    continuousChannels->getLast()->setUnits ("mV");
+                }
+            }
         }
+
+        if (acquisitionBoard->areAdcChannelsEnabled())
+        {
+            for (int ch = 0; ch < 8; ch++)
+            {
+                String name = "ADC" + String (ch + 1);
+
+                ContinuousChannel::Settings channelSettings {
+                    ContinuousChannel::ADC,
+                    name,
+                    "ADC input channel from an Open Ephys Acquisition Board",
+                    "acq-board.continuous.adc",
+
+                    acquisitionBoard->getBitVolts (ContinuousChannel::Type::ADC),
+
+                    stream
+                };
+
+                continuousChannels->add (new ContinuousChannel (channelSettings));
+                continuousChannels->getLast()->setUnits ("V");
+            }
+        }
+
+        EventChannel::Settings settings {
+            EventChannel::Type::TTL,
+            "Acquisition Board TTL Input",
+            "Events on digital input lines of an Open Ephys Acquisition Board",
+            "acq-board.events",
+            stream,
+            8
+        };
+
+        eventChannels->add (new EventChannel (settings));
     }
-
-    EventChannel::Settings settings {
-        EventChannel::Type::TTL,
-        "Acquisition Boatrd TTL Input",
-        "Events on digital input lines of an Open Ephys Acquisition Board",
-        "acq-board.events",
-        stream,
-        8
-    };
-
-    eventChannels->add (new EventChannel (settings));
 
     OwnedArray<DataStream> otherStreams;
     OwnedArray<ContinuousChannel> otherChannels;

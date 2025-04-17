@@ -42,7 +42,7 @@ class AcqBoardSim : public AcquisitionBoard
 {
 public:
     /** Constructor */
-    AcqBoardSim (DataBuffer* buffer_);
+    AcqBoardSim ();
 
     /** Destructor */
     virtual ~AcqBoardSim();

@@ -26,8 +26,8 @@
 
 const double quat_scale = (1.0f / (1 << 14));
 
-AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
-                                                 chipRegisters (30000.0f)
+AcqBoardONI::AcqBoardONI() : AcquisitionBoard(),
+                             chipRegisters (30000.0f)
 {
     impedanceMeter = std::make_unique<ImpedanceMeterONI> (this);
 
@@ -944,23 +944,25 @@ void AcqBoardONI::scanPortsInThread()
         {
             chipId.set (chipIdx++, tmpChipId[hs]);
 
+            bool bno = hasBNO[hs / 2];
+
             LOGD ("Enabling headstage ", hs);
 
             if (tmpChipId[hs] == CHIP_ID_RHD2164) //RHD2164
             {
                 if (enabledStreams.size() < MAX_NUM_DATA_STREAMS - 1)
                 {
-                    enableHeadstage (hs, true, 2, 32);
+                    enableHeadstage (hs, true, 2, 32, bno);
                     chipId.set (chipIdx++, CHIP_ID_RHD2164_B);
                 }
                 else //just one stream left
                 {
-                    enableHeadstage (hs, true, 1, 32);
+                    enableHeadstage (hs, true, 1, 32, bno);
                 }
             }
             else
             {
-                enableHeadstage (hs, true, 1, tmpChipId[hs] == 1 ? 32 : 16);
+                enableHeadstage (hs, true, 1, tmpChipId[hs] == 1 ? 32 : 16, bno);
             }
         }
         else if (hs % 2 == 0 && hasBNO[hs / 2])
@@ -1048,11 +1050,15 @@ bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strCha
     {
         headstages[hsNum]->setFirstChannel (getNumDataOutputs (ContinuousChannel::ELECTRODE));
         headstages[hsNum]->setNumStreams (nStr);
-        headstages[hsNum]->setHasBno (hasBNO);
         headstages[hsNum]->setChannelsPerStream (strChans);
-        headstages[hsNum]->setFirstStreamIndex (enabledStreams.size());
-        enabledStreams.add (headstages[hsNum]->getDataStream (0));
-        numChannelsPerDataStream.add (strChans);
+        headstages[hsNum]->setHasBno (hasBNO);
+
+        if (nStr > 0)
+        {
+            headstages[hsNum]->setFirstStreamIndex (enabledStreams.size());
+            enabledStreams.add (headstages[hsNum]->getDataStream (0));
+            numChannelsPerDataStream.add (strChans);
+        }
 
         if (nStr > 1)
         {
@@ -1081,9 +1087,8 @@ bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strCha
         }
 
         headstages[hsNum]->setNumStreams (0);
+        headstages[hsNum]->setHasBno (hasBNO);
     }
-
-    buffer->resize (getNumChannels(), 10000);
 
     return true;
 }
@@ -1202,7 +1207,6 @@ ChannelNamingScheme AcqBoardONI::getNamingScheme()
 void AcqBoardONI::enableAuxChannels (bool enabled)
 {
     settings.acquireAux = enabled;
-    buffer->resize (getNumChannels(), 10000);
     updateRegisters();
 }
 
@@ -1214,7 +1218,6 @@ bool AcqBoardONI::areAuxChannelsEnabled() const
 void AcqBoardONI::enableAdcChannels (bool enabled)
 {
     settings.acquireAdc = enabled;
-    buffer->resize (getNumChannels(), 10000);
 }
 
 bool AcqBoardONI::areAdcChannelsEnabled() const
@@ -1373,7 +1376,7 @@ void AcqBoardONI::connectHeadstageChannelToDAC (int headstageChannelIndex, int d
 
 bool AcqBoardONI::isReady()
 {
-    if (! deviceFound || (getNumChannels() == 0))
+    if (! deviceFound || (getNumChannels() == 0 && getNumBnos() == 0))
         return false;
 
     if (! checkBoardMem())
@@ -1443,7 +1446,17 @@ bool AcqBoardONI::stopAcquisition()
         evalBoard->resetBoard();
     }
 
-    buffer->clear();
+    if (buffer != nullptr)
+        buffer->clear();
+
+    if (memBuffer != nullptr)
+        memBuffer->clear();
+
+    for (const auto& bnoBuffer : bnoBuffers)
+    {
+        if (bnoBuffer != nullptr)
+            bnoBuffer->clear();
+    }
 
     isTransmitting = false;
     updateSettingsDuringAcquisition = false;
@@ -1466,6 +1479,7 @@ void AcqBoardONI::run()
         oni_frame_t* frame;
         unsigned char* bufferPtr;
         int numStreams = enabledStreams.size();
+        int numChannels = getNumChannels();
         double ts;
 
         //evalBoard->printFIFOmetrics();
@@ -1482,6 +1496,12 @@ void AcqBoardONI::run()
             }
             if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_RHYTHM)
             {
+                if (numChannels == 0)
+                {
+                    oni_destroy_frame (frame);
+                    continue;
+                }
+
                 int channel = -1;
 
                 bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
@@ -1576,10 +1596,10 @@ void AcqBoardONI::run()
             else if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_MEMORY)
             {
                 auto data = (uint32_t*) frame->data;
-                float memf = 100.0f * float(*(data + 2)) / totalMemory;
+                float memf = 100.0f * float (*(data + 2)) / totalMemory;
                 uint64 zero = 0;
                 int64 tst = frame->time;
-                double tsd = static_cast<double>(frame->time) / acquisitionClockHz;
+                double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
                 memBuffer->addToBuffer (
                     &memf,
                     &tst,
@@ -1713,6 +1733,19 @@ int AcqBoardONI::getChannelsInHeadstage (int hsNum) const
     return headstages[hsNum]->getNumChannels();
 }
 
+int AcqBoardONI::getNumBnos() const
+{
+    int count = 0;
+
+    for (int i = 0; i < NUMBER_OF_PORTS; i++)
+    {
+        if (hasBNO[i])
+            count++;
+    }
+
+    return count;
+}
+
 int AcqBoardONI::getNumDataOutputs (ContinuousChannel::Type type)
 {
     if (type == ContinuousChannel::ELECTRODE)
@@ -1729,12 +1762,12 @@ int AcqBoardONI::getNumDataOutputs (ContinuousChannel::Type type)
 
         return totalChannels;
     }
-    if (type == ContinuousChannel::AUX)
+    else if (type == ContinuousChannel::AUX)
     {
+        int numAuxOutputs = 0;
+
         if (settings.acquireAux)
         {
-            int numAuxOutputs = 0;
-
             for (auto headstage : headstages)
             {
                 if (headstage->isConnected())
@@ -1742,14 +1775,11 @@ int AcqBoardONI::getNumDataOutputs (ContinuousChannel::Type type)
                     numAuxOutputs += 3;
                 }
             }
-            return numAuxOutputs;
         }
-        else
-        {
-            return 0;
-        }
+
+        return numAuxOutputs;
     }
-    if (type == ContinuousChannel::ADC)
+    else if (type == ContinuousChannel::ADC)
     {
         if (settings.acquireAdc)
         {

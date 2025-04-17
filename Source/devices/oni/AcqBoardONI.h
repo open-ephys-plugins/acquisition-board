@@ -76,7 +76,7 @@ class AcqBoardONI : public AcquisitionBoard
 
 public:
     /** Constructor */
-    AcqBoardONI (DataBuffer* buffer_);
+    AcqBoardONI();
 
     /** Destructor */
     virtual ~AcqBoardONI();
@@ -196,6 +196,9 @@ public:
 
     /** Returns the total number of channels in a headstage */
     int getChannelsInHeadstage (int hsNum) const;
+
+    /** Returns the number of BNO devices attached */
+    int getNumBnos() const;
 
     /** Returns total number of outputs per channel type */
     int getNumDataOutputs (ContinuousChannel::Type);

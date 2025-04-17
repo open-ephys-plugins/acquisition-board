@@ -56,7 +56,7 @@ class AcqBoardOpalKelly : public AcquisitionBoard
     
 public:
     /** Constructor */
-    AcqBoardOpalKelly (DataBuffer* buffer_);
+    AcqBoardOpalKelly();
 
     /** Destructor */
     virtual ~AcqBoardOpalKelly();

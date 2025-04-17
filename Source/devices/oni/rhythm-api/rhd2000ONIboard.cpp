@@ -1315,7 +1315,7 @@ bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
     int result;
 
-    while (val == 2)
+    while (val >= 2)
     {
         result = oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::BNO_STATUS, &val);
 
@@ -1333,7 +1333,7 @@ void Rhd2000ONIBoard::enableBnoStream (const uint32_t port, bool enabled)
 
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
 
-    oni_write_reg (ctx, device, 0, static_cast<int> (enabled));
+    int rc = oni_write_reg (ctx, device, (oni_reg_addr_t)BnoRegisters::ENABLE_BNO, static_cast<int> (enabled));
 }
 
 bool Rhd2000ONIBoard::isBnoEnabled (const uint32_t port)
@@ -1344,7 +1344,7 @@ bool Rhd2000ONIBoard::isBnoEnabled (const uint32_t port)
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
     oni_reg_val_t val;
     
-    if (oni_read_reg (ctx, device, 0, &val) != ONI_ESUCCESS)
+    if (oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::ENABLE_BNO, &val) != ONI_ESUCCESS)
         return false;
     
     return static_cast<bool> (val);
