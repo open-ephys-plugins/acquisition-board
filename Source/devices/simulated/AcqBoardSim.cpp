@@ -26,6 +26,8 @@ const int MAX_NUM_HEADSTAGES = 8;
 
 AcqBoardSim::AcqBoardSim () : AcquisitionBoard ()
 {
+    boardType = BoardType::Simulated;
+
     impedanceMeter = std::make_unique<ImpedanceMeterSim> ();
 
     for (int i = 0; i < MAX_NUM_HEADSTAGES; i++)

@@ -390,18 +390,33 @@ bool Rhd2000ONIBoard::setMemoryMonitorSampleRate (int sampleRate)
     oni_reg_val_t clkHz;
     int rc = oni_read_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::CLK_HZ, &clkHz);
     if (rc != ONI_ESUCCESS)
+    {
+        std::cout << oni_error_str (rc) << "\n";
         return false;
+    }
 
     rc = oni_write_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::CLK_DIV, clkHz / sampleRate);
 
-    return rc == ONI_ESUCCESS;
+    if (rc != ONI_ESUCCESS)
+    {
+        std::cout << oni_error_str (rc) << "\n";
+        return false;
+    }
+
+    return true;
 }
 
 bool Rhd2000ONIBoard::getTotalMemory(uint32_t* memory)
 {
     int rc = oni_read_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::TOTAL_MEM, memory);
 
-    return rc == ONI_ESUCCESS;
+    if (rc != ONI_ESUCCESS)
+    {
+        std::cout << oni_error_str (rc) << "\n";
+        return false;
+    }
+
+    return true;
 }
 
 // Print a command list to the console in readable form.

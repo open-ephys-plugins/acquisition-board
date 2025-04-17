@@ -208,6 +208,16 @@ public:
         return buffer;
     }
 
+    enum class BoardType
+    {
+        None = 0,
+        Simulated = 1,
+        OpalKelly = 2,
+        ONI = 3
+    };
+
+    BoardType getBoardType() const { return boardType; }
+
 protected:
     /** Timer for triggering digital outputs */
     class DigitalOutputTimer : public Timer
@@ -340,6 +350,8 @@ protected:
 
     /** True if change in settings is needed during acquisition*/
     bool updateSettingsDuringAcquisition = false;
+
+    BoardType boardType = BoardType::None;
 };
 
 #endif

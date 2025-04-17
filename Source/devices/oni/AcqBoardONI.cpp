@@ -29,6 +29,8 @@ const double quat_scale = (1.0f / (1 << 14));
 AcqBoardONI::AcqBoardONI() : AcquisitionBoard(),
                              chipRegisters (30000.0f)
 {
+    boardType = BoardType::ONI;
+
     impedanceMeter = std::make_unique<ImpedanceMeterONI> (this);
 
     evalBoard = std::make_unique<Rhd2000ONIBoard>();
@@ -1622,6 +1624,8 @@ void AcqBoardONI::run()
                     &tsd,
                     &zero,
                     1);
+
+                editor->setPercentMemoryUsed (memf);
             }
             else if (hasBNO[0] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_A)
             {
