@@ -165,6 +165,7 @@ public:
     void getONIDriverInfo (const oni_driver_info_t** driverInfo);
     bool getFTDriverInfo (int* major, int* minor, int* patch);
     bool getFTLibInfo (int* major, int* minor, int* patch);
+    bool getDeviceId (oni_reg_val_t* id);
 
     bool getAcquisitionClockHz (uint32_t*) const;
 
@@ -275,4 +276,6 @@ private:
     int numDataStreams; // total number of data streams currently enabled
     int dataStreamEnabled[MAX_NUM_DATA_STREAMS_USB3]; // 0 (disabled) or 1 (enabled), set for maximum stream number
     std::vector<int> cableDelay;
+
+    static constexpr double bitVal16 = double (1 / double (1 << 16));
 };

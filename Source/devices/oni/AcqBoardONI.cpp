@@ -120,6 +120,12 @@ bool AcqBoardONI::detectBoard()
             LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
             hasI2cSupport = major >= 1 && minor >= 5;
         }
+        oni_reg_val_t tmpId;
+        if (evalBoard->getDeviceId(&tmpId))
+        {
+            deviceId = tmpId;
+            LOGC ("Acquisition board ID = ", deviceId);
+        }
 
         deviceFound = true;
 
@@ -1128,7 +1134,10 @@ float AcqBoardONI::getBitVolts (ContinuousChannel::Type channelType) const
         case ContinuousChannel::AUX:
             return 0.0000374;
         case ContinuousChannel::ADC:
-            return 0.00015258789;
+            if (deviceId == DEVICE_ID_V3)
+                return v3AdcBitVal;
+            else
+                return 0.00015258789;
     }
 }
 
@@ -1568,12 +1577,19 @@ void AcqBoardONI::run()
                 // copy the 8 ADC channels
                 if (settings.acquireAdc)
                 {
+                    bool isV3 = deviceId == DEVICE_ID_V3;
+
                     for (int adcChan = 0; adcChan < 8; ++adcChan)
                     {
                         channel++;
                         // ADC waveform units = volts
 
-                        thisSample[channel] = getBitVolts (ContinuousChannel::ADC) * float (*(uint16*) (bufferPtr + index)) - 5 - 0.4096;
+                        auto adcValue = float (*(uint16*) (bufferPtr + index));
+
+                        if (isV3)
+                            thisSample[channel] = -(getBitVolts (ContinuousChannel::ADC) * adcValue - 5);
+                        else
+                            thisSample[channel] = getBitVolts (ContinuousChannel::ADC) * adcValue - 5 - 0.4096;
 
                         index += 2; // single chan width (2 bytes)
                     }
