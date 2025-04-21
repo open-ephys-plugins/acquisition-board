@@ -76,7 +76,7 @@ class AcqBoardONI : public AcquisitionBoard
 
 public:
     /** Constructor */
-    AcqBoardONI (DataBuffer* buffer_);
+    AcqBoardONI();
 
     /** Destructor */
     virtual ~AcqBoardONI();
@@ -141,6 +141,8 @@ public:
     /** Gets the method for determining channel names*/
     ChannelNamingScheme getNamingScheme();
 
+    bool isReady() override;
+
     /** Initializes data transfer*/
     bool startAcquisition();
 
@@ -195,6 +197,9 @@ public:
     /** Returns the total number of channels in a headstage */
     int getChannelsInHeadstage (int hsNum) const;
 
+    /** Returns the number of BNO devices attached */
+    int getNumBnos() const;
+
     /** Returns total number of outputs per channel type */
     int getNumDataOutputs (ContinuousChannel::Type);
 
@@ -227,7 +232,7 @@ private:
     void setCableLength (int hsNum, float length);
 
     /** Enables or disables a given headstage */
-    bool enableHeadstage (int hsNum, bool enabled, int nStr = 1, int strChans = 32);
+    bool enableHeadstage (int hsNum, bool enabled, int nStr = 1, int strChans = 32, bool hasBno = false);
 
     /**Returns the global channel index for a local headstage channel */
     int getChannelFromHeadstage (int headstageIndex, int channelIndex);
@@ -292,19 +297,24 @@ private:
     /** Re-check cable delays after changing sample rate*/
     bool checkCableDelays = false;
 
-    static const int numberOfPorts = 4;
+    static constexpr int NUMBER_OF_PORTS = 4;
+    static constexpr int BNO_CHANNELS = 4;
+    static constexpr int MEMORY_MONITOR_FS = 100;
 
     int regOffset;
     bool varSampleRateCapable = false;
     bool commonCommandsSet = false;
     bool initialScan = true;
-    bool hasBNO[numberOfPorts]; // Tracks if there is a BNO on any of the available ports
-    bool hasI2c[numberOfPorts]; // Tracks if there is an I2C-capable device on any of the available ports
-    uint32_t headstageId[numberOfPorts];
+    bool hasBNO[NUMBER_OF_PORTS]; // Tracks if there is a BNO on any of the available ports
+    bool hasI2c[NUMBER_OF_PORTS]; // Tracks if there is an I2C-capable device on any of the available ports
+    uint32_t headstageId[NUMBER_OF_PORTS];
     bool hasI2cSupport = false;
 
+    uint32_t acquisitionClockHz;
+    uint32_t totalMemory;
+
     DataBuffer* memBuffer;
-    Array<DataBuffer*, juce::DummyCriticalSection, numberOfPorts> bnoBuffers;
+    Array<DataBuffer*, juce::DummyCriticalSection, NUMBER_OF_PORTS> bnoBuffers;
 };
 
 #endif

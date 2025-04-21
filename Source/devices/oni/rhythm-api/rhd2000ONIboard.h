@@ -4,6 +4,9 @@
 #include <oni.h>
 #include <queue>
 #include <vector>
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 #define MAX_NUM_DATA_STREAMS_USB3 16
 
@@ -78,8 +81,16 @@ public:
 
     enum class I2cRawRegisters : oni_reg_addr_t
     {
-        ENABLE = 0x0,
-        I2C_BUS_READY = 0x1
+        ENABLE = 0x0 + (1 << 15),
+        I2C_BUS_READY = 0x1 + (1 << 15)
+    };
+
+    enum class MemoryMonitorRegisters : uint32_t
+    {
+        ENABLE = 0,
+        CLK_DIV = 1,
+        CLK_HZ = 2,
+        TOTAL_MEM = 3
     };
 
     bool isUSB3();
@@ -114,6 +125,9 @@ public:
 
     bool setSampleRate (AmplifierSampleRate newSampleRate);
     double getSampleRate() const;
+
+    bool setMemoryMonitorSampleRate (int sampleRate);
+    bool getTotalMemory (uint32_t*);
 
     void setDspSettle (bool enabled);
 
@@ -151,6 +165,8 @@ public:
     void getONIDriverInfo (const oni_driver_info_t** driverInfo);
     bool getFTDriverInfo (int* major, int* minor, int* patch);
     bool getFTLibInfo (int* major, int* minor, int* patch);
+
+    bool getAcquisitionClockHz (uint32_t*) const;
 
     bool enableI2cMode (bool[4]);
     bool isI2cCapable (const uint32_t);

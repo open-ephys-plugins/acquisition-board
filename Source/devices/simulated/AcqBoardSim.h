@@ -42,7 +42,7 @@ class AcqBoardSim : public AcquisitionBoard
 {
 public:
     /** Constructor */
-    AcqBoardSim (DataBuffer* buffer_);
+    AcqBoardSim ();
 
     /** Destructor */
     virtual ~AcqBoardSim();
@@ -100,6 +100,8 @@ public:
 
     /** Gets the method for determining channel names*/
     ChannelNamingScheme getNamingScheme();
+
+    bool isReady() override;
 
     /** Initializes data transfer*/
     bool startAcquisition();

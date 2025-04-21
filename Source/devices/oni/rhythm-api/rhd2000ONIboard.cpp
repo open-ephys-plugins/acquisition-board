@@ -91,6 +91,20 @@ bool Rhd2000ONIBoard::getFTLibInfo (int* major, int* minor, int* patch)
         return false;
 }
 
+bool Rhd2000ONIBoard::getAcquisitionClockHz (uint32_t* acqClkHz) const
+{
+    uint32_t val;
+    size_t size = sizeof (val);
+
+    if (oni_get_opt (ctx, ONI_OPT_ACQCLKHZ, &val, &size) == ONI_ESUCCESS)
+    {
+        *acqClkHz = val;
+        return true;
+    }
+
+    return false;
+}
+
 void Rhd2000ONIBoard::initialize()
 {
     int i;
@@ -369,6 +383,25 @@ double Rhd2000ONIBoard::getSampleRate() const
         default:
             return -1.0;
     }
+}
+
+bool Rhd2000ONIBoard::setMemoryMonitorSampleRate (int sampleRate)
+{
+    oni_reg_val_t clkHz;
+    int rc = oni_read_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::CLK_HZ, &clkHz);
+    if (rc != ONI_ESUCCESS)
+        return false;
+
+    rc = oni_write_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::CLK_DIV, clkHz / sampleRate);
+
+    return rc == ONI_ESUCCESS;
+}
+
+bool Rhd2000ONIBoard::getTotalMemory(uint32_t* memory)
+{
+    int rc = oni_read_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::TOTAL_MEM, memory);
+
+    return rc == ONI_ESUCCESS;
 }
 
 // Print a command list to the console in readable form.
@@ -1190,13 +1223,12 @@ bool Rhd2000ONIBoard::enableI2cMode (bool enablePort[4])
     return true;
 }
 
-bool Rhd2000ONIBoard::isI2cCapable(const uint32_t port)
+bool Rhd2000ONIBoard::isI2cCapable (const uint32_t port)
 {
     if (! ctx || port > 3)
         return false;
 
     oni_reg_val_t val;
-
     oni_dev_idx_t device = DEVICE_I2C_RAW_A + port * 2;
 
     int result = oni_read_reg(ctx, device, (oni_reg_addr_t)I2cRawRegisters::I2C_BUS_READY, &val);
@@ -1210,7 +1242,7 @@ bool Rhd2000ONIBoard::isI2cCapable(const uint32_t port)
 int Rhd2000ONIBoard::readByte (oni_dev_idx_t device, uint32_t i2cDevAddress, oni_reg_addr_t i2cRegAddress, oni_reg_val_t* value, bool sixteenBitAddress)
 {
     if (! ctx)
-        return 0;
+        return 1;
 
     uint32_t registerAddress = (i2cRegAddress << 7) | (i2cDevAddress & 0x7F);
     registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
@@ -1279,13 +1311,16 @@ bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
     if (! ctx || port > 3)
         return false;
 
-    oni_reg_val_t val = 2; // Value == 2 means there is a BNO scan in progress
+    oni_reg_val_t val = 2; // Value >= 2 means there is a BNO scan in progress
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
     int result;
 
-    while (val == 2)
+    using namespace std::chrono;
+    auto startTime = high_resolution_clock::now();
+
+    while (val >= 2 && duration_cast<seconds>(duration<double>(startTime - high_resolution_clock::now())) < 1s)
     {
-        result = oni_read_reg (ctx, device, (oni_reg_addr_t)BnoRegisters::BNO_STATUS, &val);
+        result = oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::BNO_STATUS, &val);
 
         if (result != ONI_ESUCCESS)
             return false;
@@ -1294,14 +1329,14 @@ bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
     return val == 1;
 }
 
-void Rhd2000ONIBoard::enableBnoStream(const uint32_t port, bool enabled)
+void Rhd2000ONIBoard::enableBnoStream (const uint32_t port, bool enabled)
 {
     if (! ctx || port > 3)
         return;
 
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
 
-    oni_write_reg (ctx, device, 0, static_cast<int> (enabled));
+    int rc = oni_write_reg (ctx, device, (oni_reg_addr_t)BnoRegisters::ENABLE_BNO, static_cast<int> (enabled));
 }
 
 bool Rhd2000ONIBoard::isBnoEnabled (const uint32_t port)
@@ -1312,18 +1347,18 @@ bool Rhd2000ONIBoard::isBnoEnabled (const uint32_t port)
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
     oni_reg_val_t val;
     
-    if (oni_read_reg (ctx, device, 0, &val) != ONI_ESUCCESS)
+    if (oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::ENABLE_BNO, &val) != ONI_ESUCCESS)
         return false;
     
-    return static_cast<bool>(val);
+    return static_cast<bool> (val);
 }
 
-void Rhd2000ONIBoard::setBnoAxisMap (const uint32_t port, int axisMap)
+void Rhd2000ONIBoard::setBnoAxisMap  (const uint32_t port, int axisMap)
 {
     if (! ctx || port > 3)
         return;
 
     oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
 
-    oni_write_reg (ctx, device, (uint32_t)BnoRegisters::AXIS_MAP, axisMap);
+    oni_write_reg (ctx, device, (uint32_t) BnoRegisters::AXIS_MAP, axisMap);
 }

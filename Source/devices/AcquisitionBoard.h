@@ -25,9 +25,9 @@
 
 #include <DataThreadHeaders.h>
 
+#include "../DeviceEditor.h"
 #include "Headstage.h"
 #include "ImpedanceMeter.h"
-#include "../DeviceEditor.h"
 
 /** Instructions for settings digital output */
 struct DigitalOutputCommand
@@ -48,9 +48,9 @@ class AcquisitionBoard : public Thread
 {
 public:
     /** Constructor */
-    AcquisitionBoard (DataBuffer* buffer_) : Thread ("Acquisition Board"),
-                                             buffer (buffer_)
+    AcquisitionBoard () : Thread ("Acquisition Board")
     {
+        buffer = nullptr;
     }
 
     /** Destructor */
@@ -110,6 +110,8 @@ public:
     /** Gets the method for determining channel names*/
     virtual ChannelNamingScheme getNamingScheme() = 0;
 
+    virtual bool isReady() = 0;
+
     /** Initiates data transfer */
     virtual bool startAcquisition() = 0;
 
@@ -126,7 +128,7 @@ public:
     virtual double setDspCutoffFreq (double freq) = 0;
 
     /** Gets the current DSP cutoff frequency */
-    virtual double getDspCutoffFreq () const = 0;
+    virtual double getDspCutoffFreq() const = 0;
 
     /** Sets whether DSP offset is enabled */
     virtual void setDspOffset (bool enabled) = 0;
@@ -200,8 +202,14 @@ public:
     /** Create stream and channel structures is the acquisition board type has custom streams and updates the buffers */
     virtual void updateCustomStreams (OwnedArray<DataStream>& otherStreams, OwnedArray<ContinuousChannel>& otherChannels) {};
 
+    DataBuffer* getBuffer()
+    {
+        buffer = new DataBuffer (getNumChannels(), 10000);
+        return buffer;
+    }
+
 protected:
-    /** Timer for triggering digtial outputs */
+    /** Timer for triggering digital outputs */
     class DigitalOutputTimer : public Timer
     {
     public:
@@ -218,7 +226,6 @@ protected:
         /** Sends signal to turn off event channel*/
         void timerCallback()
         {
-        
             stopTimer();
 
             board->addDigitalOutputCommand (this, tllOutputLine, false);
@@ -240,8 +247,6 @@ protected:
 
         digitalOutputTimers.removeObject (timerToDelete);
     }
-
-
 
     /** Sample buffer to fill */
     DataBuffer* buffer;
@@ -335,7 +340,6 @@ protected:
 
     /** True if change in settings is needed during acquisition*/
     bool updateSettingsDuringAcquisition = false;
-
 };
 
 #endif

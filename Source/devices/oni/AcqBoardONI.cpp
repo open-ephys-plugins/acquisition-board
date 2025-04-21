@@ -26,8 +26,8 @@
 
 const double quat_scale = (1.0f / (1 << 14));
 
-AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
-                                                 chipRegisters (30000.0f)
+AcqBoardONI::AcqBoardONI() : AcquisitionBoard(),
+                             chipRegisters (30000.0f)
 {
     impedanceMeter = std::make_unique<ImpedanceMeterONI> (this);
 
@@ -53,7 +53,7 @@ AcqBoardONI::AcqBoardONI (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
         dacThresholds.set (k, 0);
     }
 
-    for (int i = 0; i < numberOfPorts; i++)
+    for (int i = 0; i < NUMBER_OF_PORTS; i++)
     {
         hasBNO[i] = false;
         bnoBuffers.add (nullptr);
@@ -117,11 +117,15 @@ bool AcqBoardONI::detectBoard()
         }
         if (evalBoard->getFirmwareVersion (&major, &minor, &patch))
         {
-            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor + "." + patch);
-            hasI2cSupport = major >= 1 && minor > 5;
+            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
+            hasI2cSupport = major >= 1 && minor >= 5;
         }
 
         deviceFound = true;
+
+        evalBoard->setMemoryMonitorSampleRate (MEMORY_MONITOR_FS);
+        evalBoard->getTotalMemory (&totalMemory);
+
         return true;
     }
     else
@@ -134,7 +138,7 @@ void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
 {
     memBuffer = otherBuffers.add (new DataBuffer (1, 10000)); // Memory device
 
-    for (int i = 0; i < numberOfPorts; i++)
+    for (int i = 0; i < NUMBER_OF_PORTS; i++)
     {
         if (hasBNO[i])
             bnoBuffers.set (i, otherBuffers.add (new DataBuffer (4, 10000)));
@@ -153,7 +157,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         "Hardware buffer usage on an acquisition board",
         "rhythm-fpga-device.memory",
 
-        100
+        MEMORY_MONITOR_FS
 
     };
 
@@ -165,7 +169,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         "MEM",
         "Hardware buffer usage",
         "rhythm-fpga-device.continuous.mem",
-        0.1f, //some scaling so it does not overflow too easily
+        1.0f, //some scaling so it does not overflow too easily
         stream
     };
     otherChannels.add (new ContinuousChannel (channelSettings));
@@ -173,7 +177,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
     String port = "ABCD";
 
     //BNO
-    for (int k = 0; k < numberOfPorts; k++)
+    for (int k = 0; k < NUMBER_OF_PORTS; k++)
     {
         if (hasBNO[k])
         {
@@ -271,6 +275,8 @@ bool AcqBoardONI::initializeBoard()
     evalBoard->selectAuxCommandBank (Rhd2000ONIBoard::PortB, Rhd2000ONIBoard::AuxCmd3, settings.fastSettleEnabled ? 2 : 1);
     evalBoard->selectAuxCommandBank (Rhd2000ONIBoard::PortC, Rhd2000ONIBoard::AuxCmd3, settings.fastSettleEnabled ? 2 : 1);
     evalBoard->selectAuxCommandBank (Rhd2000ONIBoard::PortD, Rhd2000ONIBoard::AuxCmd3, settings.fastSettleEnabled ? 2 : 1);
+
+    evalBoard->getAcquisitionClockHz (&acquisitionClockHz);
 
     return true;
 }
@@ -684,6 +690,9 @@ int AcqBoardONI::getIntanChipId (
 {
     bool intanChipPresent;
 
+    if (stream < 0)
+        return 0;
+
     // First, check ROM registers 32-36 to verify that they hold 'INTAN', and
     // the initial chip name ROM registers 24-26 that hold 'RHD'.
     // This is just used to verify that we are getting good data over the SPI
@@ -729,12 +738,12 @@ void AcqBoardONI::scanPortsInThread()
 
     if (hasI2cSupport)
     {
-        bool enableI2c[4] = { true, true, true, true };
+        bool enableI2c[NUMBER_OF_PORTS] = { true, true, true, true };
 
         evalBoard->enableI2cMode (enableI2c);
         evalBoard->resetBoard();
 
-        for (int i = 0; i < numberOfPorts; i += 1)
+        for (int i = 0; i < NUMBER_OF_PORTS; i += 1)
         {
             hasBNO[i] = evalBoard->isBnoConnected (i);
             evalBoard->enableBnoStream (i, hasBNO[i]);
@@ -935,24 +944,30 @@ void AcqBoardONI::scanPortsInThread()
         {
             chipId.set (chipIdx++, tmpChipId[hs]);
 
+            bool bno = hasBNO[hs / 2];
+
             LOGD ("Enabling headstage ", hs);
 
             if (tmpChipId[hs] == CHIP_ID_RHD2164) //RHD2164
             {
                 if (enabledStreams.size() < MAX_NUM_DATA_STREAMS - 1)
                 {
-                    enableHeadstage (hs, true, 2, 32);
+                    enableHeadstage (hs, true, 2, 32, bno);
                     chipId.set (chipIdx++, CHIP_ID_RHD2164_B);
                 }
                 else //just one stream left
                 {
-                    enableHeadstage (hs, true, 1, 32);
+                    enableHeadstage (hs, true, 1, 32, bno);
                 }
             }
             else
             {
-                enableHeadstage (hs, true, 1, tmpChipId[hs] == 1 ? 32 : 16);
+                enableHeadstage (hs, true, 1, tmpChipId[hs] == 1 ? 32 : 16, bno);
             }
+        }
+        else if (hs % 2 == 0 && hasBNO[hs / 2])
+        {
+            enableHeadstage (hs, true, 0, 0, true);
         }
         else
         {
@@ -1026,7 +1041,7 @@ void AcqBoardONI::setCableLength (int hsNum, float length)
     }
 }
 
-bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strChans)
+bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strChans, bool hasBNO)
 {
     LOGD ("Headstage ", hsNum, ", enabled: ", enabled, ", num streams: ", nStr, ", stream channels: ", strChans);
     LOGD ("Max num headstages: ", MAX_NUM_HEADSTAGES);
@@ -1036,9 +1051,14 @@ bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strCha
         headstages[hsNum]->setFirstChannel (getNumDataOutputs (ContinuousChannel::ELECTRODE));
         headstages[hsNum]->setNumStreams (nStr);
         headstages[hsNum]->setChannelsPerStream (strChans);
-        headstages[hsNum]->setFirstStreamIndex (enabledStreams.size());
-        enabledStreams.add (headstages[hsNum]->getDataStream (0));
-        numChannelsPerDataStream.add (strChans);
+        headstages[hsNum]->setHasBno (hasBNO);
+
+        if (nStr > 0)
+        {
+            headstages[hsNum]->setFirstStreamIndex (enabledStreams.size());
+            enabledStreams.add (headstages[hsNum]->getDataStream (0));
+            numChannelsPerDataStream.add (strChans);
+        }
 
         if (nStr > 1)
         {
@@ -1067,9 +1087,8 @@ bool AcqBoardONI::enableHeadstage (int hsNum, bool enabled, int nStr, int strCha
         }
 
         headstages[hsNum]->setNumStreams (0);
+        headstages[hsNum]->setHasBno (hasBNO);
     }
-
-    buffer->resize (getNumChannels(), 10000);
 
     return true;
 }
@@ -1188,7 +1207,6 @@ ChannelNamingScheme AcqBoardONI::getNamingScheme()
 void AcqBoardONI::enableAuxChannels (bool enabled)
 {
     settings.acquireAux = enabled;
-    buffer->resize (getNumChannels(), 10000);
     updateRegisters();
 }
 
@@ -1200,7 +1218,6 @@ bool AcqBoardONI::areAuxChannelsEnabled() const
 void AcqBoardONI::enableAdcChannels (bool enabled)
 {
     settings.acquireAdc = enabled;
-    buffer->resize (getNumChannels(), 10000);
 }
 
 bool AcqBoardONI::areAdcChannelsEnabled() const
@@ -1357,14 +1374,17 @@ void AcqBoardONI::connectHeadstageChannelToDAC (int headstageChannelIndex, int d
     }
 }
 
-bool AcqBoardONI::startAcquisition()
+bool AcqBoardONI::isReady()
 {
-    if (! deviceFound || (getNumChannels() == 0))
+    if (! deviceFound || (getNumChannels() == 0 && getNumBnos() == 0))
         return false;
 
     if (! checkBoardMem())
         return false;
+}
 
+bool AcqBoardONI::startAcquisition()
+{
     impedanceMeter->waitSafely();
     dataBlock.reset (new Rhd2000ONIDataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3()));
 
@@ -1426,7 +1446,17 @@ bool AcqBoardONI::stopAcquisition()
         evalBoard->resetBoard();
     }
 
-    buffer->clear();
+    if (buffer != nullptr)
+        buffer->clear();
+
+    if (memBuffer != nullptr)
+        memBuffer->clear();
+
+    for (const auto& bnoBuffer : bnoBuffers)
+    {
+        if (bnoBuffer != nullptr)
+            bnoBuffer->clear();
+    }
 
     isTransmitting = false;
     updateSettingsDuringAcquisition = false;
@@ -1449,6 +1479,7 @@ void AcqBoardONI::run()
         oni_frame_t* frame;
         unsigned char* bufferPtr;
         int numStreams = enabledStreams.size();
+        int numChannels = getNumChannels();
         double ts;
 
         //evalBoard->printFIFOmetrics();
@@ -1465,6 +1496,12 @@ void AcqBoardONI::run()
             }
             if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_RHYTHM)
             {
+                if (numChannels == 0)
+                {
+                    oni_destroy_frame (frame);
+                    continue;
+                }
+
                 int channel = -1;
 
                 bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
@@ -1558,12 +1595,11 @@ void AcqBoardONI::run()
             }
             else if (frame->dev_idx == Rhd2000ONIBoard::DEVICE_MEMORY)
             {
-                bufferPtr = (unsigned char*) frame->data + 8; //skip ONI timestamps
-                uint32 membytes = (uint32 (*(uint16*) bufferPtr) << 16) + (uint32 (*(uint16*) (bufferPtr + 2)));
-                float memf = membytes * 0.1f;
+                auto data = (uint32_t*) frame->data;
+                float memf = 100.0f * float (*(data + 2)) / totalMemory;
                 uint64 zero = 0;
                 int64 tst = frame->time;
-                double tsd = frame->time / 50e6;
+                double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
                 memBuffer->addToBuffer (
                     &memf,
                     &tst,
@@ -1653,8 +1689,8 @@ void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
     unsigned char* bufferPtr = (unsigned char*) frame->data + 8 + 6;
     uint64 zero = 0;
     int64 tst = frame->time;
-    double tsd = frame->time / 50e6;
-    float quatdata[4];
+    double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
+    float quatdata[4] {};
     for (int i = 0; i < 4; i++)
     {
         quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
@@ -1697,6 +1733,19 @@ int AcqBoardONI::getChannelsInHeadstage (int hsNum) const
     return headstages[hsNum]->getNumChannels();
 }
 
+int AcqBoardONI::getNumBnos() const
+{
+    int count = 0;
+
+    for (int i = 0; i < NUMBER_OF_PORTS; i++)
+    {
+        if (hasBNO[i])
+            count++;
+    }
+
+    return count;
+}
+
 int AcqBoardONI::getNumDataOutputs (ContinuousChannel::Type type)
 {
     if (type == ContinuousChannel::ELECTRODE)
@@ -1713,12 +1762,12 @@ int AcqBoardONI::getNumDataOutputs (ContinuousChannel::Type type)
 
         return totalChannels;
     }
-    if (type == ContinuousChannel::AUX)
+    else if (type == ContinuousChannel::AUX)
     {
+        int numAuxOutputs = 0;
+
         if (settings.acquireAux)
         {
-            int numAuxOutputs = 0;
-
             for (auto headstage : headstages)
             {
                 if (headstage->isConnected())
@@ -1726,14 +1775,11 @@ int AcqBoardONI::getNumDataOutputs (ContinuousChannel::Type type)
                     numAuxOutputs += 3;
                 }
             }
-            return numAuxOutputs;
         }
-        else
-        {
-            return 0;
-        }
+
+        return numAuxOutputs;
     }
-    if (type == ContinuousChannel::ADC)
+    else if (type == ContinuousChannel::ADC)
     {
         if (settings.acquireAdc)
         {
