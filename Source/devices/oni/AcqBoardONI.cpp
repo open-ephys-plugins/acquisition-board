@@ -60,6 +60,8 @@ AcqBoardONI::AcqBoardONI() : AcquisitionBoard(),
         hasBNO[i] = false;
         bnoBuffers.add (nullptr);
     }
+
+    isTransmitting = false;
 }
 
 AcqBoardONI::~AcqBoardONI()
