@@ -297,6 +297,14 @@ private:
     /** Re-check cable delays after changing sample rate*/
     bool checkCableDelays = false;
 
+    /** Hold the current device ID.Used to determine which version of the acquisition board this is */
+    int deviceId = 0;
+
+    static constexpr int DEVICE_ID_V2 = 0x0100;
+    static constexpr int DEVICE_ID_V3 = 0x0102;
+
+    static constexpr double v3AdcBitVal = double ((((1.25 * (1 + 84.5 / 51)) / (1 << 12)) * (10 / (1.25 * (1 + 84.5 / 51)))) / 16);
+
     static constexpr int NUMBER_OF_PORTS = 4;
     static constexpr int BNO_CHANNELS = 4;
     static constexpr int MEMORY_MONITOR_FS = 100;

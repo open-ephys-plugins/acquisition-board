@@ -1165,13 +1165,13 @@ void Rhd2000ONIBoard::setDacManual (int value)
         return;
     }
     value = value & 0xFFFF;
-    oni_size_t values[4];
+    oni_size_t dacValues[4] {};
     for (int i = 0; i < 4; i++)
     {
-        values[i] = value + (value << 16);
+        dacValues[i] = std::min ((value + 5) / (10 * bitVal16), static_cast<double> (std::numeric_limits<uint16_t>::max()));
     }
     oni_frame_t* frame;
-    int res = oni_create_frame (ctx, &frame, DEVICE_DAC, values, 4 * sizeof (oni_size_t));
+    int res = oni_create_frame (ctx, &frame, DEVICE_DAC, dacValues, 4 * sizeof (oni_size_t));
     if (res > ONI_ESUCCESS)
     {
         oni_write_frame (ctx, frame);
@@ -1192,6 +1192,15 @@ bool Rhd2000ONIBoard::getFirmwareVersion (int* major, int* minor, int* patch) co
     *minor = (val >> 8) & 0xFF;
     *major = (val >> 16) & 0xFF;
     return true;
+}
+
+bool Rhd2000ONIBoard::getDeviceId(oni_reg_val_t* id)
+{
+    constexpr int deviceIndex = 254;
+    constexpr int registerAddress = 0;
+    int rc = oni_read_reg (ctx, deviceIndex, registerAddress, id);
+
+    return rc == ONI_ESUCCESS;
 }
 
 Rhd2000ONIBoard::BoardMemState Rhd2000ONIBoard::getBoardMemState() const
