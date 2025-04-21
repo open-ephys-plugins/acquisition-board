@@ -1312,7 +1312,7 @@ uint32_t Rhd2000ONIBoard::getDeviceIdOnEeprom (const uint32_t port)
             return 0;
     }
 
-    const uint32_t deviceIdStartAddress = 7;
+    const uint32_t deviceIdStartAddress = 8;
     uint32_t data = 0;
 
     for (unsigned int i = 0; i < sizeof (uint32_t); i++)

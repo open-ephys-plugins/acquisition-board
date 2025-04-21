@@ -22,6 +22,10 @@
 
 #include "AcqBoardONI.h"
 
+#include <string>
+#include <sstream>
+#include <iostream>
+
 #define INIT_STEP 64
 
 const double quat_scale = (1.0f / (1 << 14));
@@ -125,7 +129,7 @@ bool AcqBoardONI::detectBoard()
             hasI2cSupport = major >= 1 && minor >= 5;
         }
         oni_reg_val_t tmpId;
-        if (evalBoard->getDeviceId(&tmpId))
+        if (evalBoard->getDeviceId (&tmpId))
         {
             deviceId = tmpId;
             LOGC ("Acquisition board ID = ", deviceId);
@@ -763,20 +767,27 @@ void AcqBoardONI::scanPortsInThread()
 
             if (hasBNO[i])
             {
-              if (headstageId[i] == 0) // NB: 1st revision BNO capable LP headstage contains BNO but no EEPROM
-              {
-                evalBoard->setBnoAxisMap (i, 0b00100100);
-              }
-              else
-              {
-                  switch (headstageId[i])
-                  {
-                      // TODO: Add headstages here with the required axis map
-                      default:
-                          evalBoard->setBnoAxisMap (i, 0b00100100);
-                          break;
-                  }
-              }
+                if (headstageId[i] == 0) // NB: 1st revision BNO capable LP headstage contains BNO but no EEPROM
+                {
+                    LOGD ("Found headstage with BNO but no EEPROM. Assuming low-profile 3D headstage.");
+
+                    evalBoard->setBnoAxisMap (i, 0b00100100);
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << "0x" << std::hex << headstageId[i];
+                    std::string idStr (ss.str());
+                    LOGD ("Headstage ID ", idStr.c_str(), " found on port ", String::charToString ('A' + i));
+
+                    switch (headstageId[i])
+                    {
+                        // TODO: Add headstages here with the required axis map
+                        default:
+                            evalBoard->setBnoAxisMap (i, 0b00100100);
+                            break;
+                    }
+                }
             }
 
             enableI2c[i] = hasBNO[i] || (hasI2c[i] && headstageId[i] != 0);
