@@ -117,8 +117,8 @@ bool AcqBoardONI::detectBoard()
         }
         if (evalBoard->getFirmwareVersion (&major, &minor, &patch))
         {
-            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor + "." + patch);
-            hasI2cSupport = major >= 1 && minor > 5;
+            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
+            hasI2cSupport = major >= 1 && minor >= 5;
         }
 
         deviceFound = true;
