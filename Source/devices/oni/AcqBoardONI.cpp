@@ -115,12 +115,10 @@ bool AcqBoardONI::detectBoard()
         {
             LOGC ("FTDI Library version: ", major, ".", minor, ".", patch);
         }
-        if (evalBoard->getFirmwareVersion (&major, &minor))
+        if (evalBoard->getFirmwareVersion (&major, &minor, &patch))
         {
-            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor);
-            //if (major >= 16) //For now we use this, we will use the proper versioning
-            //    hasBNO[0] = true;
-            hasI2cSupport = major >= 2;
+            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor + "." + patch);
+            hasI2cSupport = major >= 1 && minor > 5;
         }
 
         deviceFound = true;
@@ -738,28 +736,31 @@ void AcqBoardONI::scanPortsInThread()
 
         for (int i = 0; i < numberOfPorts; i += 1)
         {
-            hasBNO[i] = evalBoard->isBnoConnected (Rhd2000ONIBoard::DEVICE_BNO_A + i * 2);
-            evalBoard->enableBnoStream (Rhd2000ONIBoard::DEVICE_BNO_A + i * 2, hasBNO[i]);
+            hasBNO[i] = evalBoard->isBnoConnected (i);
+            evalBoard->enableBnoStream (i, hasBNO[i]);
 
-            hasI2c[i] = evalBoard->isI2cCapable (Rhd2000ONIBoard::DEVICE_I2C_RAW_A + i * 2);
-            headstageId[i] = hasI2c[i] ? evalBoard->getDeviceIdOnEeprom (Rhd2000ONIBoard::DEVICE_I2C_RAW_A + i * 2) : 0;
+            hasI2c[i] = evalBoard->isI2cCapable (i);
+            headstageId[i] = hasI2c[i] ? evalBoard->getDeviceIdOnEeprom (i) : 0;
 
-            if (hasBNO[i] && !hasI2c[i]) // NB: 1st revision BNO capable LP headstage contains BNO but no EEPROM
+            if (hasBNO[i])
             {
-                evalBoard->setBnoAxisMap (Rhd2000ONIBoard::DEVICE_BNO_A + i * 2, 0b00100100);
-            }
-            else if (hasI2c[i])
-            {
-                switch (headstageId[i])
-                {
-                    // TODO: Add headstages here with the required axis map
-                    default:
-                        evalBoard->setBnoAxisMap (Rhd2000ONIBoard::DEVICE_BNO_A + i * 2, 0b00100100);
-                        break;
-                }
+              if (headstageId[i] == 0) // NB: 1st revision BNO capable LP headstage contains BNO but no EEPROM
+              {
+                evalBoard->setBnoAxisMap (i, 0b00100100);
+              }
+              else
+              {
+                  switch (headstageId[i])
+                  {
+                      // TODO: Add headstages here with the required axis map
+                      default:
+                          evalBoard->setBnoAxisMap (i, 0b00100100);
+                          break;
+                  }
+              }
             }
 
-            enableI2c[i] = hasBNO[i] || hasI2c[i];
+            enableI2c[i] = hasBNO[i] || (hasI2c[i] && headstageId[i] != 0);
         }
 
         evalBoard->enableI2cMode (enableI2c);
