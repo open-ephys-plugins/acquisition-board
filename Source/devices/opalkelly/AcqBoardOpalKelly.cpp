@@ -38,6 +38,8 @@
 AcqBoardOpalKelly::AcqBoardOpalKelly() : AcquisitionBoard(),
                                          chipRegisters (30000.0f)
 {
+    boardType = BoardType::OpalKelly;
+
     impedanceMeter = std::make_unique<ImpedanceMeterOpalKelly> (this);
 
     evalBoard = std::make_unique<Rhd2000EvalBoard>();
