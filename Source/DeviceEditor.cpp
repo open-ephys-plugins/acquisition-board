@@ -861,8 +861,8 @@ void HeadstageOptionsInterface::checkEnabledState()
     if (board->isHeadstageEnabled (hsNumber2))
     {
         channelsOnHs2 = board->getActiveChannelsInHeadstage (hsNumber2);
-        String label = channelsOnHs1 == 0 ? "IMU" : String (channelsOnHs1); // NB: No active channels indicates a BNO is connected instead
-        hsButton1->setLabel (label);
+        String label = channelsOnHs2 == 0 ? "IMU" : String (channelsOnHs2); // NB: No active channels indicates a BNO is connected instead
+        hsButton2->setLabel (label);
         hsButton2->setEnabledState (true);
         hsButton2->setToggleState (true, false);
     }

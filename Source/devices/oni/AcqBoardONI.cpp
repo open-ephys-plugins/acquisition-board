@@ -1005,7 +1005,7 @@ void AcqBoardONI::scanPortsInThread()
                 enableHeadstage (hs, true, 1, tmpChipId[hs] == 1 ? 32 : 16, bno);
             }
         }
-        else if (hs % 2 == 0 && hasBNO[hs / 2])
+        else if (hs % 2 == 1 && hasBNO[hs / 2])
         {
             enableHeadstage (hs, true, 0, 0, true);
         }
