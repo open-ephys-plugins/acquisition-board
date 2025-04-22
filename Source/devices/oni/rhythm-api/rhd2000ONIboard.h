@@ -159,7 +159,7 @@ public:
     void setDacManual (int value);
     void setDacGain (int gain);
 
-    bool getFirmwareVersion (int* major, int* minor, int* patch) const;
+    bool getFirmwareVersion (int* major, int* minor, int* patch, int* rc=nullptr) const;
 
     void getONIVersion (int* major, int* minor, int* patch);
     void getONIDriverInfo (const oni_driver_info_t** driverInfo);

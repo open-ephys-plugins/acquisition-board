@@ -111,7 +111,7 @@ bool AcqBoardONI::detectBoard()
 
     if (return_code == 1) // successfully opened board
     {
-        int major, minor, patch;
+        int major, minor, patch, rc;
         evalBoard->getONIVersion (&major, &minor, &patch);
         LOGC ("ONI Library version: ", major, ".", minor, ".", patch);
         LOGC ("ONI Driver: ", driverInfo->name, " Version: ", driverInfo->major, ".", driverInfo->minor, ".", driverInfo->patch, (driverInfo->pre_release ? "-" : ""), (driverInfo->pre_release ? driverInfo->pre_release : ""));
@@ -123,9 +123,28 @@ bool AcqBoardONI::detectBoard()
         {
             LOGC ("FTDI Library version: ", major, ".", minor, ".", patch);
         }
-        if (evalBoard->getFirmwareVersion (&major, &minor, &patch))
+        if (evalBoard->getFirmwareVersion (&major, &minor, &patch, &rc))
         {
-            LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
+            if (rc != 0)
+            {
+                const char* tag;
+                switch (rc & 0xC0)
+                {
+                    case 0x80:
+                        tag = "-rc";
+                        break;
+                    case 0xC0:
+                        tag = "-experimental";
+                        break;
+                    default:
+                        tag = "-beta";
+                }
+                LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch, tag, int (rc & 0x3F));
+            }
+            else
+            {
+                LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
+            }
             hasI2cSupport = major >= 1 && minor >= 5;
         }
         oni_reg_val_t tmpId;
