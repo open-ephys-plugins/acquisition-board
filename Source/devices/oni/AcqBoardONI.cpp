@@ -22,13 +22,11 @@
 
 #include "AcqBoardONI.h"
 
-#include <string>
-#include <sstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 #define INIT_STEP 64
-
-const double quat_scale = (1.0f / (1 << 14));
 
 AcqBoardONI::AcqBoardONI() : AcquisitionBoard(),
                              chipRegisters (30000.0f)
@@ -174,7 +172,7 @@ void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
     for (int i = 0; i < NUMBER_OF_PORTS; i++)
     {
         if (hasBNO[i])
-            bnoBuffers.set (i, otherBuffers.add (new DataBuffer (4, 10000)));
+            bnoBuffers.set (i, otherBuffers.add (new DataBuffer (BNO_CHANNELS, 10000)));
         else
             bnoBuffers.set (i, nullptr);
     }
@@ -225,6 +223,25 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             otherStreams.add (stream);
 
             String identifier = "acq-board.9dof.continuous";
+
+            std::array<char*, 3> eulerIdentifiers = { "yaw",
+                                                      "pitch",
+                                                      "roll" };
+            constexpr char* eulerNames = "YPR";
+
+            for (int i = 0; i < 3; i++)
+            {
+                ContinuousChannel::Settings channelSettings {
+                    ContinuousChannel::AUX,
+                    String ("Eul-") + eulerNames[i],
+                    "Euler channel",
+                    identifier + ".euler." + String(eulerIdentifiers[i]),
+                    1.0f, // TODO: Is this the right value?
+                    stream
+                };
+                otherChannels.add (new ContinuousChannel (channelSettings));
+            }
+
             constexpr char* quaternionSubtypesLower = "wxyz";
             constexpr char* quaternionSubtypesUpper = "WXYZ";
 
@@ -232,14 +249,63 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             {
                 ContinuousChannel::Settings channelSettings {
                     ContinuousChannel::AUX,
-                    String("Quat-") + quaternionSubtypesUpper[i],
+                    String ("Quat-") + quaternionSubtypesUpper[i],
                     "Quaternion channel",
                     identifier + ".quaternion." + quaternionSubtypesLower[i],
-                    quat_scale,
+                    quaternionScale,
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
             }
+
+            constexpr char* axesLower = "xyz";
+            constexpr char* axesUpper = "XYZ";
+
+            for (int i = 0; i < 3; i++)
+            {
+                ContinuousChannel::Settings channelSettings {
+                    ContinuousChannel::AUX,
+                    String ("Acc-") + axesUpper[i],
+                    "Acceleration channel",
+                    identifier + ".acceleration." + axesLower[i],
+                    1.0f,
+                    stream
+                };
+                otherChannels.add (new ContinuousChannel (channelSettings));
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                ContinuousChannel::Settings channelSettings {
+                    ContinuousChannel::AUX,
+                    String ("Grav-") + axesUpper[i],
+                    "Gravity channel",
+                    identifier + ".gravity." + axesLower[i],
+                    1.0f,
+                    stream
+                };
+                otherChannels.add (new ContinuousChannel (channelSettings));
+            }
+
+            ContinuousChannel::Settings temperatureChannelSettings {
+                ContinuousChannel::AUX,
+                String ("Temp"),
+                "Temperature channel",
+                identifier + ".temperature",
+                1.0f,
+                stream
+            };
+            otherChannels.add (new ContinuousChannel (temperatureChannelSettings));
+
+            ContinuousChannel::Settings calibrationChannelSettings {
+                ContinuousChannel::AUX,
+                String ("Cal"),
+                "Calibration channel",
+                identifier + ".calibration",
+                1.0f,
+                stream
+            };
+            otherChannels.add (new ContinuousChannel (calibrationChannelSettings));
         }
     }
 }
@@ -1739,17 +1805,50 @@ void AcqBoardONI::run()
 
 void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
 {
-    unsigned char* bufferPtr = (unsigned char*) frame->data + 8 + 6;
+    int16_t* dataPtr = (int16_t*) frame->data + 4;
     uint64 zero = 0;
     int64 tst = frame->time;
     double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
-    float quatdata[4] {};
+    std::array<float, BNO_CHANNELS> bnoSamples {};
+
+    int offset = 0;
+
+    // Euler
+    for (int i = 0; i < 3; i++)
+    {
+        bnoSamples[offset] = float (*(dataPtr + offset)) * eulerAngleScale;
+        offset++;
+    }
+
+    // Quaternion
     for (int i = 0; i < 4; i++)
     {
-        quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
+        bnoSamples[offset] = float (*(dataPtr + offset)) * quaternionScale;
+        offset++;
     }
+
+    // Acceleration
+    for (int i = 0; i < 3; i++)
+    {
+        bnoSamples[offset] = float (*(dataPtr + offset)) * accelerationScale;
+        offset++;
+    }
+
+    // Gravity
+    for (int i = 0; i < 3; i++)
+    {
+        bnoSamples[offset] = float (*(dataPtr + offset)) * accelerationScale;
+        offset++;
+    }
+
+    // Temperature
+    bnoSamples[offset] = *((uint8_t*) (dataPtr + offset));
+
+    // Calibration
+    bnoSamples[offset] = *((uint8_t*) (dataPtr + offset) + 1);
+
     buffer->addToBuffer (
-        quatdata,
+        bnoSamples.data(),
         &tst,
         &tsd,
         &zero,
