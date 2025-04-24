@@ -188,7 +188,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
     DataStream::Settings memStreamSettings {
         "Memory Usage",
         "Hardware buffer usage on an acquisition board",
-        "rhythm-fpga-device.memory",
+        "acq-board.memory",
 
         MEMORY_MONITOR_FS
 
@@ -201,8 +201,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         ContinuousChannel::AUX,
         "MEM",
         "Hardware buffer usage",
-        "rhythm-fpga-device.continuous.mem",
-        1.0f, //some scaling so it does not overflow too easily
+        "acq-board.memory.continuous",
+        1.0f,
         stream
     };
     otherChannels.add (new ContinuousChannel (channelSettings));
@@ -217,23 +217,24 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             DataStream::Settings bnoStreamSettings {
                 "IMU Port " + String::charToString (port[k]),
                 "Inertial measurement unit data from the BNO device on port " + String::charToString (port[k]),
-                "rhythm-fpga-device.bno",
+                "acq-board.9dof",
                 100
             };
 
             stream = new DataStream (bnoStreamSettings);
             otherStreams.add (stream);
 
+            String identifier = "acq-board.9dof.continuous";
+            constexpr char* quaternionSubtypesLower = "wxyz";
+            constexpr char* quaternionSubtypesUpper = "WXYZ";
+
             for (int i = 0; i < 4; i++)
             {
-                String identifier = "rhythm-fpga-device.continuous.bno";
-
-                String quatIdentifier = identifier + ".quat";
                 ContinuousChannel::Settings channelSettings {
                     ContinuousChannel::AUX,
-                    "QUAT_" + String (i),
+                    String("Quat-") + quaternionSubtypesUpper[i],
                     "Quaternion channel",
-                    quatIdentifier,
+                    identifier + ".quaternion." + quaternionSubtypesLower[i],
                     quat_scale,
                     stream
                 };
