@@ -1301,28 +1301,31 @@ uint32_t Rhd2000ONIBoard::getDeviceIdOnEeprom (const uint32_t port)
     if (!ctx || port > 3)
         return 0;
 
+    uint8_t val;
+    int res;
+
     oni_dev_idx_t i2cRawAddress = DEVICE_I2C_RAW_A + port * 2;
 
-    // NB: Confirm EEPROM first bytes contain OESH\x01
-    const char identifier[] = "OESH\x01";
+    // NB: Confirm EEPROM first bytes contain OESH
+    const char identifier[] = "OESH";
 
     for (unsigned int i = 0; i < strlen(identifier); i += 1)
-    {
-        uint8_t val;
-        int res;
+    {    
         res = readEepromByte (i2cRawAddress, i, val);
 
         if (res != 0 || val != identifier[i])
             return 0;
     }
+    //Check that EEPROM format is v1 or v2
+    res = readEepromByte (i2cRawAddress, 4, val);
+    if (res != 0 || (val != 1 && val != 2))
+        return 0;
 
     const uint32_t deviceIdStartAddress = 8;
     uint32_t data = 0;
 
     for (unsigned int i = 0; i < sizeof (uint32_t); i++)
     {
-        uint8_t val;
-        int res;
         res = readEepromByte (i2cRawAddress, deviceIdStartAddress + i, val);
 
         if (res != 0)
