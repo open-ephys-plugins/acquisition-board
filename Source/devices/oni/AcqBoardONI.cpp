@@ -236,10 +236,11 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     String ("Eul-") + eulerNames[i],
                     "Euler channel",
                     identifier + ".euler." + String(eulerIdentifiers[i]),
-                    1.0f, // TODO: Is this the right value?
+                    eulerAngleScale,
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("Degrees");
             }
 
             constexpr char* quaternionSubtypesLower = "wxyz";
@@ -256,6 +257,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("u"); // NB: Quaternion data is unitless by definition
             }
 
             constexpr char* axesLower = "xyz";
@@ -268,10 +270,11 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     String ("Acc-") + axesUpper[i],
                     "Acceleration channel",
                     identifier + ".acceleration." + axesLower[i],
-                    1.0f,
+                    accelerationScale,
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("m/s^2");
             }
 
             for (int i = 0; i < 3; i++)
@@ -281,10 +284,11 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     String ("Grav-") + axesUpper[i],
                     "Gravity channel",
                     identifier + ".gravity." + axesLower[i],
-                    1.0f,
+                    accelerationScale,
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("m/s^2");
             }
 
             ContinuousChannel::Settings temperatureChannelSettings {
@@ -296,6 +300,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 stream
             };
             otherChannels.add (new ContinuousChannel (temperatureChannelSettings));
+            otherChannels.getLast()->setUnits ("Celsius");
 
             ContinuousChannel::Settings calibrationChannelSettings {
                 ContinuousChannel::AUX,
@@ -1845,7 +1850,7 @@ void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
     bnoSamples[offset] = *((uint8_t*) (dataPtr + offset));
 
     // Calibration
-    bnoSamples[offset] = *((uint8_t*) (dataPtr + offset) + 1);
+    bnoSamples[offset + 1] = *((uint8_t*) (dataPtr + offset) + 1);
 
     buffer->addToBuffer (
         bnoSamples.data(),
