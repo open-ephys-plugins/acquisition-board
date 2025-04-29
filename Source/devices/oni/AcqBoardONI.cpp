@@ -199,11 +199,12 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         ContinuousChannel::AUX,
         "MEM",
         "Hardware buffer usage",
-        "acq-board.memory.continuous",
+        "acq-board.memory.continuous.percentage",
         1.0f,
         stream
     };
     otherChannels.add (new ContinuousChannel (channelSettings));
+    otherChannels.getLast()->setUnits ("%");
 
     String port = "ABCD";
 
@@ -225,9 +226,9 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             String identifier = "acq-board.9dof.continuous";
 
             std::array<char*, 3> eulerIdentifiers = { "yaw",
-                                                      "pitch",
-                                                      "roll" };
-            constexpr char* eulerNames = "YPR";
+                                                      "roll",
+                                                      "pitch" };
+            constexpr char* eulerNames = "YRP";
 
             for (int i = 0; i < 3; i++)
             {
