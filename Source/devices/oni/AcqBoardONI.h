@@ -306,8 +306,12 @@ private:
     static constexpr double v3AdcBitVal = double ((((1.25 * (1 + 84.5 / 51)) / (1 << 12)) * (10 / (1.25 * (1 + 84.5 / 51)))) / 16);
 
     static constexpr int NUMBER_OF_PORTS = 4;
-    static constexpr int BNO_CHANNELS = 4;
+    static constexpr int BNO_CHANNELS = 3 + 3 + 4 + 3 + 1 + 1;
     static constexpr int MEMORY_MONITOR_FS = 100;
+
+    static constexpr double eulerAngleScale = 1.0f / 16;
+    static constexpr double quaternionScale = 1.0f / (1 << 14);
+    static constexpr double accelerationScale = 1.0f / 100;
 
     int regOffset;
     bool varSampleRateCapable = false;

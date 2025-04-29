@@ -22,13 +22,11 @@
 
 #include "AcqBoardONI.h"
 
-#include <string>
-#include <sstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 #define INIT_STEP 64
-
-const double quat_scale = (1.0f / (1 << 14));
 
 AcqBoardONI::AcqBoardONI() : AcquisitionBoard(),
                              chipRegisters (30000.0f)
@@ -174,7 +172,7 @@ void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
     for (int i = 0; i < NUMBER_OF_PORTS; i++)
     {
         if (hasBNO[i])
-            bnoBuffers.set (i, otherBuffers.add (new DataBuffer (4, 10000)));
+            bnoBuffers.set (i, otherBuffers.add (new DataBuffer (BNO_CHANNELS, 10000)));
         else
             bnoBuffers.set (i, nullptr);
     }
@@ -188,7 +186,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
     DataStream::Settings memStreamSettings {
         "Memory Usage",
         "Hardware buffer usage on an acquisition board",
-        "rhythm-fpga-device.memory",
+        "acq-board.memory",
 
         MEMORY_MONITOR_FS
 
@@ -201,11 +199,12 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         ContinuousChannel::AUX,
         "MEM",
         "Hardware buffer usage",
-        "rhythm-fpga-device.continuous.mem",
-        1.0f, //some scaling so it does not overflow too easily
+        "acq-board.memory.continuous.percentage",
+        1.0f,
         stream
     };
     otherChannels.add (new ContinuousChannel (channelSettings));
+    otherChannels.getLast()->setUnits ("%");
 
     String port = "ABCD";
 
@@ -217,28 +216,102 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             DataStream::Settings bnoStreamSettings {
                 "IMU Port " + String::charToString (port[k]),
                 "Inertial measurement unit data from the BNO device on port " + String::charToString (port[k]),
-                "rhythm-fpga-device.bno",
+                "acq-board.9dof",
                 100
             };
 
             stream = new DataStream (bnoStreamSettings);
             otherStreams.add (stream);
 
-            for (int i = 0; i < 4; i++)
-            {
-                String identifier = "rhythm-fpga-device.continuous.bno";
+            String identifier = "acq-board.9dof.continuous";
 
-                String quatIdentifier = identifier + ".quat";
+            std::array<char*, 3> eulerIdentifiers = { "yaw",
+                                                      "roll",
+                                                      "pitch" };
+            constexpr char* eulerNames = "YRP";
+
+            for (int i = 0; i < 3; i++)
+            {
                 ContinuousChannel::Settings channelSettings {
                     ContinuousChannel::AUX,
-                    "QUAT_" + String (i),
-                    "Quaternion channel",
-                    quatIdentifier,
-                    quat_scale,
+                    String ("Eul-") + eulerNames[i],
+                    "Euler channel",
+                    identifier + ".euler." + String(eulerIdentifiers[i]),
+                    eulerAngleScale,
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("Degrees");
             }
+
+            constexpr char* quaternionSubtypesLower = "wxyz";
+            constexpr char* quaternionSubtypesUpper = "WXYZ";
+
+            for (int i = 0; i < 4; i++)
+            {
+                ContinuousChannel::Settings channelSettings {
+                    ContinuousChannel::AUX,
+                    String ("Quat-") + quaternionSubtypesUpper[i],
+                    "Quaternion channel",
+                    identifier + ".quaternion." + quaternionSubtypesLower[i],
+                    quaternionScale,
+                    stream
+                };
+                otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("u"); // NB: Quaternion data is unitless by definition
+            }
+
+            constexpr char* axesLower = "xyz";
+            constexpr char* axesUpper = "XYZ";
+
+            for (int i = 0; i < 3; i++)
+            {
+                ContinuousChannel::Settings channelSettings {
+                    ContinuousChannel::AUX,
+                    String ("Acc-") + axesUpper[i],
+                    "Acceleration channel",
+                    identifier + ".acceleration." + axesLower[i],
+                    accelerationScale,
+                    stream
+                };
+                otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("m/s^2");
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                ContinuousChannel::Settings channelSettings {
+                    ContinuousChannel::AUX,
+                    String ("Grav-") + axesUpper[i],
+                    "Gravity channel",
+                    identifier + ".gravity." + axesLower[i],
+                    accelerationScale,
+                    stream
+                };
+                otherChannels.add (new ContinuousChannel (channelSettings));
+                otherChannels.getLast()->setUnits ("m/s^2");
+            }
+
+            ContinuousChannel::Settings temperatureChannelSettings {
+                ContinuousChannel::AUX,
+                String ("Temp"),
+                "Temperature channel",
+                identifier + ".temperature",
+                1.0f,
+                stream
+            };
+            otherChannels.add (new ContinuousChannel (temperatureChannelSettings));
+            otherChannels.getLast()->setUnits ("Celsius");
+
+            ContinuousChannel::Settings calibrationChannelSettings {
+                ContinuousChannel::AUX,
+                String ("Cal"),
+                "Calibration channel",
+                identifier + ".calibration",
+                1.0f,
+                stream
+            };
+            otherChannels.add (new ContinuousChannel (calibrationChannelSettings));
         }
     }
 }
@@ -1738,17 +1811,50 @@ void AcqBoardONI::run()
 
 void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
 {
-    unsigned char* bufferPtr = (unsigned char*) frame->data + 8 + 6;
+    int16_t* dataPtr = (int16_t*) frame->data + 4;
     uint64 zero = 0;
     int64 tst = frame->time;
     double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
-    float quatdata[4] {};
+    std::array<float, BNO_CHANNELS> bnoSamples {};
+
+    int offset = 0;
+
+    // Euler
+    for (int i = 0; i < 3; i++)
+    {
+        bnoSamples[offset] = float (*(dataPtr + offset)) * eulerAngleScale;
+        offset++;
+    }
+
+    // Quaternion
     for (int i = 0; i < 4; i++)
     {
-        quatdata[i] = float (*(int16*) (bufferPtr + 2 * i)) * quat_scale;
+        bnoSamples[offset] = float (*(dataPtr + offset)) * quaternionScale;
+        offset++;
     }
+
+    // Acceleration
+    for (int i = 0; i < 3; i++)
+    {
+        bnoSamples[offset] = float (*(dataPtr + offset)) * accelerationScale;
+        offset++;
+    }
+
+    // Gravity
+    for (int i = 0; i < 3; i++)
+    {
+        bnoSamples[offset] = float (*(dataPtr + offset)) * accelerationScale;
+        offset++;
+    }
+
+    // Temperature
+    bnoSamples[offset] = *((uint8_t*) (dataPtr + offset));
+
+    // Calibration
+    bnoSamples[offset + 1] = *((uint8_t*) (dataPtr + offset) + 1);
+
     buffer->addToBuffer (
-        quatdata,
+        bnoSamples.data(),
         &tst,
         &tsd,
         &zero,

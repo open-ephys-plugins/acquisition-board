@@ -161,7 +161,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
         DataStream::Settings dataStreamSettings {
             "acquisition_board",
             "Continuous and event data from an Open Ephys Acquisition Board",
-            "acq-board.data",
+            "acq-board.rhythm",
 
             static_cast<float> (acquisitionBoard->getSampleRate())
 
@@ -179,7 +179,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
                     ContinuousChannel::ELECTRODE,
                     headstage->getChannelName (ch),
                     "Headstage channel from an Open Ephys Acquisition Board",
-                    "acq-board.continuous.headstage",
+                    "acq-board.rhythm.continuous.ephys",
 
                     acquisitionBoard->getBitVolts (ContinuousChannel::Type::ELECTRODE),
 
@@ -207,7 +207,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
                         ContinuousChannel::AUX,
                         headstage->getStreamPrefix() + "_AUX" + String (ch + 1),
                         "Aux input channel from an Open Ephys Acquisition Board",
-                        "acq-board.continuous.aux",
+                        "acq-board.rhythm.continuous.aux",
 
                         acquisitionBoard->getBitVolts (ContinuousChannel::Type::AUX),
 
@@ -230,7 +230,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
                     ContinuousChannel::ADC,
                     name,
                     "ADC input channel from an Open Ephys Acquisition Board",
-                    "acq-board.continuous.adc",
+                    "acq-board.rhythm.continuous.adc",
 
                     acquisitionBoard->getBitVolts (ContinuousChannel::Type::ADC),
 
@@ -246,7 +246,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
             EventChannel::Type::TTL,
             "Acquisition Board TTL Input",
             "Events on digital input lines of an Open Ephys Acquisition Board",
-            "acq-board.events",
+            "acq-board.rhythm.events",
             stream,
             8
         };
