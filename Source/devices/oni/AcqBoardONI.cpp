@@ -303,15 +303,21 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             otherChannels.add (new ContinuousChannel (temperatureChannelSettings));
             otherChannels.getLast()->setUnits ("Celsius");
 
-            ContinuousChannel::Settings calibrationChannelSettings {
-                ContinuousChannel::AUX,
-                String ("Cal"),
-                "Calibration channel",
-                identifier + ".calibration",
-                1.0f,
-                stream
-            };
-            otherChannels.add (new ContinuousChannel (calibrationChannelSettings));
+            std::array<std::string, 4> calibrationTypesName = { "Mag", "Acc", "Gyr", "Sys" };
+            std::array<std::string, 4> calibrationTypesIdentifier = { "magnetometer", "acceleration", "gyroscope", "system" };
+
+            for (int i = 0; i < 4; i++)
+            {
+                ContinuousChannel::Settings calibrationChannelSettings {
+                    ContinuousChannel::AUX,
+                    String ("Cal-") + calibrationTypesName[i],
+                    "Calibration channel",
+                    identifier + ".calibration." + calibrationTypesIdentifier[i],
+                    1.0f,
+                    stream
+                };
+                otherChannels.add (new ContinuousChannel (calibrationChannelSettings));
+            }
         }
     }
 }
@@ -1809,7 +1815,7 @@ void AcqBoardONI::run()
     }
 }
 
-void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
+void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer) const
 {
     int16_t* dataPtr = (int16_t*) frame->data + 4;
     uint64 zero = 0;
@@ -1817,7 +1823,7 @@ void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
     double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
     std::array<float, BNO_CHANNELS> bnoSamples {};
 
-    int offset = 0;
+    size_t offset = 0;
 
     // Euler
     for (int i = 0; i < 3; i++)
@@ -1851,7 +1857,14 @@ void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer)
     bnoSamples[offset] = *((uint8_t*) (dataPtr + offset));
 
     // Calibration
-    bnoSamples[offset + 1] = *((uint8_t*) (dataPtr + offset) + 1);
+    auto calibrationStatus = *((uint8_t*) (dataPtr + offset) + 1);
+
+    constexpr uint8_t statusMask = 0b11;
+
+    for (int i = 0; i < 4; i++)
+    {
+        bnoSamples[offset + i + 1] = (calibrationStatus & (statusMask << (2 * i))) >> (2 * i);
+    }
 
     buffer->addToBuffer (
         bnoSamples.data(),
