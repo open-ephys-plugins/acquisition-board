@@ -154,6 +154,7 @@ bool AcqBoardONI::detectBoard()
 
         deviceFound = true;
 
+        evalBoard->enableMemoryMonitor();
         evalBoard->setMemoryMonitorSampleRate (MEMORY_MONITOR_FS);
         evalBoard->getTotalMemory (&totalMemory);
 
