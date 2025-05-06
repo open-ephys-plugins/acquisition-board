@@ -1,10 +1,10 @@
 #pragma once
 
 #include "rhd2000ONIdatablock.h"
+#include <chrono>
 #include <oni.h>
 #include <queue>
 #include <vector>
-#include <chrono>
 
 using namespace std::chrono_literals;
 
@@ -126,6 +126,7 @@ public:
     bool setSampleRate (AmplifierSampleRate newSampleRate);
     double getSampleRate() const;
 
+    void enableMemoryMonitor();
     bool setMemoryMonitorSampleRate (int sampleRate);
     bool getTotalMemory (uint32_t*);
 
@@ -159,7 +160,7 @@ public:
     void setDacManual (int value);
     void setDacGain (int gain);
 
-    bool getFirmwareVersion (int* major, int* minor, int* patch, int* rc=nullptr) const;
+    bool getFirmwareVersion (int* major, int* minor, int* patch, int* rc = nullptr) const;
 
     void getONIVersion (int* major, int* minor, int* patch);
     void getONIDriverInfo (const oni_driver_info_t** driverInfo);
