@@ -882,8 +882,17 @@ void AcqBoardONI::scanPortsInThread()
                     switch (headstageId[i])
                     {
                         // TODO: Add headstages here with the required axis map
+                        case 0x80000001:  //Low-Profile 64ch hirose
+                            evalBoard->setBnoAxisMap (i, 0b00000100100);
+                            break;
+                        case 0x80000002: //32ch
+                            evalBoard->setBnoAxisMap (i, 0b10000011000);
+                            break;
+                        case 0x80000003: //16ch bipolar
+                            evalBoard->setBnoAxisMap (i, 0b10000011000);
+                            break;
                         default:
-                            evalBoard->setBnoAxisMap (i, 0b00100100);
+                            evalBoard->setBnoAxisMap (i, 0b00000100100);
                             break;
                     }
                 }
