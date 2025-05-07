@@ -1360,7 +1360,7 @@ bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
     using namespace std::chrono;
     auto startTime = high_resolution_clock::now();
 
-    while (val >= 2 && duration_cast<seconds> (duration<double> (startTime - high_resolution_clock::now())) < 1s)
+    while (val >= 2 && duration_cast<seconds> (duration<double> (high_resolution_clock::now() - startTime)) < 1s)
     {
         result = oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::BNO_STATUS, &val);
 
