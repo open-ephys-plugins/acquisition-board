@@ -126,7 +126,7 @@ public:
     bool setSampleRate (AmplifierSampleRate newSampleRate);
     double getSampleRate() const;
 
-    void enableMemoryMonitor();
+    void enableMemoryMonitor(bool enable = true);
     bool setMemoryMonitorSampleRate (int sampleRate);
     bool getTotalMemory (uint32_t*);
 

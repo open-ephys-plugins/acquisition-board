@@ -212,6 +212,9 @@ public:
     /** Create stream and channel structures is the acquisition board type has custom streams and updates the buffers */
     void updateCustomStreams (OwnedArray<DataStream>& otherStreams, OwnedArray<ContinuousChannel>& otherChannels) override;
 
+    /** Gets whether or not the firmware version fully supports memory monitor data */
+    bool getMemoryMonitorSupport() const;
+
 private:
     /**Check board memory status */
     bool checkBoardMem() const;
@@ -321,11 +324,12 @@ private:
     bool hasI2c[NUMBER_OF_PORTS]; // Tracks if there is an I2C-capable device on any of the available ports
     uint32_t headstageId[NUMBER_OF_PORTS];
     bool hasI2cSupport = false;
+    bool hasMemoryMonitorSupport = false;
 
     uint32_t acquisitionClockHz;
     uint32_t totalMemory;
 
-    DataBuffer* memBuffer;
+    DataBuffer* memBuffer = nullptr;
     Array<DataBuffer*, juce::DummyCriticalSection, NUMBER_OF_PORTS> bnoBuffers;
 };
 

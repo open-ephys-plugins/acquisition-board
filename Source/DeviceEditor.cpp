@@ -24,6 +24,7 @@
 #include "DeviceEditor.h"
 
 #include "devices/AcquisitionBoard.h"
+#include "devices/oni/AcqBoardONI.h"
 
 #include "UI/ChannelCanvas.h"
 
@@ -65,14 +66,17 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     if (board->getBoardType() == AcquisitionBoard::BoardType::ONI)
     {
-        desiredWidth += 22;
+        if (((AcqBoardONI*)board)->getMemoryMonitorSupport())
+        {
+            desiredWidth += 22;
 
-        memoryUsage = std::make_unique<MemoryMonitorUsage> (parentNode);
-        memoryUsage->setBounds (8, 30, 15, 95);
-        memoryUsage->setTooltip ("Monitors the percent of the hardware memory buffer used.");
-        addAndMakeVisible (memoryUsage.get());
+            memoryUsage = std::make_unique<MemoryMonitorUsage> (parentNode);
+            memoryUsage->setBounds (8, 30, 15, 95);
+            memoryUsage->setTooltip ("Monitors the percent of the hardware memory buffer used.");
+            addAndMakeVisible (memoryUsage.get());
 
-        xOffset = memoryUsage->getRight();
+            xOffset = memoryUsage->getRight();
+        }
     }
 
     // add headstage-specific controls (currently just a toggle button)
