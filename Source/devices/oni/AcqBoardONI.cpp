@@ -255,10 +255,10 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 
             String identifier = "acq-board.9dof.continuous";
 
-            std::array<char*, 3> eulerIdentifiers = { "yaw",
-                                                      "roll",
-                                                      "pitch" };
-            constexpr char* eulerNames = "YRP";
+            std::array<std::string, 3> eulerIdentifiers = { "yaw",
+                                                            "roll",
+                                                            "pitch" };
+            const std::string eulerNames = "YRP";
 
             for (int i = 0; i < 3; i++)
             {
@@ -274,8 +274,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 otherChannels.getLast()->setUnits ("Degrees");
             }
 
-            constexpr char* quaternionSubtypesLower = "wxyz";
-            constexpr char* quaternionSubtypesUpper = "WXYZ";
+            const std::string quaternionSubtypesLower = "wxyz";
+            const std::string quaternionSubtypesUpper = "WXYZ";
 
             for (int i = 0; i < 4; i++)
             {
@@ -291,8 +291,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 otherChannels.getLast()->setUnits ("u"); // NB: Quaternion data is unitless by definition
             }
 
-            constexpr char* axesLower = "xyz";
-            constexpr char* axesUpper = "XYZ";
+            const std::string axesLower = "xyz";
+            const std::string axesUpper = "XYZ";
 
             for (int i = 0; i < 3; i++)
             {
@@ -1292,13 +1292,15 @@ float AcqBoardONI::getBitVolts (ContinuousChannel::Type channelType) const
         case ContinuousChannel::ELECTRODE:
             return 0.195f;
         case ContinuousChannel::AUX:
-            return 0.0000374;
+            return 0.0000374f;
         case ContinuousChannel::ADC:
             if (deviceId == DEVICE_ID_V3)
                 return v3AdcBitVal;
             else
-                return 0.00015258789;
+                return 0.00015258789f;
     }
+
+    return 1.0f;
 }
 
 void AcqBoardONI::measureImpedances()
@@ -1550,6 +1552,8 @@ bool AcqBoardONI::isReady()
 
     if (! checkBoardMem())
         return false;
+
+    return true;
 }
 
 bool AcqBoardONI::startAcquisition()
