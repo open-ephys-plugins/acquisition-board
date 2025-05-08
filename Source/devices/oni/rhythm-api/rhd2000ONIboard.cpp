@@ -385,9 +385,9 @@ double Rhd2000ONIBoard::getSampleRate() const
     }
 }
 
-void Rhd2000ONIBoard::enableMemoryMonitor()
+void Rhd2000ONIBoard::enableMemoryMonitor(bool enable)
 {
-    int rc = oni_write_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::ENABLE, 1);
+    int rc = oni_write_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::ENABLE, enable ? 1 : 0);
 
     if (rc != ONI_ESUCCESS)
     {

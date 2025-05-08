@@ -144,6 +144,7 @@ bool AcqBoardONI::detectBoard()
                 LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
             }
             hasI2cSupport = major >= 1 && minor >= 5;
+            hasMemoryMonitorSupport = major >= 1 && minor >= 5 && patch >= 1;
         }
         oni_reg_val_t tmpId;
         if (evalBoard->getDeviceId (&tmpId))
@@ -154,9 +155,16 @@ bool AcqBoardONI::detectBoard()
 
         deviceFound = true;
 
-        evalBoard->enableMemoryMonitor();
-        evalBoard->setMemoryMonitorSampleRate (MEMORY_MONITOR_FS);
-        evalBoard->getTotalMemory (&totalMemory);
+        if (hasMemoryMonitorSupport)
+        {
+            evalBoard->enableMemoryMonitor (true);
+            evalBoard->setMemoryMonitorSampleRate (MEMORY_MONITOR_FS);
+            evalBoard->getTotalMemory (&totalMemory);
+        }
+        else
+        {
+            evalBoard->enableMemoryMonitor (false);
+        }
 
         return true;
     }
@@ -168,7 +176,8 @@ bool AcqBoardONI::detectBoard()
 
 void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
 {
-    memBuffer = otherBuffers.add (new DataBuffer (1, 10000)); // Memory device
+    if (hasMemoryMonitorSupport)
+        memBuffer = otherBuffers.add (new DataBuffer (1, 10000)); // Memory device
 
     for (int i = 0; i < NUMBER_OF_PORTS; i++)
     {
@@ -183,29 +192,32 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 {
     DataStream* stream;
 
-    //Memory usage device
-    DataStream::Settings memStreamSettings {
-        "Memory Usage",
-        "Hardware buffer usage on an acquisition board",
-        "acq-board.memory",
+    if (hasMemoryMonitorSupport)
+    {
+        //Memory usage device
+        DataStream::Settings memStreamSettings {
+            "Memory Usage",
+            "Hardware buffer usage on an acquisition board",
+            "acq-board.memory",
 
-        MEMORY_MONITOR_FS
+            MEMORY_MONITOR_FS
 
-    };
+        };
 
-    stream = new DataStream (memStreamSettings);
-    otherStreams.add (stream);
+        stream = new DataStream (memStreamSettings);
+        otherStreams.add (stream);
 
-    ContinuousChannel::Settings channelSettings {
-        ContinuousChannel::AUX,
-        "MEM",
-        "Hardware buffer usage",
-        "acq-board.memory.continuous.percentage",
-        1.0f,
-        stream
-    };
-    otherChannels.add (new ContinuousChannel (channelSettings));
-    otherChannels.getLast()->setUnits ("%");
+        ContinuousChannel::Settings channelSettings {
+            ContinuousChannel::AUX,
+            "MEM",
+            "Hardware buffer usage",
+            "acq-board.memory.continuous.percentage",
+            1.0f,
+            stream
+        };
+        otherChannels.add (new ContinuousChannel (channelSettings));
+        otherChannels.getLast()->setUnits ("%");
+    }
 
     String port = "ABCD";
 
@@ -237,7 +249,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     ContinuousChannel::AUX,
                     String ("Eul-") + eulerNames[i],
                     "Euler channel",
-                    identifier + ".euler." + String(eulerIdentifiers[i]),
+                    identifier + ".euler." + String (eulerIdentifiers[i]),
                     eulerAngleScale,
                     stream
                 };
@@ -882,7 +894,7 @@ void AcqBoardONI::scanPortsInThread()
                     switch (headstageId[i])
                     {
                         // TODO: Add headstages here with the required axis map
-                        case 0x80000001:  //Low-Profile 64ch hirose
+                        case 0x80000001: //Low-Profile 64ch hirose
                             evalBoard->setBnoAxisMap (i, 0b00000100100);
                             break;
                         case 0x80000002: //32ch
@@ -2070,4 +2082,9 @@ int AcqBoardONI::getHeadstageChannel (int& hs, int ch) const
         }
     }
     return -1;
+}
+
+bool AcqBoardONI::getMemoryMonitorSupport() const
+{
+    return hasMemoryMonitorSupport;
 }
