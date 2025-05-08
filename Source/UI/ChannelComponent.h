@@ -52,7 +52,7 @@ public:
     void setImpedanceValues (float mag, float phase);
 
     /** Sets layout */
-    void resized();
+    void resized() override;
 
     /** Holds channel type */
     const ContinuousChannel::Type type;
@@ -67,7 +67,6 @@ private:
     String name;
     int gainIndex;
     int userDefinedData;
-    Font font;
     bool isEnabled;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChannelComponent);

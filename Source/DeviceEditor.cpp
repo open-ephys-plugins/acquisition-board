@@ -99,12 +99,12 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     // add sample rate selection
     sampleRateInterface = std::make_unique<SampleRateInterface> (board, this);
     addAndMakeVisible (sampleRateInterface.get());
-    sampleRateInterface->setBounds (xOffset + 80, 20, 80, 50);
+    sampleRateInterface->setBounds (xOffset + 80, 22, 80, 50);
 
     // add Bandwidth selection
     bandwidthInterface = std::make_unique<BandwidthInterface> (board, this);
     addAndMakeVisible (bandwidthInterface.get());
-    bandwidthInterface->setBounds (xOffset + 80, 55, 80, 50);
+    bandwidthInterface->setBounds (xOffset + 80, 60, 80, 45);
 
     // add AUX channel enable/disable button
     auxButton = std::make_unique<UtilityButton> ("AUX");
@@ -126,8 +126,8 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     // add audio output config interface
     audioLabel = std::make_unique<Label> ("audio label", "Audio out");
-    audioLabel->setBounds (xOffset + 170, 20, 75, 15);
-    audioLabel->setFont (Font ("Small Text", 10, Font::plain));
+    audioLabel->setBounds (xOffset + 170, 22, 75, 15);
+    audioLabel->setFont (FontOptions ("Inter", "Regular", 10.0f));
     addAndMakeVisible (audioLabel.get());
 
     for (int i = 0; i < 2; i++)
@@ -186,7 +186,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     addAndMakeVisible (dacTTLButton.get());
 
     dacHPFlabel = std::make_unique<Label> ("DAC HPF", "DAC HPF");
-    dacHPFlabel->setFont (Font ("Small Text", 10, Font::plain));
+    dacHPFlabel->setFont (FontOptions ("Inter", "Regular", 10.0f));
     dacHPFlabel->setBounds (xOffset + 255, 40, 60, 20);
     addAndMakeVisible (dacHPFlabel.get());
 
@@ -203,7 +203,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     addAndMakeVisible (dacHPFcombo.get());
 
     ttlSettleLabel = std::make_unique<Label> ("TTL Settle", "TTL Settle");
-    ttlSettleLabel->setFont (Font ("Small Text", 10, Font::plain));
+    ttlSettleLabel->setFont (FontOptions ("Inter", "Regular", 10.0f));
     ttlSettleLabel->setBounds (xOffset + 255, 70, 70, 20);
     addAndMakeVisible (ttlSettleLabel.get());
 
@@ -431,6 +431,11 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 {
     if (board == nullptr)
     {
+        if (previousSettings == nullptr)
+        {
+            return;
+        }
+
         xml->setAttribute ("SampleRate", previousSettings->getIntAttribute ("SampleRate"));
         xml->setAttribute ("LowCut", previousSettings->getDoubleAttribute ("LowCut"));
         xml->setAttribute ("HighCut", previousSettings->getDoubleAttribute ("HighCut"));
@@ -493,10 +498,9 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 
 void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
 {
-
     if (board == nullptr)
     {
-		previousSettings = std::make_unique<XmlElement> ("DeviceEditorSettings");
+        previousSettings = std::make_unique<XmlElement> ("DeviceEditorSettings");
         previousSettings->setAttribute ("SampleRate", xml->getIntAttribute ("SampleRate"));
         previousSettings->setAttribute ("LowCut", xml->getDoubleAttribute ("LowCut"));
         previousSettings->setAttribute ("HighCut", xml->getDoubleAttribute ("HighCut"));
@@ -525,7 +529,7 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
         }
 
         return;
-	}
+    }
 
     sampleRateInterface->setSelectedId (xml->getIntAttribute ("SampleRate"));
     bandwidthInterface->setLowerBandwidth (xml->getDoubleAttribute ("LowCut"));
@@ -601,13 +605,13 @@ BandwidthInterface::BandwidthInterface (AcquisitionBoard* board_,
     upperBandwidthSelection = std::make_unique<Label> ("UpperBandwidth", lastHighCutString); // this is currently set in DeviceThread, the cleaner way would be to set it here again
     upperBandwidthSelection->setEditable (true, false, false);
     upperBandwidthSelection->addListener (this);
-    upperBandwidthSelection->setBounds (30, 25, 60, 20);
+    upperBandwidthSelection->setBounds (25, 25, 50, 20);
     addAndMakeVisible (upperBandwidthSelection.get());
 
     lowerBandwidthSelection = std::make_unique<Label> ("LowerBandwidth", lastLowCutString);
     lowerBandwidthSelection->setEditable (true, false, false);
     lowerBandwidthSelection->addListener (this);
-    lowerBandwidthSelection->setBounds (30, 10, 60, 20);
+    lowerBandwidthSelection->setBounds (25, 10, 50, 20);
     addAndMakeVisible (lowerBandwidthSelection.get());
 }
 
@@ -698,13 +702,13 @@ void BandwidthInterface::paint (Graphics& g)
 {
     g.setColour (findColour (ThemeColours::defaultText));
 
-    g.setFont (Font ("Small Text", 10, Font::plain));
+    g.setFont (FontOptions ("Inter", "Regular", 10.0f));
 
-    g.drawText (name, 0, 0, 200, 15, Justification::left, false);
+    g.drawText (name, 0, 0, 200, 11, Justification::left, false);
 
-    g.drawText ("Low:", 0, 11, 200, 20, Justification::left, false);
+    g.drawText ("Low:", 0, 11, 200, 15, Justification::left, false);
 
-    g.drawText ("High:", 0, 26, 200, 20, Justification::left, false);
+    g.drawText ("High:", 0, 26, 200, 15, Justification::left, false);
 }
 
 // Sample rate Options --------------------------------------------------------------------
@@ -728,7 +732,7 @@ SampleRateInterface::SampleRateInterface (AcquisitionBoard* board_,
 
     rateSelection->setSelectedId (sampleRates.getLast(), dontSendNotification);
     rateSelection->addListener (this);
-    rateSelection->setBounds (0, 12, 80, 20);
+    rateSelection->setBounds (0, 14, 80, 20);
     addAndMakeVisible (rateSelection.get());
 }
 
@@ -770,7 +774,7 @@ void SampleRateInterface::paint (Graphics& g)
 {
     g.setColour (findColour (ThemeColours::defaultText));
 
-    g.setFont (Font ("Small Text", 10, Font::plain));
+    g.setFont (FontOptions ("Inter", "Regular", 10.0f));
 
     g.drawText (name, 0, 0, 80, 15, Justification::left, false);
 }
@@ -954,7 +958,7 @@ void HeadstageOptionsInterface::paint (Graphics& g)
 
     g.setColour (findColour (ThemeColours::defaultText));
 
-    g.setFont (Font ("Small Text", 15, Font::plain));
+    g.setFont (FontOptions ("Inter", "Regular", 15.0f));
 
     g.drawText (name, 10, 2, 200, 15, Justification::left, false);
 }
@@ -974,7 +978,8 @@ AudioInterface::AudioInterface (AcquisitionBoard* board_,
     noiseSlicerLevelSelection = std::make_unique<Label> ("Noise Slicer", lastNoiseSlicerString); // this is currently set in DeviceThread, the cleaner would be to set it here again
     noiseSlicerLevelSelection->setEditable (true, false, false);
     noiseSlicerLevelSelection->addListener (this);
-    noiseSlicerLevelSelection->setBounds (45, 6, 35, 20);
+    noiseSlicerLevelSelection->setBounds (35, 0, 35, 20);
+    noiseSlicerLevelSelection->setJustificationType (Justification::bottomLeft);
     addAndMakeVisible (noiseSlicerLevelSelection.get());
 }
 
@@ -1033,9 +1038,9 @@ int AudioInterface::getNoiseSlicerLevel()
 void AudioInterface::paint (Graphics& g)
 {
     g.setColour (findColour (ThemeColours::defaultText));
-    g.setFont (Font ("Small Text", 10, Font::plain));
-    g.drawText (name, 0, 0, 200, 15, Justification::left, false);
-    g.drawText ("Slicer:", 0, 10, 200, 15, Justification::left, false);
+    g.setFont (FontOptions ("Inter", "Regular", 10.0f));
+    g.drawText (name, 0, 0, 35, 10, Justification::left, false);
+    g.drawText ("Slicer:", 0, 10, 35, 10, Justification::left, false);
 }
 
 // Clock Divider options
@@ -1050,7 +1055,7 @@ ClockDivideInterface::ClockDivideInterface (AcquisitionBoard* board_,
     divideRatioSelection = std::make_unique<Label> ("Clock Divider", lastDivideRatioString);
     divideRatioSelection->setEditable (true, false, false);
     divideRatioSelection->addListener (this);
-    divideRatioSelection->setBounds (45, 6, 35, 20);
+    divideRatioSelection->setBounds (35, 0, 35, 20);
     addAndMakeVisible (divideRatioSelection.get());
 }
 
@@ -1088,9 +1093,9 @@ void ClockDivideInterface::setClockDivideRatio (int value)
 void ClockDivideInterface::paint (Graphics& g)
 {
     g.setColour (findColour (ThemeColours::defaultText));
-    g.setFont (Font ("Small Text", 10, Font::plain));
-    g.drawText (name, 0, 0, 200, 15, Justification::left, false);
-    g.drawText ("Divider: ", 0, 10, 200, 15, Justification::left, false);
+    g.setFont (FontOptions ("Inter", "Regular", 10.0f));
+    g.drawText (name, 0, 0, 35, 10, Justification::left, false);
+    g.drawText ("Divider: ", 0, 10, 35, 10, Justification::left, false);
 }
 
 // DSP Options --------------------------------------------------------------------
@@ -1149,5 +1154,5 @@ double DSPInterface::getDspCutoffFreq()
 void DSPInterface::paint (Graphics& g)
 {
     g.setColour (findColour (ThemeColours::defaultText));
-    g.setFont (Font ("Small Text", 10, Font::plain));
+    g.setFont (FontOptions ("Inter", "Regular", 10.0f));
 }

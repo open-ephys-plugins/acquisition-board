@@ -54,7 +54,7 @@ public:
     static DataThread* createDataThread (SourceNode* sn);
 
     /** Creates the UI for this plugin */
-    std::unique_ptr<GenericEditor> createEditor (SourceNode* sn);
+    std::unique_ptr<GenericEditor> createEditor (SourceNode* sn) override;
 
     /** Detects the type of board to use */
     AcquisitionBoard* detectBoard();

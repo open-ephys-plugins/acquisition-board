@@ -50,28 +50,28 @@ public:
     ~ChannelCanvas() {}
 
     /** Render the background */
-    void paint (Graphics& g);
+    void paint (Graphics& g) override;
 
     /** Sets the layout of sub-components*/
-    void resized();
+    void resized() override;
 
     /** Called when the component's tab becomes visible again*/
-    void refreshState();
+    void refreshState() override;
 
     /** Called when parameters of the underlying data processor are changed*/
-    void update();
+    void updateSettings() override;
 
     /** Calls update after a delay*/
     void updateAsync();
 
     /** Called instead of repaint to avoid redrawing underlying components*/
-    void refresh();
+    void refresh() override;
 
     /** Called when data acquisition starts*/
-    void beginAnimation();
+    void beginAnimation() override;
 
     /** Called when data acquisition ends*/
-    void endAnimation();
+    void endAnimation() override;
 
     /** Child components*/
     std::unique_ptr<Viewport> channelViewport;

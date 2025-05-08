@@ -60,7 +60,7 @@ void ChannelCanvas::refreshState()
     resized();
 }
 
-void ChannelCanvas::update()
+void ChannelCanvas::updateSettings()
 {
     channelList->update();
     resized();

@@ -23,7 +23,7 @@
 
 #include "HeadstageSim.h"
 
-HeadstageSim::HeadstageSim(int port_index) : Headstage(port_index)
+HeadstageSim::HeadstageSim(int port_index) : Headstage(port_index), numChannels(0)
 {
 
 }

@@ -36,7 +36,7 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
                                                                      name (name_),
                                                                      gainIndex (gainIndex_)
 {
-    Font f = Font ("Small Text", 13, Font::plain);
+    FontOptions f = FontOptions ("Inter", "Regular", 13.0f);
 
     staticLabel = std::make_unique<Label> ("Channel", "Channel");
     staticLabel->setFont (f);
@@ -52,7 +52,7 @@ ChannelComponent::ChannelComponent (ChannelList* cl,
     if (type == ContinuousChannel::ELECTRODE)
     {
         impedanceLabel = std::make_unique<Label> ("Impedance", "? Ohm");
-        impedanceLabel->setFont (Font ("Default", 13, Font::plain));
+        impedanceLabel->setFont (FontOptions ("Fira Code", "Regular", 13.0f));
         impedanceLabel->setEditable (false);
         addAndMakeVisible (impedanceLabel.get());
     }

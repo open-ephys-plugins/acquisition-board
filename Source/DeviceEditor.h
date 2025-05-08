@@ -52,16 +52,16 @@ public:
     ~DeviceEditor() {}
 
     /** Respond to combo box changes (e.g. sample rate)*/
-    void comboBoxChanged (ComboBox* comboBox);
+    void comboBoxChanged (ComboBox* comboBox) override;
 
     /** Respond to button clicks*/
-    void buttonClicked (Button* button);
+    void buttonClicked (Button* button) override;
 
     /** Disable UI during acquisition*/
-    void startAcquisition();
+    void startAcquisition() override;
 
     /** Enable UI after acquisition is finished*/
-    void stopAcquisition();
+    void stopAcquisition() override;
 
     /** Runs impedance test*/
     void measureImpedances();
@@ -73,7 +73,7 @@ public:
     void saveImpedances (File& file);
 
     /** Updates channel canvas*/
-    void updateSettings();
+    void updateSettings() override;
 
     /** Saves custom parameters */
     void saveVisualizerEditorParameters (XmlElement* xml) override;
@@ -82,7 +82,7 @@ public:
     void loadVisualizerEditorParameters (XmlElement* xml) override;
 
     /** Creates an interface with additional channel settings*/
-    Visualizer* createNewCanvas (void);
+    Visualizer* createNewCanvas (void) override;
 
     /** Called by PopupChannelSelector */
     void channelStateChanged (Array<int> newChannels) override;
@@ -90,7 +90,7 @@ public:
     /** Called by PopupChannelSelector */
     int getChannelCount() override;
 
-    virtual Array<int> getSelectedChannels() { return Array<int>(); }
+    virtual Array<int> getSelectedChannels() override { return Array<int>(); }
 
     void setPercentMemoryUsed (float memoryUsed)
     {
@@ -159,10 +159,10 @@ public:
     ~HeadstageOptionsInterface();
 
     /** Draw the options interface background */
-    void paint (Graphics& g);
+    void paint (Graphics& g) override;
 
     /** Toggle between 16 and 32 ch */
-    void buttonClicked (Button* button);
+    void buttonClicked (Button* button) override;
 
     /** Refresh button state*/
     void checkEnabledState();
@@ -205,10 +205,10 @@ public:
     ~BandwidthInterface();
 
     /** Draw interface labels */
-    void paint (Graphics& g);
+    void paint (Graphics& g) override;
 
     /** Called when settings are changed */
-    void labelTextChanged (Label* te);
+    void labelTextChanged (Label* te) override;
 
     /** Sets lower bandwidth value */
     void setLowerBandwidth (double value);
@@ -252,10 +252,10 @@ public:
     ~DSPInterface();
 
     /** Draw interface labels */
-    void paint (Graphics& g);
+    void paint (Graphics& g) override;
 
     /** Called when settings are changed */
-    void labelTextChanged (Label* te);
+    void labelTextChanged (Label* te) override;
 
     /** Sets DSP cutoff frequency */
     void setDspCutoffFreq (double value);
@@ -299,10 +299,10 @@ public:
     String getText();
 
     /** Draw interface labels */
-    void paint (Graphics& g);
+    void paint (Graphics& g) override;
 
     /** Called when settings are changed */
-    void comboBoxChanged (ComboBox* cb);
+    void comboBoxChanged (ComboBox* cb) override;
 
 private:
     int sampleRate;
@@ -330,10 +330,10 @@ public:
     ~AudioInterface();
 
     /** Draw interface labels */
-    void paint (Graphics& g);
+    void paint (Graphics& g) override;
 
     /** Called when settings are changed */
-    void labelTextChanged (Label* te);
+    void labelTextChanged (Label* te) override;
 
     /** Sets noise slicer level (used to reduce background noise) */
     void setNoiseSlicerLevel (int value);
@@ -373,10 +373,10 @@ public:
     ClockDivideInterface (class AcquisitionBoard*, DeviceEditor*);
 
     /** Draws the interface labels */
-    void paint (Graphics& g);
+    void paint (Graphics& g) override;
 
     /** Called when settings are changed */
-    void labelTextChanged (Label* te);
+    void labelTextChanged (Label* te) override;
 
     /** Sets clock divide ratio */
     void setClockDivideRatio (int value);

@@ -109,6 +109,8 @@ bool AcqBoardONI::detectBoard()
 
     if (return_code == 1) // successfully opened board
     {
+        LOGC ("Board opened successfully.");
+
         int major, minor, patch, rc;
         evalBoard->getONIVersion (&major, &minor, &patch);
         LOGC ("ONI Library version: ", major, ".", minor, ".", patch);
@@ -170,8 +172,23 @@ bool AcqBoardONI::detectBoard()
     }
     else
     {
+        if (return_code == -1)
+        {
+            LOGC ("ONI FT600 driver library not found.");
+        }
+        else if (return_code == -2)
+        {
+            LOGC ("No ONI Acquisition Board found.");
+        }
+        deviceFound = false;
         return false;
     }
+}
+
+void InitializerThread::run()
+{
+    setProgress(-1.0); // Show an indeterminate progress bar
+    board->initializeBoardInThread();
 }
 
 void AcqBoardONI::createCustomStreams (OwnedArray<DataBuffer>& otherBuffers)
@@ -336,6 +353,14 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 }
 
 bool AcqBoardONI::initializeBoard()
+{
+    InitializerThread initializer(this);
+    initializer.runThread();
+
+    return true;
+}
+
+bool AcqBoardONI::initializeBoardInThread()
 {
     LOGC ("Initializing ONI Acquisition Board...");
 
