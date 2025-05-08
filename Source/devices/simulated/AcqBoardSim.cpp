@@ -24,8 +24,10 @@
 
 const int MAX_NUM_HEADSTAGES = 8;
 
-AcqBoardSim::AcqBoardSim (DataBuffer* buffer_) : AcquisitionBoard (buffer_)
+AcqBoardSim::AcqBoardSim () : AcquisitionBoard ()
 {
+    boardType = BoardType::Simulated;
+
     impedanceMeter = std::make_unique<ImpedanceMeterSim> ();
 
     for (int i = 0; i < MAX_NUM_HEADSTAGES; i++)
@@ -103,9 +105,6 @@ void AcqBoardSim::scanPorts()
             enableHeadstage (i, false);
 		}
     }
-
-    buffer->resize (getNumChannels(), 10000);
-        
 }
 
 
@@ -131,8 +130,6 @@ bool AcqBoardSim::enableHeadstage (int hsNum, bool enabled, int nStr, int strCha
 void AcqBoardSim::enableAuxChannels (bool enabled)
 {
     settings.acquireAux = enabled;
-
-    buffer->resize (getNumChannels(), 10000);
 }
 
 bool AcqBoardSim::areAuxChannelsEnabled() const
@@ -143,8 +140,6 @@ bool AcqBoardSim::areAuxChannelsEnabled() const
 void AcqBoardSim::enableAdcChannels (bool enabled)
 {
     settings.acquireAdc = enabled;
-
-    buffer->resize (getNumChannels(), 10000);
 }
 
 bool AcqBoardSim::areAdcChannelsEnabled() const
@@ -190,6 +185,11 @@ void AcqBoardSim::setNamingScheme (ChannelNamingScheme scheme)
 ChannelNamingScheme AcqBoardSim::getNamingScheme()
 {
     return channelNamingScheme;
+}
+
+bool AcqBoardSim::isReady()
+{
+    return true;
 }
 
 bool AcqBoardSim::startAcquisition()

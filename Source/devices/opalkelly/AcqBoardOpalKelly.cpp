@@ -35,11 +35,13 @@
 
 #define INIT_STEP (evalBoard->isUSB3() ? 256 : 60)
 
-AcqBoardOpalKelly::AcqBoardOpalKelly (DataBuffer* buffer_) : AcquisitionBoard (buffer_),
-                                                             chipRegisters (30000.0f)
+AcqBoardOpalKelly::AcqBoardOpalKelly() : AcquisitionBoard(),
+                                         chipRegisters (30000.0f)
 {
+    boardType = BoardType::OpalKelly;
+
     impedanceMeter = std::make_unique<ImpedanceMeterOpalKelly> (this);
-    
+
     evalBoard = std::make_unique<Rhd2000EvalBoard>();
 
     memset (auxBuffer, 0, sizeof (auxBuffer));
@@ -97,8 +99,8 @@ bool AcqBoardOpalKelly::detectBoard()
     {
         LOGC ("Board opened successfully.");
 
-            // Get some general information about the XEM.
-        LOGC("FPGA system clock: ", evalBoard->getSystemClockFreq(), " MHz"); // Should indicate 100 MHz
+        // Get some general information about the XEM.
+        LOGC ("FPGA system clock: ", evalBoard->getSystemClockFreq(), " MHz"); // Should indicate 100 MHz
         LOGC ("Opal Kelly device firmware version: ", evalBoard->dev->GetDeviceMajorVersion(), ".", evalBoard->dev->GetDeviceMinorVersion());
         LOGC ("Opal Kelly device serial number: ", evalBoard->dev->GetSerialNumber().c_str());
         LOGC ("Opal Kelly device ID std::string: ", evalBoard->dev->GetDeviceID().c_str());
@@ -221,7 +223,7 @@ Array<const Headstage*> AcqBoardOpalKelly::getHeadstages()
 {
     Array<const Headstage*> connectedHeadstages;
 
-    for(auto headstage : headstages)
+    for (auto headstage : headstages)
     {
         if (headstage->isConnected())
             connectedHeadstages.add (headstage);
@@ -257,7 +259,6 @@ Array<int> AcqBoardOpalKelly::getAvailableSampleRates()
 
 void AcqBoardOpalKelly::setSampleRate (int desiredSampleRate)
 {
-
     Rhd2000EvalBoard::AmplifierSampleRate sampleRate;
 
     switch (desiredSampleRate)
@@ -466,7 +467,6 @@ int AcqBoardOpalKelly::getIntanChipId (Rhd2000DataBlock* dataBlock, int stream, 
 
 void AcqBoardOpalKelly::scanPorts()
 {
-
     //Clear previous known streams
     enabledStreams.clear();
 
@@ -725,7 +725,6 @@ void AcqBoardOpalKelly::setCableLength (int hsNum, float length)
     }
 }
 
-
 bool AcqBoardOpalKelly::enableHeadstage (int hsNum, bool enabled, int nStr, int strChans)
 {
     LOGD ("Headstage ", hsNum, ", enabled: ", enabled, ", num streams: ", nStr, ", stream channels: ", strChans);
@@ -768,8 +767,6 @@ bool AcqBoardOpalKelly::enableHeadstage (int hsNum, bool enabled, int nStr, int 
 
         headstages[hsNum]->setNumStreams (0);
     }
-
-    buffer->resize (getNumChannels(), 10000);
 
     return true;
 }
@@ -828,7 +825,6 @@ void AcqBoardOpalKelly::measureImpedances()
 
 void AcqBoardOpalKelly::impedanceMeasurementFinished()
 {
-    
     if (impedances.valid)
     {
         LOGD ("Updating headstage impedance values");
@@ -843,7 +839,7 @@ void AcqBoardOpalKelly::impedanceMeasurementFinished()
 
         editor->impedanceMeasurementFinished();
     }
- }
+}
 
 void AcqBoardOpalKelly::saveImpedances (File& file)
 {
@@ -873,7 +869,7 @@ void AcqBoardOpalKelly::saveImpedances (File& file)
             xml->addChildElement (headstageXml);
         }
 
-       xml->writeTo(file, XmlElement::TextFormat());
+        xml->writeTo (file, XmlElement::TextFormat());
     }
 }
 
@@ -895,7 +891,6 @@ ChannelNamingScheme AcqBoardOpalKelly::getNamingScheme()
 void AcqBoardOpalKelly::enableAuxChannels (bool enabled)
 {
     settings.acquireAux = enabled;
-    buffer->resize (getNumChannels(), 10000);
     updateRegisters();
 }
 
@@ -907,7 +902,6 @@ bool AcqBoardOpalKelly::areAuxChannelsEnabled() const
 void AcqBoardOpalKelly::enableAdcChannels (bool enabled)
 {
     settings.acquireAdc = enabled;
-    buffer->resize (getNumChannels(), 10000);
 }
 
 bool AcqBoardOpalKelly::areAdcChannelsEnabled() const
@@ -917,7 +911,6 @@ bool AcqBoardOpalKelly::areAdcChannelsEnabled() const
 
 double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 {
-
     settings.analogFilter.upperBandwidth = upper;
 
     updateRegisters();
@@ -927,7 +920,6 @@ double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 
 double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 {
-
     settings.analogFilter.lowerBandwidth = lower;
 
     updateRegisters();
@@ -937,7 +929,6 @@ double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 
 double AcqBoardOpalKelly::setDspCutoffFreq (double freq)
 {
-
     settings.dsp.cutoffFreq = freq;
 
     updateRegisters();
@@ -952,7 +943,6 @@ double AcqBoardOpalKelly::getDspCutoffFreq() const
 
 void AcqBoardOpalKelly::setDspOffset (bool state)
 {
-
     settings.dsp.enabled = state;
 
     updateRegisters();
@@ -1033,7 +1023,6 @@ int AcqBoardOpalKelly::setClockDivider (int divide_ratio)
     return divide_ratio;
 }
 
-
 void AcqBoardOpalKelly::setDACTriggerThreshold (int dacChannelIndex, float threshold)
 {
     dacThresholds.set (dacChannelIndex, threshold);
@@ -1045,7 +1034,6 @@ void AcqBoardOpalKelly::setDACTriggerThreshold (int dacChannelIndex, float thres
 
 void AcqBoardOpalKelly::connectHeadstageChannelToDAC (int headstageChannelIndex, int dacChannelIndex)
 {
-
     if (dacChannelIndex == -1)
         return;
 
@@ -1070,10 +1058,15 @@ void AcqBoardOpalKelly::connectHeadstageChannelToDAC (int headstageChannelIndex,
     }
 }
 
+bool AcqBoardOpalKelly::isReady()
+{
+    return true;
+}
+
 bool AcqBoardOpalKelly::startAcquisition()
 {
     impedanceMeter->waitSafely();
-    dataBlock.reset( new Rhd2000DataBlock(evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3()));
+    dataBlock.reset (new Rhd2000DataBlock (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3()));
 
     LOGD ("Expecting ", getNumChannels(), " channels.");
 
@@ -1239,9 +1232,8 @@ void AcqBoardOpalKelly::run()
                         channel++;
                         // ADC waveform units = volts
 
-
                         thisSample[channel] = getBitVolts (ContinuousChannel::ADC) * float (*(uint16*) (bufferPtr + index)) - 5 - 0.4096;
-                        
+
                         index += 2; // single chan width (2 bytes)
                     }
                 }
@@ -1255,10 +1247,10 @@ void AcqBoardOpalKelly::run()
                 index += 4;
 
                 buffer->addToBuffer (thisSample,
-                                               &timestamp,
-                                               &ts,
-                                               &ttlEventWord,
-                                               1);
+                                     &timestamp,
+                                     &ts,
+                                     &ttlEventWord,
+                                     1);
             }
         }
 
@@ -1269,7 +1261,7 @@ void AcqBoardOpalKelly::run()
             {
                 if (dacChannelsToUpdate[k])
                 {
-                    dacChannelsToUpdate.set(k, false);
+                    dacChannelsToUpdate.set (k, false);
                     if (dacChannels[k] >= 0)
                     {
                         evalBoard->enableDac (k, true);
@@ -1319,8 +1311,6 @@ void AcqBoardOpalKelly::run()
         }
     }
 }
-
-
 
 void AcqBoardOpalKelly::setNumHeadstageChannels (int hsNum, int numChannels)
 {
@@ -1397,7 +1387,6 @@ int AcqBoardOpalKelly::getNumDataOutputs (ContinuousChannel::Type type)
 
     return 0;
 }
-
 
 int AcqBoardOpalKelly::getChannelFromHeadstage (int hs, int ch)
 {

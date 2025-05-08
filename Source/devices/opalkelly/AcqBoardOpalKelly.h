@@ -56,7 +56,7 @@ class AcqBoardOpalKelly : public AcquisitionBoard
     
 public:
     /** Constructor */
-    AcqBoardOpalKelly (DataBuffer* buffer_);
+    AcqBoardOpalKelly();
 
     /** Destructor */
     virtual ~AcqBoardOpalKelly();
@@ -114,6 +114,8 @@ public:
 
     /** Gets the method for determining channel names*/
     ChannelNamingScheme getNamingScheme();
+
+    bool isReady() override;
 
     /** Initializes data transfer*/
     bool startAcquisition();

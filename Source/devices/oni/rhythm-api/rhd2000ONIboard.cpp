@@ -40,7 +40,6 @@ int Rhd2000ONIBoard::open (const oni_driver_info_t** driverInfo)
         return -1;
     if (driverInfo)
         getONIDriverInfo (driverInfo);
-    
 
     if (oni_init_ctx (ctx, -1) != ONI_ESUCCESS)
     {
@@ -83,13 +82,27 @@ bool Rhd2000ONIBoard::getFTLibInfo (int* major, int* minor, int* patch)
     size_t size = sizeof (val);
     if (oni_get_driver_opt (ctx, 1, &val, &size) == ONI_ESUCCESS)
     {
-        *major = (val >> 16) & 0xFF;
-        *minor = (val >> 8) & 0xFF;
+        *major = (val >> 24) & 0xFF;
+        *minor = (val >> 16) & 0xFF;
         *patch = (val >> 0) & 0xFF;
         return true;
     }
     else
         return false;
+}
+
+bool Rhd2000ONIBoard::getAcquisitionClockHz (uint32_t* acqClkHz) const
+{
+    uint32_t val;
+    size_t size = sizeof (val);
+
+    if (oni_get_opt (ctx, ONI_OPT_ACQCLKHZ, &val, &size) == ONI_ESUCCESS)
+    {
+        *acqClkHz = val;
+        return true;
+    }
+
+    return false;
 }
 
 void Rhd2000ONIBoard::initialize()
@@ -370,6 +383,51 @@ double Rhd2000ONIBoard::getSampleRate() const
         default:
             return -1.0;
     }
+}
+
+void Rhd2000ONIBoard::enableMemoryMonitor(bool enable)
+{
+    int rc = oni_write_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::ENABLE, enable ? 1 : 0);
+
+    if (rc != ONI_ESUCCESS)
+    {
+        std::cout << oni_error_str (rc) << std::endl;
+        return;
+    }
+}
+
+bool Rhd2000ONIBoard::setMemoryMonitorSampleRate (int sampleRate)
+{
+    oni_reg_val_t clkHz;
+    int rc = oni_read_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::CLK_HZ, &clkHz);
+    if (rc != ONI_ESUCCESS)
+    {
+        std::cout << oni_error_str (rc) << "\n";
+        return false;
+    }
+
+    rc = oni_write_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::CLK_DIV, clkHz / sampleRate);
+
+    if (rc != ONI_ESUCCESS)
+    {
+        std::cout << oni_error_str (rc) << "\n";
+        return false;
+    }
+
+    return true;
+}
+
+bool Rhd2000ONIBoard::getTotalMemory (uint32_t* memory)
+{
+    int rc = oni_read_reg (ctx, DEVICE_MEMORY, (oni_reg_addr_t) MemoryMonitorRegisters::TOTAL_MEM, memory);
+
+    if (rc != ONI_ESUCCESS)
+    {
+        std::cout << oni_error_str (rc) << "\n";
+        return false;
+    }
+
+    return true;
 }
 
 // Print a command list to the console in readable form.
@@ -996,7 +1054,7 @@ int Rhd2000ONIBoard::oni_write_reg_mask (const oni_ctx ctx, oni_dev_idx_t dev_id
     return res;
 }
 
-int Rhd2000ONIBoard::readFrame (oni_frame_t** frame)
+int Rhd2000ONIBoard::readFrame (oni_frame_t** frame, bool filterRhythm)
 {
     int res;
     bool found = false;
@@ -1005,7 +1063,7 @@ int Rhd2000ONIBoard::readFrame (oni_frame_t** frame)
         res = oni_read_frame (ctx, frame);
         if (res < ONI_ESUCCESS)
             return res;
-        if ((*frame)->dev_idx == DEVICE_RHYTHM)
+        if (filterRhythm == false || (*frame)->dev_idx == DEVICE_RHYTHM)
         {
             found = true;
         }
@@ -1133,13 +1191,13 @@ void Rhd2000ONIBoard::setDacManual (int value)
         return;
     }
     value = value & 0xFFFF;
-    oni_size_t values[4];
+    oni_size_t dacValues[4] {};
     for (int i = 0; i < 4; i++)
     {
-        values[i] = value + (value << 16);
+        dacValues[i] = std::min ((value + 5) / (10 * bitVal16), static_cast<double> (std::numeric_limits<uint16_t>::max()));
     }
     oni_frame_t* frame;
-    int res = oni_create_frame (ctx, &frame, DEVICE_DAC, values, 4 * sizeof (oni_size_t));
+    int res = oni_create_frame (ctx, &frame, DEVICE_DAC, dacValues, 4 * sizeof (oni_size_t));
     if (res > ONI_ESUCCESS)
     {
         oni_write_frame (ctx, frame);
@@ -1149,16 +1207,30 @@ void Rhd2000ONIBoard::setDacManual (int value)
         std::cerr << "Error creating frame for DAC writing " << res << ": " << oni_error_str (res) << std::endl;
 }
 
-bool Rhd2000ONIBoard::getFirmwareVersion (int* major, int* minor) const
+bool Rhd2000ONIBoard::getFirmwareVersion (int* major, int* minor, int* patch, int* rc) const
 {
     if (! ctx)
         return false;
     oni_reg_val_t val;
     if (oni_read_reg (ctx, 254, 2, &val) != ONI_ESUCCESS)
         return false;
-    *minor = val & 0xFF;
-    *major = (val >> 8) & 0xFF;
+    *patch = val & 0xFF;
+    *minor = (val >> 8) & 0xFF;
+    *major = (val >> 16) & 0xFF;
+    if (rc)
+    {
+        *rc = (val >> 24) & 0xFF;
+    }
     return true;
+}
+
+bool Rhd2000ONIBoard::getDeviceId (oni_reg_val_t* id)
+{
+    constexpr int deviceIndex = 254;
+    constexpr int registerAddress = 0;
+    int rc = oni_read_reg (ctx, deviceIndex, registerAddress, id);
+
+    return rc == ONI_ESUCCESS;
 }
 
 Rhd2000ONIBoard::BoardMemState Rhd2000ONIBoard::getBoardMemState() const
@@ -1169,4 +1241,166 @@ Rhd2000ONIBoard::BoardMemState Rhd2000ONIBoard::getBoardMemState() const
     if (oni_read_reg (ctx, 254, 0x1000, &val) != ONI_ESUCCESS)
         return BOARDMEM_INVALID;
     return static_cast<BoardMemState> (val & 0x03);
+}
+
+bool Rhd2000ONIBoard::enableI2cMode (bool enablePort[4])
+{
+    if (! ctx)
+        return false;
+
+    const oni_reg_addr_t ENABLE_I2C_ADDRESS = 0x00001001;
+    oni_reg_val_t val = 0x0;
+
+    for (int i = 3; i >= 0; i--)
+    {
+        val |= static_cast<int> (enablePort[i]) << i;
+    }
+
+    if (oni_write_reg (ctx, DEVICE_INFO, ENABLE_I2C_ADDRESS, val) != ONI_ESUCCESS)
+        return false;
+
+    return true;
+}
+
+bool Rhd2000ONIBoard::isI2cCapable (const uint32_t port)
+{
+    if (! ctx || port > 3)
+        return false;
+
+    oni_reg_val_t val;
+    oni_dev_idx_t device = DEVICE_I2C_RAW_A + port * 2;
+
+    int result = oni_read_reg (ctx, device, (oni_reg_addr_t) I2cRawRegisters::I2C_BUS_READY, &val);
+
+    if (result != ONI_ESUCCESS)
+        return false;
+
+    return val > 0;
+}
+
+int Rhd2000ONIBoard::readByte (oni_dev_idx_t device, uint32_t i2cDevAddress, oni_reg_addr_t i2cRegAddress, oni_reg_val_t* value, bool sixteenBitAddress)
+{
+    if (! ctx)
+        return 1;
+
+    uint32_t registerAddress = (i2cRegAddress << 7) | (i2cDevAddress & 0x7F);
+    registerAddress |= sixteenBitAddress ? 0x80000000 : 0;
+
+    int result = oni_read_reg (ctx, device, registerAddress, value);
+
+    return result;
+}
+
+int Rhd2000ONIBoard::readEepromByte (oni_dev_idx_t i2cRawAddress, uint32_t address, uint8_t& byte)
+{
+    uint32_t i2cAddress = 0x50;
+
+    oni_reg_val_t value;
+
+    int result = readByte (i2cRawAddress, i2cAddress, address, &value, true);
+
+    if (result == 0)
+        byte = (uint8_t) (value & 0xFF);
+    else
+        byte = 0;
+
+    return result;
+}
+
+uint32_t Rhd2000ONIBoard::getDeviceIdOnEeprom (const uint32_t port)
+{
+    if (! ctx || port > 3)
+        return 0;
+
+    uint8_t val;
+    int res;
+
+    oni_dev_idx_t i2cRawAddress = DEVICE_I2C_RAW_A + port * 2;
+
+    // NB: Confirm EEPROM first bytes contain OESH
+    const char identifier[] = "OESH";
+
+    for (unsigned int i = 0; i < strlen (identifier); i += 1)
+    {
+        res = readEepromByte (i2cRawAddress, i, val);
+
+        if (res != 0 || val != identifier[i])
+            return 0;
+    }
+    //Check that EEPROM format is v1 or v2
+    res = readEepromByte (i2cRawAddress, 4, val);
+    if (res != 0 || (val != 1 && val != 2))
+        return 0;
+
+    const uint32_t deviceIdStartAddress = 8;
+    uint32_t data = 0;
+
+    for (unsigned int i = 0; i < sizeof (uint32_t); i++)
+    {
+        res = readEepromByte (i2cRawAddress, deviceIdStartAddress + i, val);
+
+        if (res != 0)
+            return 0;
+
+        data += val << (8 * i);
+    }
+
+    return data;
+}
+
+bool Rhd2000ONIBoard::isBnoConnected (const uint32_t port)
+{
+    if (! ctx || port > 3)
+        return false;
+
+    oni_reg_val_t val = 2; // Value >= 2 means there is a BNO scan in progress
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
+    int result;
+
+    using namespace std::chrono;
+    auto startTime = high_resolution_clock::now();
+
+    while (val >= 2 && duration_cast<seconds> (duration<double> (high_resolution_clock::now() - startTime)) < 1s)
+    {
+        result = oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::BNO_STATUS, &val);
+
+        if (result != ONI_ESUCCESS)
+            return false;
+    }
+
+    return val == 1;
+}
+
+void Rhd2000ONIBoard::enableBnoStream (const uint32_t port, bool enabled)
+{
+    if (! ctx || port > 3)
+        return;
+
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
+
+    int rc = oni_write_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::ENABLE_BNO, static_cast<int> (enabled));
+}
+
+bool Rhd2000ONIBoard::isBnoEnabled (const uint32_t port)
+{
+    if (! ctx || port > 3)
+        return false;
+
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
+    oni_reg_val_t val;
+
+    if (oni_read_reg (ctx, device, (oni_reg_addr_t) BnoRegisters::ENABLE_BNO, &val) != ONI_ESUCCESS)
+        return false;
+
+    return static_cast<bool> (val);
+}
+
+void Rhd2000ONIBoard::setBnoAxisMap (const uint32_t port, int axisMap)
+{
+    if (! ctx || port > 3)
+        return;
+
+    oni_dev_idx_t device = DEVICE_BNO_A + port * 2;
+
+    oni_write_reg (ctx, device, (uint32_t) BnoRegisters::AXIS_MAP, axisMap);
 }

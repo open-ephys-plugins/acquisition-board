@@ -24,6 +24,7 @@
 #include "DeviceEditor.h"
 
 #include "devices/AcquisitionBoard.h"
+#include "devices/oni/AcqBoardONI.h"
 
 #include "UI/ChannelCanvas.h"
 
@@ -61,19 +62,36 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     board->editor = this;
 
+    int xOffset = 0;
+
+    if (board->getBoardType() == AcquisitionBoard::BoardType::ONI)
+    {
+        if (((AcqBoardONI*)board)->getMemoryMonitorSupport())
+        {
+            desiredWidth += 22;
+
+            memoryUsage = std::make_unique<MemoryMonitorUsage> (parentNode);
+            memoryUsage->setBounds (8, 30, 15, 95);
+            memoryUsage->setTooltip ("Monitors the percent of the hardware memory buffer used.");
+            addAndMakeVisible (memoryUsage.get());
+
+            xOffset = memoryUsage->getRight();
+        }
+    }
+
     // add headstage-specific controls (currently just a toggle button)
     for (int i = 0; i < 4; i++)
     {
         HeadstageOptionsInterface* hsOptions = new HeadstageOptionsInterface (board, this, i);
         headstageOptionsInterfaces.add (hsOptions);
         addAndMakeVisible (hsOptions);
-        hsOptions->setBounds (3, 28 + i * 20, 70, 18);
+        hsOptions->setBounds (xOffset + 3, 28 + i * 20, 70, 18);
     }
 
     // add rescan button
     rescanButton = std::make_unique<UtilityButton> ("RESCAN");
     rescanButton->setRadius (3.0f);
-    rescanButton->setBounds (6, 108, 65, 18);
+    rescanButton->setBounds (xOffset + 6, 108, 65, 18);
     rescanButton->addListener (this);
     rescanButton->setTooltip ("Check for connected headstages");
     addAndMakeVisible (rescanButton.get());
@@ -81,17 +99,17 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     // add sample rate selection
     sampleRateInterface = std::make_unique<SampleRateInterface> (board, this);
     addAndMakeVisible (sampleRateInterface.get());
-    sampleRateInterface->setBounds (80, 22, 80, 50);
+    sampleRateInterface->setBounds (xOffset + 80, 22, 80, 50);
 
     // add Bandwidth selection
     bandwidthInterface = std::make_unique<BandwidthInterface> (board, this);
     addAndMakeVisible (bandwidthInterface.get());
-    bandwidthInterface->setBounds (80, 60, 80, 45);
+    bandwidthInterface->setBounds (xOffset + 80, 60, 80, 45);
 
     // add AUX channel enable/disable button
     auxButton = std::make_unique<UtilityButton> ("AUX");
     auxButton->setRadius (3.0f);
-    auxButton->setBounds (80, 108, 32, 18);
+    auxButton->setBounds (xOffset + 80, 108, 32, 18);
     auxButton->addListener (this);
     auxButton->setClickingTogglesState (true);
     auxButton->setTooltip ("Toggle AUX channels (3 per headstage)");
@@ -100,7 +118,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     // add ADC channel enable/disable button
     adcButton = std::make_unique<UtilityButton> ("ADC");
     adcButton->setRadius (3.0f);
-    adcButton->setBounds (80 + 32 + 1, 108, 32, 18);
+    adcButton->setBounds (xOffset + 80 + 32 + 1, 108, 32, 18);
     adcButton->addListener (this);
     adcButton->setClickingTogglesState (true);
     adcButton->setTooltip ("Toggle 8 external HDMI ADC channels");
@@ -108,7 +126,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     // add audio output config interface
     audioLabel = std::make_unique<Label> ("audio label", "Audio out");
-    audioLabel->setBounds (170, 22, 75, 15);
+    audioLabel->setBounds (xOffset + 170, 22, 75, 15);
     audioLabel->setFont (FontOptions ("Inter", "Regular", 10.0f));
     addAndMakeVisible (audioLabel.get());
 
@@ -117,7 +135,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
         ElectrodeButton* button = new ElectrodeButton (-1);
         electrodeButtons.add (button);
 
-        button->setBounds (174 + i * 30, 35, 30, 15);
+        button->setBounds (xOffset + 174 + i * 30, 35, 30, 15);
         button->setChannelNum (-1);
         button->setClickingTogglesState (false);
         button->setToggleState (false, dontSendNotification);
@@ -138,16 +156,16 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     // add HW audio parameter selection
     audioInterface = std::make_unique<AudioInterface> (board, this);
     addAndMakeVisible (audioInterface.get());
-    audioInterface->setBounds (174, 55, 70, 50);
+    audioInterface->setBounds (xOffset + 174, 55, 70, 50);
 
     clockInterface = std::make_unique<ClockDivideInterface> (board, this);
     addAndMakeVisible (clockInterface.get());
-    clockInterface->setBounds (174, 80, 70, 50);
+    clockInterface->setBounds (xOffset + 174, 80, 70, 50);
 
     // add DSP Offset Button
     dspoffsetButton = std::make_unique<UtilityButton> ("DSP:");
     dspoffsetButton->setRadius (3.0f); // sets the radius of the button's corners
-    dspoffsetButton->setBounds (174, 108, 32, 18); // sets the x position, y position, width, and height of the button
+    dspoffsetButton->setBounds (xOffset + 174, 108, 32, 18); // sets the x position, y position, width, and height of the button
     dspoffsetButton->addListener (this);
     dspoffsetButton->setClickingTogglesState (true); // makes the button toggle its state when clicked
     dspoffsetButton->setTooltip ("Toggle DSP offset removal");
@@ -157,11 +175,11 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     // add DSP Frequency Selection field
     dspInterface = std::make_unique<DSPInterface> (board, this);
     addAndMakeVisible (dspInterface.get());
-    dspInterface->setBounds (174 + 32, 108, 40, 50);
+    dspInterface->setBounds (xOffset + 174 + 32, 108, 40, 50);
 
     dacTTLButton = std::make_unique<UtilityButton> ("DAC TTL");
     dacTTLButton->setRadius (3.0f);
-    dacTTLButton->setBounds (260, 25, 60, 18);
+    dacTTLButton->setBounds (xOffset + 260, 25, 60, 18);
     dacTTLButton->addListener (this);
     dacTTLButton->setClickingTogglesState (true);
     dacTTLButton->setTooltip ("Toggle DAC Threshold TTL Output");
@@ -169,11 +187,11 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     dacHPFlabel = std::make_unique<Label> ("DAC HPF", "DAC HPF");
     dacHPFlabel->setFont (FontOptions ("Inter", "Regular", 10.0f));
-    dacHPFlabel->setBounds (255, 40, 60, 20);
+    dacHPFlabel->setBounds (xOffset + 255, 40, 60, 20);
     addAndMakeVisible (dacHPFlabel.get());
 
     dacHPFcombo = std::make_unique<ComboBox> ("dacHPFCombo");
-    dacHPFcombo->setBounds (260, 55, 60, 18);
+    dacHPFcombo->setBounds (xOffset + 260, 55, 60, 18);
     dacHPFcombo->addListener (this);
     dacHPFcombo->addItem ("OFF", 1);
     int HPFvalues[10] = { 50, 100, 200, 300, 400, 500, 600, 700, 800, 900 };
@@ -186,11 +204,11 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     ttlSettleLabel = std::make_unique<Label> ("TTL Settle", "TTL Settle");
     ttlSettleLabel->setFont (FontOptions ("Inter", "Regular", 10.0f));
-    ttlSettleLabel->setBounds (255, 70, 70, 20);
+    ttlSettleLabel->setBounds (xOffset + 255, 70, 70, 20);
     addAndMakeVisible (ttlSettleLabel.get());
 
     ttlSettleCombo = std::make_unique<ComboBox> ("FastSettleComboBox");
-    ttlSettleCombo->setBounds (260, 85, 60, 18);
+    ttlSettleCombo->setBounds (xOffset + 260, 85, 60, 18);
     ttlSettleCombo->addListener (this);
     ttlSettleCombo->addItem ("-", 1);
     for (int k = 0; k < 8; k++)
@@ -202,7 +220,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     ledButton = std::make_unique<UtilityButton> ("LED");
     ledButton->setRadius (3.0f);
-    ledButton->setBounds (288, 108, 32, 18);
+    ledButton->setBounds (xOffset + 288, 108, 32, 18);
     ledButton->addListener (this);
     ledButton->setClickingTogglesState (true);
     ledButton->setTooltip ("Toggle board LEDs");
@@ -295,7 +313,7 @@ void DeviceEditor::channelStateChanged (Array<int> newChannels)
 
 int DeviceEditor::getChannelCount()
 {
-    return board->getNumDataOutputs (ContinuousChannel::ELECTRODE);
+    return board->getNumChannels();
 }
 
 void DeviceEditor::buttonClicked (Button* button)
@@ -380,6 +398,9 @@ void DeviceEditor::startAcquisition()
         canvas->beginAnimation();
     }
 
+    if(memoryUsage != nullptr)
+        memoryUsage->startAcquisition();
+
     acquisitionIsActive = true;
 }
 
@@ -399,6 +420,9 @@ void DeviceEditor::stopAcquisition()
     {
         canvas->endAnimation();
     }
+
+    if (memoryUsage != nullptr)
+        memoryUsage->stopAcquisition();
 
     acquisitionIsActive = false;
 }
@@ -827,7 +851,8 @@ void HeadstageOptionsInterface::checkEnabledState()
     if (board->isHeadstageEnabled (hsNumber1))
     {
         channelsOnHs1 = board->getActiveChannelsInHeadstage (hsNumber1);
-        hsButton1->setLabel (String (channelsOnHs1));
+        String label = channelsOnHs1 == 0 ? "IMU" : String (channelsOnHs1); // NB: No active channels indicates a BNO is connected instead
+        hsButton1->setLabel (label);
         hsButton1->setEnabledState (true);
         hsButton1->setToggleState (true, false);
     }
@@ -844,7 +869,8 @@ void HeadstageOptionsInterface::checkEnabledState()
     if (board->isHeadstageEnabled (hsNumber2))
     {
         channelsOnHs2 = board->getActiveChannelsInHeadstage (hsNumber2);
-        hsButton2->setLabel (String (channelsOnHs2));
+        String label = channelsOnHs2 == 0 ? "IMU" : String (channelsOnHs2); // NB: No active channels indicates a BNO is connected instead
+        hsButton2->setLabel (label);
         hsButton2->setEnabledState (true);
         hsButton2->setToggleState (true, false);
     }

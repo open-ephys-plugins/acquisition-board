@@ -132,6 +132,9 @@ void ChannelList::update()
 
     for (auto hs : headstages)
     {
+        if (hs->getNumActiveChannels() == 0)
+            continue;
+
         column++;
 
         maxChannels = hs->getNumActiveChannels() > maxChannels ? hs->getNumActiveChannels() : maxChannels;

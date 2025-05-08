@@ -27,8 +27,8 @@
 #include "../ImpedanceMeter.h"
 
 #include "rhythm-api/okFrontPanelDLL.h"
-#include "rhythm-api/rhd2000ONIdatablock.h"
 #include "rhythm-api/rhd2000ONIboard.h"
+#include "rhythm-api/rhd2000ONIdatablock.h"
 #include "rhythm-api/rhd2000ONIregisters.h"
 
 /** 
@@ -82,6 +82,9 @@ public:
     /** Sets the number of streams for this headstage (1 or 2)*/
     void setNumStreams (int num);
 
+    /** Sets whether or not there is a BNO on this headstage */
+    void setHasBno (bool hasBno);
+
     /** Returns true if the headstage is connected*/
     bool isConnected() const;
 
@@ -106,6 +109,8 @@ private:
     int channelsPerStream;
 
     bool halfChannels;
+
+    bool m_hasBno;
 
     int MAX_NUM_HEADSTAGES;
 

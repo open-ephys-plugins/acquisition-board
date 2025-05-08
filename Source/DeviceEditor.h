@@ -24,6 +24,7 @@
 #ifndef __DEVICEEDITOR_H_2AD3C591__
 #define __DEVICEEDITOR_H_2AD3C591__
 
+#include "UI/MemoryMonitorUsage.h"
 #include <VisualizerEditorHeaders.h>
 
 class HeadstageOptionsInterface;
@@ -86,9 +87,16 @@ public:
     /** Called by PopupChannelSelector */
     void channelStateChanged (Array<int> newChannels) override;
 
+    /** Called by PopupChannelSelector */
+    int getChannelCount() override;
+
     virtual Array<int> getSelectedChannels() override { return Array<int>(); }
 
-    int getChannelCount() override;
+    void setPercentMemoryUsed (float memoryUsed)
+    {
+        if (memoryUsage != nullptr)
+            memoryUsage->setPercentMemoryUsed (memoryUsed);
+    }
 
 private:
     /** Pointer to acquisition board device */
@@ -99,6 +107,8 @@ private:
 
     /** XmlElement to hold previously saved parameters if no device is found */
     std::unique_ptr<XmlElement> previousSettings;
+
+    std::unique_ptr<MemoryMonitorUsage> memoryUsage = nullptr;
 
     OwnedArray<HeadstageOptionsInterface> headstageOptionsInterfaces;
     OwnedArray<ElectrodeButton> electrodeButtons;
