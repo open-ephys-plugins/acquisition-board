@@ -118,6 +118,8 @@ bool AcqBoardOpalKelly::detectBoard()
         LOGC ("No Opal Kelly Acquisition Board found.");
         return false;
     }
+
+    return false;
 }
 
 bool AcqBoardOpalKelly::initializeBoard()
@@ -810,10 +812,12 @@ float AcqBoardOpalKelly::getBitVolts (ContinuousChannel::Type channelType) const
         case ContinuousChannel::ELECTRODE:
             return 0.195f;
         case ContinuousChannel::AUX:
-            return 0.0000374;
+            return 0.0000374f;
         case ContinuousChannel::ADC:
-            return 0.00015258789;
+            return 0.00015258789f;
     }
+
+    return 1.0f;
 }
 
 void AcqBoardOpalKelly::measureImpedances()

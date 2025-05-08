@@ -854,14 +854,14 @@ void HeadstageOptionsInterface::checkEnabledState()
         String label = channelsOnHs1 == 0 ? "IMU" : String (channelsOnHs1); // NB: No active channels indicates a BNO is connected instead
         hsButton1->setLabel (label);
         hsButton1->setEnabledState (true);
-        hsButton1->setToggleState (true, false);
+        hsButton1->setToggleState (true, dontSendNotification);
     }
     else
     {
         channelsOnHs1 = 0;
         hsButton1->setLabel (" ");
         hsButton1->setEnabledState (false);
-        hsButton1->setToggleState (false, false);
+        hsButton1->setToggleState (false, dontSendNotification);
     }
 
     LOGD ("Channels on HS1: ", channelsOnHs1);
@@ -872,14 +872,14 @@ void HeadstageOptionsInterface::checkEnabledState()
         String label = channelsOnHs2 == 0 ? "IMU" : String (channelsOnHs2); // NB: No active channels indicates a BNO is connected instead
         hsButton2->setLabel (label);
         hsButton2->setEnabledState (true);
-        hsButton2->setToggleState (true, false);
+        hsButton2->setToggleState (true, dontSendNotification);
     }
     else
     {
         channelsOnHs2 = 0;
         hsButton2->setLabel (" ");
         hsButton2->setEnabledState (false);
-        hsButton2->setToggleState (false, false);
+        hsButton2->setToggleState (false, dontSendNotification);
     }
 
     LOGD ("Channels on HS2: ", channelsOnHs1);
@@ -923,6 +923,8 @@ bool HeadstageOptionsInterface::is32Channel (int hsIndex)
 
     else if (hsIndex == 1)
         return channelsOnHs2 == 32;
+
+    return false;
 }
 
 void HeadstageOptionsInterface::set32Channel (int hsIndex, bool is32Channel)
@@ -1008,7 +1010,7 @@ void AudioInterface::labelTextChanged (Label* label)
             actualNoiseSlicerLevel = board->setNoiseSlicerLevel (requestedValue);
 
             LOGD ("Setting Noise Slicer Level to ", requestedValue);
-            label->setText (String ((roundFloatToInt) (actualNoiseSlicerLevel)), dontSendNotification);
+            label->setText (String ((roundToInt) (actualNoiseSlicerLevel)), dontSendNotification);
         }
     }
     else
@@ -1027,7 +1029,7 @@ void AudioInterface::labelTextChanged (Label* label)
 void AudioInterface::setNoiseSlicerLevel (int value)
 {
     actualNoiseSlicerLevel = board->setNoiseSlicerLevel (value);
-    noiseSlicerLevelSelection->setText (String (roundFloatToInt (actualNoiseSlicerLevel)), dontSendNotification);
+    noiseSlicerLevelSelection->setText (String (roundToInt (actualNoiseSlicerLevel)), dontSendNotification);
 }
 
 int AudioInterface::getNoiseSlicerLevel()
