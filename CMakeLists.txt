@@ -72,7 +72,7 @@ if(MSVC)
 elseif(LINUX)
 	target_link_libraries(${PLUGIN_NAME} GL X11 Xext Xinerama asound dl freetype pthread rt)
 	set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
-		"-fvisibility=hidden -fPIC -rdynamic -Wl,-rpath='$ORIGIN/../shared' -Wl,-rpath='$ORIGIN/../shared-api9'")
+		"-fvisibility=hidden -fPIC -rdynamic -Wl,-rpath='$ORIGIN/../shared' -Wl,-rpath='$ORIGIN/../shared-api10'")
 	target_compile_options(${PLUGIN_NAME} PRIVATE -fPIC -rdynamic)
 	target_compile_options(${PLUGIN_NAME} PRIVATE -O3) #enable optimization for linux debug
 	
@@ -80,7 +80,7 @@ elseif(LINUX)
 elseif(APPLE)
 	set_target_properties(${PLUGIN_NAME} PROPERTIES BUNDLE TRUE)
 	set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
-	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared-api9")
+	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared-api10")
 
 	set_target_properties(${PLUGIN_NAME} PROPERTIES
 		XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
@@ -94,7 +94,7 @@ elseif(APPLE)
 	install_name_tool -change "libonidriver_ft600.dylib"
 	"@rpath/libonidriver_ft600.dylib" $<TARGET_FILE:${PLUGIN_NAME}>)
 
-	install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api9)
+	install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api10)
 endif()
 
 #create filters for vs and xcode
@@ -115,7 +115,7 @@ elseif(LINUX)
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(APPLE)
 	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
-	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.1.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api9)
+	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.1.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api10)
 endif()
 
 set(LIBONI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI)
@@ -134,6 +134,6 @@ elseif(APPLE)
     set(LIBONI_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI/osx)
     target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/liboni.dylib")
 	target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/libonidriver_ft600.dylib")
-    install(FILES ${LIBONI_LIB_DIR}/liboni.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api9)
-    install(FILES ${LIBONI_LIB_DIR}/libonidriver_ft600.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api9)
+    install(FILES ${LIBONI_LIB_DIR}/liboni.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api10)
+    install(FILES ${LIBONI_LIB_DIR}/libonidriver_ft600.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api10)
 endif()
