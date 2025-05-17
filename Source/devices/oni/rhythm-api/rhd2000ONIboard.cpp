@@ -3,6 +3,8 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 Rhd2000ONIBoard::Rhd2000ONIBoard()
 {
@@ -609,6 +611,8 @@ void Rhd2000ONIBoard::selectAuxCommandLength (AuxCmdSlot auxCommandSlot, int loo
 
 void Rhd2000ONIBoard::resetBoard()
 {
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for (50ms);
     uint32_t val = 1;
     oni_set_opt (ctx, ONI_OPT_RESET, &val, sizeof (val));
     oni_set_opt (ctx, ONI_OPT_BLOCKREADSIZE, &usbReadBlockSize, sizeof (usbReadBlockSize));
