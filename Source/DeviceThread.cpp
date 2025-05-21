@@ -158,13 +158,14 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
     {
         sourceBuffers.add (acquisitionBoard->getBuffer());
 
+        bool generatesTimestamps = acquisitionBoard->getBoardType() == AcquisitionBoard::BoardType::ONI;
+
         DataStream::Settings dataStreamSettings {
             "acquisition_board",
             "Continuous and event data from an Open Ephys Acquisition Board",
             "acq-board.rhythm",
-
-            static_cast<float> (acquisitionBoard->getSampleRate())
-
+            static_cast<float> (acquisitionBoard->getSampleRate()),
+            generatesTimestamps
         };
 
         DataStream* stream = new DataStream (dataStreamSettings);
