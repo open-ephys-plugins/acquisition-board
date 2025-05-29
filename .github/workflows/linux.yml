@@ -2,42 +2,134 @@ name: linux
 
 on: 
   push:
+    branches: [main] # NB: Runs whenever a PR is merged to main
   pull_request:
+    branches: [main] # NB: Runs when a PR to main is opened. This can be expanded to run when PRs are opened to other branches (i.e., testing-juce8)
+  release:
+    types: [published] # NB: Runs whenever a new release is created. Releases are based on tags, but are separate in that a tag can be created without a concurrent release
 
 jobs:
 
+  check-semver:
+    runs-on: ubuntu-22.04
+    if: github.event_name != 'release'
+    steps:
+      - name: Checkout current version
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find previous release
+        id: previous-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "RELEASE_NAME=$(gh release list -L 1 --json tagName -q .[0].tagName)" >> $GITHUB_OUTPUT
+          
+      - name: Checkout last release version
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.previous-release.outputs.RELEASE_NAME }}
+          path: last-release
+          sparse-checkout: |
+            Source/OpenEphysLib.cpp
+          sparse-checkout-cone-mode: false
+
+      - name: Extract Versions
+        id: extract-versions
+        run: |
+          ls -la
+          ls last-release -la
+          ls last-release/Source -la
+          cat ./last-release/Source/OpenEphysLib.cpp
+          echo "CURRENT_VERSION=$(cat ./Source/OpenEphysLib.cpp | grep -w -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> $GITHUB_OUTPUT
+          echo "PREVIOUS_VERSION=$(cat ./last-release/Source/OpenEphysLib.cpp | grep -w -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> $GITHUB_OUTPUT
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10.12"
+
+      - name: Install semver
+        run: python -m pip install semver
+
+      - name: Compare Versions
+        run: |
+         version_current=${{ steps.extract-versions.outputs.CURRENT_VERSION }}
+         version_release=${{ steps.extract-versions.outputs.PREVIOUS_VERSION }}
+ 
+         echo "Current Version: $version_current"
+         echo "Release Version: $version_release"
+         
+         if [ ! $(python -c "import semver; print(semver.compare(\"$version_current\", \"$version_release\"))") == 1 ]; then
+           echo "::error title=Invalid version number::Version number must be increased"
+           exit 1
+         fi
+
   build-linux:
 
+    needs: [check-semver]
+    if: always() && !failure() && !cancelled()
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-22.04]
+    outputs:
+      PLUGIN_API: ${{ steps.setup.outputs.PLUGIN_API }}
+      PLUGIN_VERSION: ${{ steps.setup.outputs.PLUGIN_VERSION }}
 
     steps:
     - uses: actions/checkout@v4
+
     - name: setup
+      id: setup
       run: |
         sudo apt update
         cd ../..
         git clone https://github.com/open-ephys/plugin-GUI.git --branch testing-juce8
         sudo ./plugin-GUI/Resources/Scripts/install_linux_dependencies.sh
         cd plugin-GUI/Build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+        echo "PLUGIN_API=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> GITHUB_OUTPUT
+        echo "PLUGIN_VERSION=$(grep -w ../Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> GITHUB_OUTPUT
+    
     - name: build
+      id: build
       run: |
         cd Build
         cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
         make
-#    - name: test
-#      run: cd build && ctest
+        
+    - name: Collect artifact
+      uses: actions/upload-artifact@v4
+      if: steps.build.outcome == 'success' && always()
+      with:
+        name: Artifact
+        if-no-files-found: error
+        path: |
+          Build
+          Resources
+          libONI
+
+  deploy-linux:
+
+    needs: [build-linux]
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'release' && always() && !failure() && !cancelled()
+
+    steps:
+
+    - name: Download build folder
+      uses: actions/download-artifact@v4
+      with:
+        name: Artifact
+
     - name: deploy
-      if: github.ref == 'refs/heads/main'
       env:
         ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
         build_dir: "Build"
         package: AcquisitionBoard-linux
       run: |
-        plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
-        tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
+        plugin_api=${{ needs.build-linux.outputs.PLUGIN_API }}
+        tag=${{ needs.build-linux.outputs.PLUGIN_VERSION }}
         new_plugin_ver=$tag-API$plugin_api
         mkdir plugins 
         cp -r $build_dir/*.so plugins
