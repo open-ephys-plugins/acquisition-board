@@ -124,7 +124,7 @@ jobs:
   deploy-windows:
 
     needs: [build-windows]
-    runs-on: ubuntu-22.04
+    runs-on: windows-latest
     if: github.event_name == 'release' && always() && !failure() && !cancelled()
 
     steps:
