@@ -152,3 +152,4 @@ jobs:
         powershell Compress-Archive -Path "plugins" -DestinationPath ${zipfile}
         powershell Compress-Archive -U -Path "shared" -DestinationPath ${zipfile}
         curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/AcquisitionBoard-plugin/windows/$zipfile"
+      shell: bash
