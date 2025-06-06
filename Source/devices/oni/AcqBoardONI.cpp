@@ -216,9 +216,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             "Memory Usage",
             "Hardware buffer usage on an acquisition board",
             "acq-board.memory",
-
-            MEMORY_MONITOR_FS
-
+            MEMORY_MONITOR_FS,
+            true
         };
 
         stream = new DataStream (memStreamSettings);
@@ -247,7 +246,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 "IMU Port " + String::charToString (port[k]),
                 "Inertial measurement unit data from the BNO device on port " + String::charToString (port[k]),
                 "acq-board.9dof",
-                100
+                100,
+                true
             };
 
             stream = new DataStream (bnoStreamSettings);
@@ -1589,6 +1589,10 @@ bool AcqBoardONI::startAcquisition()
 
     isTransmitting = true;
 
+    dataSampleNumber = 0;
+    memorySampleNumber = 0;
+    bnoSampleNumbers = { 0, 0, 0, 0 };
+
     return true;
 }
 
@@ -1653,7 +1657,7 @@ void AcqBoardONI::run()
         unsigned char* bufferPtr;
         int numStreams = enabledStreams.size();
         int numChannels = getNumChannels();
-        double ts;
+        int64 sampleNumber;
 
         //evalBoard->printFIFOmetrics();
         for (int samp = 0; samp < nSamps; samp++)
@@ -1687,7 +1691,6 @@ void AcqBoardONI::run()
                 }
 
                 index += 8; // magic number header width (bytes)
-                int64 timestamp = Rhd2000ONIDataBlock::convertUsbTimeStamp (bufferPtr, index);
                 index += 4; // timestamp width
                 auxIndex = index; // aux chans start at this offset
                 index += 6 * numStreams; // width of the 3 aux chans
@@ -1767,9 +1770,12 @@ void AcqBoardONI::run()
 
                 index += 4;
 
+                sampleNumber = dataSampleNumber++;
+                double timestamp = static_cast<double> (frame->time) / acquisitionClockHz;
+
                 buffer->addToBuffer (thisSample,
+                                     &sampleNumber,
                                      &timestamp,
-                                     &ts,
                                      &ttlEventWord,
                                      1);
             }
@@ -1778,7 +1784,7 @@ void AcqBoardONI::run()
                 auto data = (uint32_t*) frame->data;
                 float memf = 100.0f * float (*(data + 2)) / totalMemory;
                 uint64 zero = 0;
-                int64 tst = frame->time;
+                int64 tst = memorySampleNumber++;
                 double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
                 memBuffer->addToBuffer (
                     &memf,
@@ -1791,19 +1797,19 @@ void AcqBoardONI::run()
             }
             else if (hasBNO[0] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_A)
             {
-                addBnoDataToBuffer (frame, bnoBuffers[0]);
+                addBnoDataToBuffer (frame, bnoBuffers[0], bnoSampleNumbers[0]++);
             }
             else if (hasBNO[1] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_B)
             {
-                addBnoDataToBuffer (frame, bnoBuffers[1]);
+                addBnoDataToBuffer (frame, bnoBuffers[1], bnoSampleNumbers[1]++);
             }
             else if (hasBNO[2] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_C)
             {
-                addBnoDataToBuffer (frame, bnoBuffers[2]);
+                addBnoDataToBuffer (frame, bnoBuffers[2], bnoSampleNumbers[2]++);
             }
             else if (hasBNO[3] && frame->dev_idx == Rhd2000ONIBoard::DEVICE_BNO_D)
             {
-                addBnoDataToBuffer (frame, bnoBuffers[3]);
+                addBnoDataToBuffer (frame, bnoBuffers[3], bnoSampleNumbers[3]++);
             }
             oni_destroy_frame (frame);
         }
@@ -1866,11 +1872,10 @@ void AcqBoardONI::run()
     }
 }
 
-void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer) const
+void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer, int64 sampleNumber) const
 {
     int16_t* dataPtr = (int16_t*) frame->data + 4;
     uint64 zero = 0;
-    int64 tst = frame->time;
     double tsd = static_cast<double> (frame->time) / acquisitionClockHz;
     std::array<float, BNO_CHANNELS> bnoSamples {};
 
@@ -1919,7 +1924,7 @@ void AcqBoardONI::addBnoDataToBuffer (oni_frame_t* frame, DataBuffer* buffer) co
 
     buffer->addToBuffer (
         bnoSamples.data(),
-        &tst,
+        &sampleNumber,
         &tsd,
         &zero,
         1);

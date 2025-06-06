@@ -273,7 +273,7 @@ private:
     int getHeadstageChannel (int& headstageIndex, int channelIndex) const;
 
     /** Adds the given frame to the corresponding BNO buffer */
-    void addBnoDataToBuffer (oni_frame_t*, DataBuffer*) const;
+    void addBnoDataToBuffer (oni_frame_t*, DataBuffer*, int64) const;
 
     /** Rhythm API classes*/
     std::unique_ptr<Rhd2000ONIBoard> evalBoard;
@@ -357,6 +357,10 @@ private:
 
     uint32_t acquisitionClockHz;
     uint32_t totalMemory;
+
+    int64 dataSampleNumber = 0;
+    int64 memorySampleNumber = 0;
+    std::array<int64, NUMBER_OF_PORTS> bnoSampleNumbers = { 0, 0, 0, 0 };
 
     DataBuffer* memBuffer = nullptr;
     Array<DataBuffer*, juce::DummyCriticalSection, NUMBER_OF_PORTS> bnoBuffers;
