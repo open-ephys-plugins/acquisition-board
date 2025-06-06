@@ -2,20 +2,86 @@ name: Windows
 
 on: 
   push:
+    branches: [main] # NB: Runs whenever a PR is merged to main
   pull_request:
+    branches: [main] # NB: Runs when a PR to main is opened. This can be expanded to run when PRs are opened to other branches (i.e., testing-juce8)
+  release:
+    types: [published] # NB: Runs whenever a new release is created. Releases are based on tags, but are separate in that a tag can be created without a concurrent release
 
 jobs:
 
+  check-semver:
+    runs-on: ubuntu-22.04
+    if: github.event_name != 'release'
+    steps:
+      - name: Checkout current version
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find previous release
+        id: previous-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "RELEASE_NAME=$(gh release list -L 1 --json tagName -q .[0].tagName)" >> $GITHUB_OUTPUT
+          
+      - name: Checkout last release version
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.previous-release.outputs.RELEASE_NAME }}
+          path: last-release
+          sparse-checkout: |
+            Source/OpenEphysLib.cpp
+          sparse-checkout-cone-mode: false
+
+      - name: Extract Versions
+        id: extract-versions
+        run: |
+          ls -la
+          ls last-release -la
+          ls last-release/Source -la
+          cat ./last-release/Source/OpenEphysLib.cpp
+          echo "CURRENT_VERSION=$(cat ./Source/OpenEphysLib.cpp | grep -w -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> $GITHUB_OUTPUT
+          echo "PREVIOUS_VERSION=$(cat ./last-release/Source/OpenEphysLib.cpp | grep -w -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> $GITHUB_OUTPUT
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10.12"
+
+      - name: Install semver
+        run: python -m pip install semver
+
+      - name: Compare Versions
+        run: |
+         version_current=${{ steps.extract-versions.outputs.CURRENT_VERSION }}
+         version_release=${{ steps.extract-versions.outputs.PREVIOUS_VERSION }}
+ 
+         echo "Current Version: $version_current"
+         echo "Release Version: $version_release"
+         
+         if [ ! $(python -c "import semver; print(semver.compare(\"$version_current\", \"$version_release\"))") == 1 ]; then
+           echo "::error title=Invalid version number::Version number must be increased"
+           exit 1
+         fi
+
   build-windows:
 
+    needs: [check-semver]
+    if: always() && !failure() && !cancelled()
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest]
+    outputs:
+      PLUGIN_API: ${{ steps.setup.outputs.PLUGIN_API }}
+      PLUGIN_VERSION: ${{ steps.setup.outputs.PLUGIN_VERSION }}
     
     steps:
     - uses: actions/checkout@v4
+
     - name: setup
+      id: setup
       run: |
         cd ../..
         git clone https://github.com/open-ephys/plugin-GUI.git --branch testing-juce8
@@ -24,31 +90,58 @@ jobs:
         mkdir Release && cd Release
         curl -L https://openephys.jfrog.io/artifactory/GUI-binaries/Libraries/open-ephys-lib-v1.0.0-alpha.zip --output open-ephys-lib.zip
         unzip open-ephys-lib.zip
+        echo "PLUGIN_API=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> GITHUB_OUTPUT
+        echo "PLUGIN_VERSION=$(grep -w ../Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> GITHUB_OUTPUT
       shell: bash
+      
     - name: configure
       run: |
         cd Build
         cmake -G "Visual Studio 17 2022" -A x64 .. 
       shell: bash
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
+
     - name: build-plugin
+      id: build-plugin
       run: |
         cd Build
         msbuild INSTALL.vcxproj -p:Configuration=Release -p:Platform=x64
       shell: cmd
-# TODO: Perform some basic testing before publishing...
-#    - name: test
-#      run: cd build && ctest
+      
+    - name: Collect artifact
+      uses: actions/upload-artifact@v4
+      if: steps.build-plugin.outcome == 'success' && always()
+      with:
+        name: Artifact
+        if-no-files-found: error
+        path: |
+          Build
+          Resources
+          libONI
+
+  deploy-windows:
+
+    needs: [build-windows]
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'release' && always() && !failure() && !cancelled()
+
+    steps:
+
+    - name: Download build folder
+      uses: actions/download-artifact@v4
+      with:
+        name: Artifact
+
     - name: deploy
-      if: github.ref == 'refs/heads/main'
       env:
         ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
         build_dir: "Build/Release"
         package: AcquisitionBoard-windows
       run: |
-        plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
-        tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
+        plugin_api=${{ needs.build-windows.outputs.PLUGIN_API }}
+        tag=${{ needs.build-windows.outputs.PLUGIN_VERSION }}
         new_plugin_ver=$tag-API$plugin_api
         mkdir plugins
         cp $build_dir/*.dll plugins
@@ -59,4 +152,3 @@ jobs:
         powershell Compress-Archive -Path "plugins" -DestinationPath ${zipfile}
         powershell Compress-Archive -U -Path "shared" -DestinationPath ${zipfile}
         curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/AcquisitionBoard-plugin/windows/$zipfile"
-      shell: bash
