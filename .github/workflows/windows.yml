@@ -69,10 +69,7 @@ jobs:
 
     needs: [check-semver]
     if: always() && !failure() && !cancelled()
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest]
+    runs-on: windows-latest
     outputs:
       PLUGIN_API: ${{ steps.setup.outputs.PLUGIN_API }}
       PLUGIN_VERSION: ${{ steps.setup.outputs.PLUGIN_VERSION }}
@@ -83,7 +80,7 @@ jobs:
     - name: setup
       id: setup
       run: |
-        echo "PLUGIN_VERSION=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> GITHUB_OUTPUT
+        echo "PLUGIN_VERSION=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> "$GITHUB_OUTPUT"
         cd ../..
         git clone https://github.com/open-ephys/plugin-GUI.git --branch testing-juce8
         cd plugin-GUI/Build
@@ -91,7 +88,7 @@ jobs:
         mkdir Release && cd Release
         curl -L https://openephys.jfrog.io/artifactory/GUI-binaries/Libraries/open-ephys-lib-v1.0.0-alpha.zip --output open-ephys-lib.zip
         unzip open-ephys-lib.zip
-        echo "PLUGIN_API=$(grep -rnw ../../Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> GITHUB_OUTPUT
+        echo "PLUGIN_API=$(grep -rnw ../../Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> "$GITHUB_OUTPUT"
       shell: bash
       
     - name: configure
