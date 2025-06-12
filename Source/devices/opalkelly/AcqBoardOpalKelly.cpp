@@ -144,11 +144,23 @@ bool AcqBoardOpalKelly::initializeBoard()
     bitfilename += File::getSeparatorString();
     bitfilename += evalBoard->isUSB3() ? "rhd2000_usb3.bit" : "rhd2000.bit";
 
-    if (! evalBoard->uploadFpgaBitfile (bitfilename.toStdString()))
+    if (! File (bitfilename).existsAsFile() || ! evalBoard->uploadFpgaBitfile (bitfilename.toStdString()))
     {
-        LOGC ("Could not upload FPGA bitfile from ", bitfilename);
-        deviceFound = false;
-        return false;
+        // If the bitfile is not found in the executable directory or if the upload fails,
+        // try to load it from the saved state directory.
+
+        bitfilename = CoreServices::getSavedStateDirectory().getFullPathName();
+        bitfilename += File::getSeparatorString();
+        bitfilename += "shared-api" + String (PLUGIN_API_VER);
+        bitfilename += File::getSeparatorString();
+        bitfilename += evalBoard->isUSB3() ? "rhd2000_usb3.bit" : "rhd2000.bit";
+
+        if (! evalBoard->uploadFpgaBitfile (bitfilename.toStdString()))
+        {
+            LOGC ("Could not upload FPGA bitfile from ", bitfilename);
+            deviceFound = false;
+            return false;
+        }
     }
 
     LOGC ("Successfully uploaded bitfile, initializing board...");
