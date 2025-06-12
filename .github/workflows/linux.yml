@@ -83,7 +83,7 @@ jobs:
         echo "PLUGIN_VERSION=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> "$GITHUB_OUTPUT"
         sudo apt update
         cd ../..
-        git clone https://github.com/open-ephys/plugin-GUI.git --branch testing-juce8
+        git clone https://github.com/open-ephys/plugin-GUI.git --branch main
         sudo ./plugin-GUI/Resources/Scripts/install_linux_dependencies.sh
         cd plugin-GUI/Build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
         echo "PLUGIN_API=$(grep -rnw ../Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> "$GITHUB_OUTPUT"
