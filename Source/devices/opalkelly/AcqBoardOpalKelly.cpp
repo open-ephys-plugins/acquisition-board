@@ -110,12 +110,12 @@ bool AcqBoardOpalKelly::detectBoard()
     }
     else if (return_code == -1) // Opal Kelly library not found
     {
-        LOGC ("No Opal Kelly DLL found.");
+        LOGE ("No Opal Kelly DLL found.");
         return false;
     }
     else if (return_code == -2)
     {
-        LOGC ("No Opal Kelly Acquisition Board found.");
+        LOGE ("No Opal Kelly Acquisition Board found.");
         return false;
     }
 
@@ -157,7 +157,14 @@ bool AcqBoardOpalKelly::initializeBoard()
 
         if (! evalBoard->uploadFpgaBitfile (bitfilename.toStdString()))
         {
-            LOGC ("Could not upload FPGA bitfile from ", bitfilename);
+            AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                              "Failed to upload FPGA bitfile",
+                                              "The Opal Kelly FPGA bitfile upload failed. Refer to the console for further details.",
+                                              "OK",
+                                              nullptr,
+                                              ModalCallbackFunction::create ([] (int) {}));
+
+            LOGE ("Could not upload FPGA bitfile");
             deviceFound = false;
             return false;
         }
