@@ -145,6 +145,7 @@ jobs:
         mkdir shared
         cp libONI/win64/*.dll shared
         cp Resources/okFrontPanel.dll shared
+        cp Resources/*.bit shared
         zipfile=${package}_${new_plugin_ver}.zip
         powershell Compress-Archive -Path "plugins" -DestinationPath ${zipfile}
         powershell Compress-Archive -U -Path "shared" -DestinationPath ${zipfile}

@@ -132,6 +132,7 @@ jobs:
         cp -r $build_dir/*.so plugins
         mkdir shared
         cp Resources/libokFrontPanel.so shared
+        cp Resources/*.bit shared
         cp -r libONI/linux/*.so shared
         zipfile=${package}_${new_plugin_ver}.zip
         zip -r -X $zipfile plugins shared
