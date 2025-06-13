@@ -82,7 +82,7 @@ jobs:
       run: |
         echo "PLUGIN_VERSION=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> "$GITHUB_OUTPUT"
         cd ../..
-        git clone https://github.com/open-ephys/plugin-GUI.git --branch testing-juce8
+        git clone https://github.com/open-ephys/plugin-GUI.git --branch main
         cd plugin-GUI/Build && cmake -G "Xcode" ..
         echo "PLUGIN_API=$(grep -rnw ../Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> "$GITHUB_OUTPUT"
 
@@ -139,6 +139,7 @@ jobs:
 
         mkdir shared 
         cp -r Resources/libokFrontPanel.1.dylib shared
+        cp Resources/*.bit shared
         cp -r libONI/osx/*.dylib shared
 
         # Turn our base64-encoded certificate back to a regular .p12 file

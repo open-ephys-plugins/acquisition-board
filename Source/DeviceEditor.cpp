@@ -66,7 +66,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     if (board->getBoardType() == AcquisitionBoard::BoardType::ONI)
     {
-        if (((AcqBoardONI*)board)->getMemoryMonitorSupport())
+        if (((AcqBoardONI*) board)->getMemoryMonitorSupport())
         {
             desiredWidth += 22;
 
@@ -398,7 +398,7 @@ void DeviceEditor::startAcquisition()
         canvas->beginAnimation();
     }
 
-    if(memoryUsage != nullptr)
+    if (memoryUsage != nullptr)
         memoryUsage->startAcquisition();
 
     acquisitionIsActive = true;
@@ -531,7 +531,13 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
         return;
     }
 
-    sampleRateInterface->setSelectedId (xml->getIntAttribute ("SampleRate"));
+    int sampleRateId = xml->getIntAttribute ("SampleRate");
+    Array<int> sampleRates = board->getAvailableSampleRates();
+    if (! sampleRates.contains (sampleRateId))
+    {
+        sampleRateId = sampleRates.getLast(); // if the requested sample rate is not available, use the last one in the list
+    }
+    sampleRateInterface->setSelectedId (sampleRateId);
     bandwidthInterface->setLowerBandwidth (xml->getDoubleAttribute ("LowCut"));
     bandwidthInterface->setUpperBandwidth (xml->getDoubleAttribute ("HighCut"));
     auxButton->setToggleState (xml->getBoolAttribute ("AUXsOn"), sendNotification);

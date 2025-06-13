@@ -110,12 +110,12 @@ bool AcqBoardOpalKelly::detectBoard()
     }
     else if (return_code == -1) // Opal Kelly library not found
     {
-        LOGC ("No Opal Kelly DLL found.");
+        LOGE ("No Opal Kelly DLL found.");
         return false;
     }
     else if (return_code == -2)
     {
-        LOGC ("No Opal Kelly Acquisition Board found.");
+        LOGE ("No Opal Kelly Acquisition Board found.");
         return false;
     }
 
@@ -144,11 +144,30 @@ bool AcqBoardOpalKelly::initializeBoard()
     bitfilename += File::getSeparatorString();
     bitfilename += evalBoard->isUSB3() ? "rhd2000_usb3.bit" : "rhd2000.bit";
 
-    if (! evalBoard->uploadFpgaBitfile (bitfilename.toStdString()))
+    if (! File (bitfilename).existsAsFile() || ! evalBoard->uploadFpgaBitfile (bitfilename.toStdString()))
     {
-        LOGC ("Could not upload FPGA bitfile from ", bitfilename);
-        deviceFound = false;
-        return false;
+        // If the bitfile is not found in the executable directory or if the upload fails,
+        // try to load it from the saved state directory.
+
+        bitfilename = CoreServices::getSavedStateDirectory().getFullPathName();
+        bitfilename += File::getSeparatorString();
+        bitfilename += "shared-api" + String (PLUGIN_API_VER);
+        bitfilename += File::getSeparatorString();
+        bitfilename += evalBoard->isUSB3() ? "rhd2000_usb3.bit" : "rhd2000.bit";
+
+        if (! evalBoard->uploadFpgaBitfile (bitfilename.toStdString()))
+        {
+            AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                              "Failed to upload FPGA bitfile",
+                                              "The Opal Kelly FPGA bitfile upload failed. Refer to the console for further details.",
+                                              "OK",
+                                              nullptr,
+                                              ModalCallbackFunction::create ([] (int) {}));
+
+            LOGE ("Could not upload FPGA bitfile");
+            deviceFound = false;
+            return false;
+        }
     }
 
     LOGC ("Successfully uploaded bitfile, initializing board...");
