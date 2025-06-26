@@ -204,7 +204,7 @@ public:
 
     DataBuffer* getBuffer()
     {
-        buffer = new DataBuffer (getNumChannels(), 10000);
+        buffer = new DataBuffer (getNumChannels(), 60000);
         return buffer;
     }
 

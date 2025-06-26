@@ -213,7 +213,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
     {
         //Memory usage device
         DataStream::Settings memStreamSettings {
-            "Memory Usage",
+            "memory_usage",
             "Hardware buffer usage on an acquisition board",
             "acq-board.memory",
             MEMORY_MONITOR_FS,
@@ -243,7 +243,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         if (hasBNO[k])
         {
             DataStream::Settings bnoStreamSettings {
-                "IMU Port " + String::charToString (port[k]),
+                "IMU_port_" + String::charToString (port[k]),
                 "Inertial measurement unit data from the BNO device on port " + String::charToString (port[k]),
                 "acq-board.9dof",
                 100,
