@@ -1691,6 +1691,7 @@ void AcqBoardONI::run()
                 }
 
                 index += 8; // magic number header width (bytes)
+                uint32_t rhythmSampleNum = Rhd2000ONIDataBlock::convertUsbTimeStamp (bufferPtr, index);
                 index += 4; // timestamp width
                 auxIndex = index; // aux chans start at this offset
                 index += 6 * numStreams; // width of the 3 aux chans
@@ -1722,7 +1723,7 @@ void AcqBoardONI::run()
                     {
                         if (chipId[dataStream] != CHIP_ID_RHD2164_B)
                         {
-                            int auxNum = (samp + 3) % 4;
+                            int auxNum = (rhythmSampleNum + 3) % 4;
                             if (auxNum < 3)
                             {
                                 auxSamples[dataStream][auxNum] = float (*(uint16*) (bufferPtr + auxIndex) - 32768) * 0.0000374;
