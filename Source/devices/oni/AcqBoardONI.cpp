@@ -147,6 +147,28 @@ bool AcqBoardONI::detectBoard()
             }
             hasI2cSupport = major >= 1 && minor >= 5;
             hasMemoryMonitorSupport = major >= 1 && minor >= 5 && patch >= 1;
+
+            if (major == 0)
+            {
+                AlertWindow alert ("Update Gateware Version",
+                                   "Warning: The detected version of the gateware is v"
+                                       + std::to_string (major) + "." + std::to_string (minor) + "." + std::to_string (patch)
+                                       + ", and should be updated to the latest version."
+                                       + "\n\nTo learn how to update the gateware, please click on the link below.",
+                                   MessageBoxIconType::WarningIcon);
+
+                auto hyperlink = std::make_unique<HyperlinkButton> ("Update Gateware", URL ("https://open-ephys.github.io/acq-board-docs/User-Manual/Gateware-Update.html"));
+                hyperlink->setName ("");
+                hyperlink->setSize (127, 20);
+                hyperlink->setJustificationType (Justification::centred);
+                hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::purple);
+
+                alert.addCustomComponent (hyperlink.get());
+
+                alert.addButton ("Okay", 0);
+
+                alert.runModalLoop();
+            }
         }
         oni_reg_val_t tmpId;
         if (evalBoard->getDeviceId (&tmpId))
@@ -187,7 +209,7 @@ bool AcqBoardONI::detectBoard()
 
 void InitializerThread::run()
 {
-    setProgress(-1.0); // Show an indeterminate progress bar
+    setProgress (-1.0); // Show an indeterminate progress bar
     board->initializeBoardInThread();
 }
 
@@ -354,7 +376,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 
 bool AcqBoardONI::initializeBoard()
 {
-    InitializerThread initializer(this);
+    InitializerThread initializer (this);
     initializer.runThread();
 
     return true;
