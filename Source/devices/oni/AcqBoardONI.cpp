@@ -161,7 +161,7 @@ bool AcqBoardONI::detectBoard()
                 hyperlink->setName ("");
                 hyperlink->setSize (127, 20);
                 hyperlink->setJustificationType (Justification::centred);
-                hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::purple);
+                hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::deepskyblue);
 
                 alert.addCustomComponent (hyperlink.get());
 
