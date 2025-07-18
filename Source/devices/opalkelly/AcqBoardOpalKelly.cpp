@@ -110,12 +110,12 @@ bool AcqBoardOpalKelly::detectBoard()
     }
     else if (return_code == -1) // Opal Kelly library not found
     {
-        LOGE ("No Opal Kelly DLL found.");
+        LOGC ("No Opal Kelly DLL found.");
         return false;
     }
     else if (return_code == -2)
     {
-        LOGE ("No Opal Kelly Acquisition Board found.");
+        LOGC ("No Opal Kelly Acquisition Board found.");
         return false;
     }
 
