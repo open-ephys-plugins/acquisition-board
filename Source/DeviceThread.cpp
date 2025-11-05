@@ -200,6 +200,8 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
 
         if (acquisitionBoard->areAuxChannelsEnabled())
         {
+            const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
+
             for (auto headstage : acquisitionBoard->getHeadstages())
             {
                 for (int ch = 0; ch < 3; ch++)
@@ -216,7 +218,8 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
                     };
 
                     continuousChannels->add (new ContinuousChannel (channelSettings));
-                    continuousChannels->getLast()->setUnits ("mV");
+                    continuousChannels->getLast()->setUnits ("m/s^2");
+                    continuousChannels->getLast()->inputRange = accelerationRange;
                 }
             }
         }
