@@ -306,7 +306,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
-                otherChannels.getLast()->setUnits ("Degrees");
+                otherChannels.getLast()->setUnits ("Deg.");
                 otherChannels.getLast()->inputRange = eulerRanges[i];
             }
 
@@ -325,7 +325,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
-                otherChannels.getLast()->setUnits ("u"); // NB: Quaternion data is unitless by definition
+                otherChannels.getLast()->setUnits (""); // NB: Quaternion data is unitless by definition
                 otherChannels.getLast()->inputRange = quaternionRange;
             }
 
@@ -374,7 +374,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 stream
             };
             otherChannels.add (new ContinuousChannel (temperatureChannelSettings));
-            otherChannels.getLast()->setUnits ("Celsius");
+            otherChannels.getLast()->setUnits (String::fromUTF8 ("\xc2\xb0") + String("C")); // NB: "\xc2\xb0" --> degree symbol
             otherChannels.getLast()->inputRange = ContinuousChannel::InputRange { -100.0f, 100.0f };
 
             std::array<std::string, 4> calibrationTypesName = { "Mag", "Acc", "Gyr", "Sys" };
@@ -392,7 +392,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (calibrationChannelSettings));
-                otherChannels.getLast()->setUnits ("u"); // NB: Calibration data is unitless by definition
+                otherChannels.getLast()->setUnits (""); // NB: Calibration data is unitless by definition
                 otherChannels.getLast()->inputRange = calibrationRange;
             }
         }
