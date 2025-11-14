@@ -218,7 +218,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
                     };
 
                     continuousChannels->add (new ContinuousChannel (channelSettings));
-                    continuousChannels->getLast()->setUnits ("m/s^2");
+                    continuousChannels->getLast()->setUnits ("mV");
                     continuousChannels->getLast()->inputRange = accelerationRange;
                 }
             }
