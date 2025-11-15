@@ -233,6 +233,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 
     if (hasMemoryMonitorSupport)
     {
+        const ContinuousChannel::InputRange percentRange { -100.0f, 100.0f };
+
         //Memory usage device
         DataStream::Settings memStreamSettings {
             "memory_usage",
@@ -255,6 +257,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
         };
         otherChannels.add (new ContinuousChannel (channelSettings));
         otherChannels.getLast()->setUnits ("%");
+        otherChannels.getLast()->inputRange = percentRange;
     }
 
     String port = "ABCD";
@@ -277,12 +280,22 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 
             String identifier = "acq-board.9dof.continuous";
 
-            std::array<std::string, 3> eulerIdentifiers = { "yaw",
+            const int numEulerStreams = 3;
+
+            std::array<std::string, numEulerStreams> eulerIdentifiers = { "yaw",
                                                             "roll",
                                                             "pitch" };
             const std::string eulerNames = "YRP";
 
-            for (int i = 0; i < 3; i++)
+            const std::array<ContinuousChannel::InputRange, numEulerStreams> eulerRanges = {
+                {
+                    { -360.0f, 360.0f }, // Yaw
+                    { -180.0f, 180.0f }, // Roll
+                    { -90.0f, 90.0f } // Pitch
+                }
+            };
+
+            for (int i = 0; i < numEulerStreams; i++)
             {
                 ContinuousChannel::Settings channelSettings {
                     ContinuousChannel::AUX,
@@ -293,11 +306,13 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
-                otherChannels.getLast()->setUnits ("Degrees");
+                otherChannels.getLast()->setUnits ("Deg.");
+                otherChannels.getLast()->inputRange = eulerRanges[i];
             }
 
             const std::string quaternionSubtypesLower = "wxyz";
             const std::string quaternionSubtypesUpper = "WXYZ";
+            const ContinuousChannel::InputRange quaternionRange { -1.0f, 1.0f };
 
             for (int i = 0; i < 4; i++)
             {
@@ -310,11 +325,13 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
-                otherChannels.getLast()->setUnits ("u"); // NB: Quaternion data is unitless by definition
+                otherChannels.getLast()->setUnits (""); // NB: Quaternion data is unitless by definition
+                otherChannels.getLast()->inputRange = quaternionRange;
             }
 
             const std::string axesLower = "xyz";
             const std::string axesUpper = "XYZ";
+            const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
 
             for (int i = 0; i < 3; i++)
             {
@@ -328,7 +345,10 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
                 otherChannels.getLast()->setUnits ("m/s^2");
+                otherChannels.getLast()->inputRange = accelerationRange;
             }
+
+            const ContinuousChannel::InputRange gravityRange { -10.0f, 10.0f };
 
             for (int i = 0; i < 3; i++)
             {
@@ -342,6 +362,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 };
                 otherChannels.add (new ContinuousChannel (channelSettings));
                 otherChannels.getLast()->setUnits ("m/s^2");
+                otherChannels.getLast()->inputRange = gravityRange;
             }
 
             ContinuousChannel::Settings temperatureChannelSettings {
@@ -353,10 +374,12 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 stream
             };
             otherChannels.add (new ContinuousChannel (temperatureChannelSettings));
-            otherChannels.getLast()->setUnits ("Celsius");
+            otherChannels.getLast()->setUnits (String::fromUTF8 ("\xc2\xb0") + String("C")); // NB: "\xc2\xb0" --> degree symbol
+            otherChannels.getLast()->inputRange = ContinuousChannel::InputRange { -100.0f, 100.0f };
 
             std::array<std::string, 4> calibrationTypesName = { "Mag", "Acc", "Gyr", "Sys" };
             std::array<std::string, 4> calibrationTypesIdentifier = { "magnetometer", "acceleration", "gyroscope", "system" };
+            const ContinuousChannel::InputRange calibrationRange { -3.0f, 3.0f };
 
             for (int i = 0; i < 4; i++)
             {
@@ -369,6 +392,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                     stream
                 };
                 otherChannels.add (new ContinuousChannel (calibrationChannelSettings));
+                otherChannels.getLast()->setUnits (""); // NB: Calibration data is unitless by definition
+                otherChannels.getLast()->inputRange = calibrationRange;
             }
         }
     }
