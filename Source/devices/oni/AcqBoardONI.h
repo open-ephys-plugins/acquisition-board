@@ -364,6 +364,8 @@ private:
 
     DataBuffer* memBuffer = nullptr;
     Array<DataBuffer*, juce::DummyCriticalSection, NUMBER_OF_PORTS> bnoBuffers;
+
+    static bool CheckSemVer (int major, int minor, int patch, int targetMajor, int targetMinor, int targetPatch);
 };
 
 #endif
