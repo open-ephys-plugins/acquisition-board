@@ -1,0 +1,3 @@
+[submodule "liboni"]
+	path = liboni
+	url = https://github.com/open-ephys/liboni
