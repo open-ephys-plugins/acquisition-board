@@ -23,6 +23,12 @@ Code
 │       └── ...
 ```
 
+When first cloning the repository, use `git clone --recurse-submodules` to fetch
+the `liboni` submodule as well.
+
+For existing clones of the repo, run `git submodule update --init --recursive`
+to initialize the submodule and update it in the same command.
+
 ### Windows
 
 **Requirements:** [Visual Studio](https://visualstudio.microsoft.com/) and [CMake](https://cmake.org/install/)
