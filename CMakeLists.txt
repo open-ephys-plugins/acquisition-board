@@ -85,10 +85,6 @@ elseif(APPLE)
 		XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
 		XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED NO)
 
-	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND 
-	install_name_tool -change "liboni.dylib"
-	"@rpath/liboni.dylib" $<TARGET_FILE:${PLUGIN_NAME}>)
-
 	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND
 	install_name_tool -change "libonidriver_ft600.dylib"
 	"@rpath/libonidriver_ft600.dylib" $<TARGET_FILE:${PLUGIN_NAME}>)
@@ -113,8 +109,10 @@ elseif(LINUX)
 	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so")
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(APPLE)
+	set(MAC_SHARED_FOLDER $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api10)
+
 	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
-	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.1.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api10)
+	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.1.dylib DESTINATION "${MAC_SHARED_FOLDER}")
 endif()
 
 function(vs_set_all_configurations target_name target_config_name)
@@ -170,7 +168,7 @@ if (MSVC)
 
   # Ensure needed DLLs are installed to the shared folder
   install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/${ONIDRIVER_FT600_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
-elseif(LINUX)
+elseif(LINUX OR APPLE)
   # Add liboni project
 
   set(LIBONI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/liboni/api/liboni")
@@ -210,17 +208,18 @@ elseif(LINUX)
 		DEPENDS ${LIBONI_PNAME}
 	)
 
-	set(ONIDRIVER_FT600_FILENAME "${ONIDRIVER_FT600_NAME}.so")
+	if(LINUX)
+		set(ONIDRIVER_FT600_FILENAME "${ONIDRIVER_FT600_NAME}.so")
 
-	# Ensure needed shared libraries are installed to the shared folder
-	install(FILES "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}.1" 
-			DESTINATION ${GUI_BIN_DIR}/shared
-			RENAME "${ONIDRIVER_FT600_FILENAME}")
-elseif(APPLE)
-# TODO: Build and install liboni/libondriver_ft600 for Mac
-  #   set(LIBONI_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI/osx)
-  #   target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/liboni.dylib")
-	# target_link_libraries(${PLUGIN_NAME} "${LIBONI_LIB_DIR}/libonidriver_ft600.dylib")
-  #   install(FILES ${LIBONI_LIB_DIR}/liboni.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api10)
-  #   install(FILES ${LIBONI_LIB_DIR}/libonidriver_ft600.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api10)
+		# Ensure needed shared libraries are installed to the shared folder
+		install(FILES "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}.1" 
+				DESTINATION ${GUI_BIN_DIR}/shared
+				RENAME "${ONIDRIVER_FT600_FILENAME}")
+	elseif(APPLE)
+		set(ONIDRIVER_FT600_FILENAME "${ONIDRIVER_FT600_NAME}.dylib")
+
+		# Ensure needed shared libraries are installed to the shared folder
+		install(FILES "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}"
+            DESTINATION "${MAC_SHARED_FOLDER}")
+	endif()
 endif()
