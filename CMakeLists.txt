@@ -127,6 +127,8 @@ function(vs_set_all_configurations target_name target_config_name)
     endforeach()
 endfunction()
 
+include(ExternalProject)
+
 if (MSVC)
   # add liboni project
 
@@ -169,10 +171,51 @@ if (MSVC)
   # Ensure needed DLLs are installed to the shared folder
   install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/${ONIDRIVER_FT600_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(LINUX)
-# TODO: Build and install liboni/libondriver_ft600 for Linux
-  #   find_library(LIBONI_LIBRARIES oni liboni PATHS ${CMAKE_CURRENT_SOURCE_DIR}/libONI/linux)
-	# target_link_libraries(${PLUGIN_NAME} ${LIBONI_LIBRARIES})
-  #   install(DIRECTORY ${LIBONI_DIR}/linux/ DESTINATION ${GUI_BIN_DIR}/shared FILES_MATCHING PATTERN "*.so")
+  # Add liboni project
+
+  set(LIBONI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/liboni/api/liboni")
+	set(LIBONI_NAME liboni)
+	set(LIBONI_PNAME "submodule_${LIBONI_NAME}")
+
+	ExternalProject_Add(
+		${LIBONI_PNAME}
+		SOURCE_DIR "${LIBONI_DIR}"
+		CONFIGURE_COMMAND ""
+		BUILD_COMMAND $(MAKE)
+		BUILD_IN_SOURCE 1
+		INSTALL_COMMAND ""
+	)
+
+	add_library("${LIBONI_NAME}" STATIC IMPORTED GLOBAL)
+	set_target_properties("${LIBONI_NAME}" PROPERTIES
+		IMPORTED_LOCATION "${LIBONI_DIR}/liboni.a"
+		INTERFACE_INCLUDE_DIRECTORIES "${LIBONI_DIR}")
+
+	add_dependencies(${LIBONI_NAME} ${LIBONI_PNAME})
+	target_link_libraries(${PLUGIN_NAME} "${LIBONI_NAME}")
+
+	# Add onidriver_ft600 project
+
+	set(ONIDRIVER_FT600_DIR "${LIBONI_DIR}/drivers/ft600")
+	set(ONIDRIVER_FT600_NAME libonidriver_ft600)
+	set(ONIDRIVER_FT600_PNAME "submodule_${ONIDRIVER_FT600_NAME}")
+
+	ExternalProject_Add(
+		${ONIDRIVER_FT600_PNAME}
+		SOURCE_DIR "${ONIDRIVER_FT600_DIR}"
+		CONFIGURE_COMMAND ""
+		BUILD_COMMAND $(MAKE)
+		BUILD_IN_SOURCE 1
+		INSTALL_COMMAND ""
+		DEPENDS ${LIBONI_PNAME}
+	)
+
+	set(ONIDRIVER_FT600_FILENAME "${ONIDRIVER_FT600_NAME}.so")
+
+	# Ensure needed shared libraries are installed to the shared folder
+	install(FILES "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}.1" 
+			DESTINATION ${GUI_BIN_DIR}/shared
+			RENAME "${ONIDRIVER_FT600_FILENAME}")
 elseif(APPLE)
 # TODO: Build and install liboni/libondriver_ft600 for Mac
   #   set(LIBONI_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libONI/osx)
