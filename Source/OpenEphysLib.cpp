@@ -41,7 +41,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
 	info->apiVersion = PLUGIN_API_VER;
 	info->name = "Acquisition Board";
-	info->libVersion = "1.1.6";
+	info->libVersion = "2.0.0";
 	info->numPlugins = NUM_PLUGINS;
 }
 
