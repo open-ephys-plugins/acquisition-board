@@ -147,8 +147,8 @@ bool AcqBoardONI::detectBoard()
             {
                 LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
             }
-            hasI2cSupport = major >= 1 && minor >= 5;
-            hasMemoryMonitorSupport = major >= 1 && minor >= 5 && patch >= 1;
+            hasI2cSupport = CheckSemVer (major, minor, patch, 1, 5, 0);
+            hasMemoryMonitorSupport = CheckSemVer (major, minor, patch, 1, 5, 1);
 
             if (major == 0)
             {
@@ -2176,4 +2176,22 @@ int AcqBoardONI::getHeadstageChannel (int& hs, int ch) const
 bool AcqBoardONI::getMemoryMonitorSupport() const
 {
     return hasMemoryMonitorSupport;
+}
+
+bool AcqBoardONI::CheckSemVer (int major, int minor, int patch, int targetMajor, int targetMinor, int targetPatch)
+{
+    if (major > targetMajor)
+        return true;
+    else if (major < targetMajor)
+        return false;
+
+    if (minor > targetMinor)
+        return true;
+    else if (minor < targetMinor)
+        return false;
+
+    if(patch >= targetPatch)
+        return true;
+
+    return false;
 }
