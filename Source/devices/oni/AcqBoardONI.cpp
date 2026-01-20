@@ -152,24 +152,10 @@ bool AcqBoardONI::detectBoard()
 
             if (major == 0)
             {
-                AlertWindow alert ("Update Gateware Version",
-                                   "Warning: The detected version of the gateware is v"
-                                       + std::to_string (major) + "." + std::to_string (minor) + "." + std::to_string (patch)
-                                       + ", and should be updated to the latest version."
-                                       + "\n\nTo learn how to update the gateware, please click on the link below.",
-                                   MessageBoxIconType::WarningIcon);
-
-                auto hyperlink = std::make_unique<HyperlinkButton> ("Update Gateware", URL ("https://open-ephys.github.io/acq-board-docs/User-Manual/Gateware-Update.html"));
-                hyperlink->setName ("");
-                hyperlink->setSize (127, 20);
-                hyperlink->setJustificationType (Justification::centred);
-                hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::deepskyblue);
-
-                alert.addCustomComponent (hyperlink.get());
-
-                alert.addButton ("Okay", 0);
-
-                alert.runModalLoop();
+                ShowFirmwareUpdateMessage ("Warning: The detected version of the gateware is v"
+                                           + std::to_string (major) + "." + std::to_string (minor) + "." + std::to_string (patch)
+                                           + ", and should be updated to the latest version."
+                                           + "\n\nTo learn how to update the gateware, please click on the link below.");
             }
         }
         oni_reg_val_t tmpId;
@@ -203,6 +189,12 @@ bool AcqBoardONI::detectBoard()
         else if (return_code == -2)
         {
             LOGC ("No ONI Acquisition Board found.");
+        }
+        else if (return_code == -3)
+        {
+            ShowFirmwareUpdateMessage ("Warning: The gateware on the acquisition board is not compatible with"
+                                       " this version of the plugin and needs to be updated to version 2.0.0 or greater."
+                                       "\n\nTo learn how to update the gateware, please click on the link below.");
         }
         deviceFound = false;
         return false;
@@ -2194,4 +2186,23 @@ bool AcqBoardONI::CheckSemVer (int major, int minor, int patch, int targetMajor,
         return true;
 
     return false;
+}
+
+void AcqBoardONI::ShowFirmwareUpdateMessage (std::string message)
+{
+    AlertWindow alert ("Update Gateware Version",
+                      message,
+                      MessageBoxIconType::WarningIcon);
+
+    auto hyperlink = std::make_unique<HyperlinkButton> ("Update Gateware", URL ("https://open-ephys.github.io/acq-board-docs/User-Manual/Gateware-Update.html"));
+    hyperlink->setName ("");
+    hyperlink->setSize (127, 20);
+    hyperlink->setJustificationType (Justification::centred);
+    hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::deepskyblue);
+
+    alert.addCustomComponent (hyperlink.get());
+
+    alert.addButton ("Okay", 0);
+
+    alert.runModalLoop();
 }

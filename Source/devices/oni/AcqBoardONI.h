@@ -366,6 +366,7 @@ private:
     Array<DataBuffer*, juce::DummyCriticalSection, NUMBER_OF_PORTS> bnoBuffers;
 
     static bool CheckSemVer (int major, int minor, int patch, int targetMajor, int targetMinor, int targetPatch);
+    static void ShowFirmwareUpdateMessage (std::string message);
 };
 
 #endif
