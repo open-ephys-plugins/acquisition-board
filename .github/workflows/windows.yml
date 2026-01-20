@@ -86,7 +86,7 @@ jobs:
         cd ../..
         git clone https://github.com/open-ephys/plugin-GUI.git --branch main
         cd plugin-GUI/Build
-        cmake -G "Visual Studio 17 2022" -A x64 .. 
+        cmake -G "Visual Studio 17 2022" -A x64 ..
         mkdir Release && cd Release
         curl -L https://openephys.jfrog.io/artifactory/GUI-binaries/Libraries/open-ephys-lib-v1.0.0.zip --output open-ephys-lib.zip
         unzip open-ephys-lib.zip
@@ -96,16 +96,20 @@ jobs:
     - name: configure
       run: |
         cd Build
-        cmake -G "Visual Studio 17 2022" -A x64 .. 
+        cmake -G "Visual Studio 17 2022" -A x64 ..
       shell: bash
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
 
+      # NB: To respect the ReleaseStatic configuration for liboni, we need to build the solution
+      # first before running INSTALL.vcxproj, otherwise it will build liboni in Release
+      # configuration and throw linking errors
     - name: build-plugin
       id: build-plugin
       run: |
         cd Build
+        msbuild OE_PLUGIN_acquisition-board.sln -p:Configuration=Release -p:Platform=x64
         msbuild INSTALL.vcxproj -p:Configuration=Release -p:Platform=x64
       shell: cmd
       
@@ -118,7 +122,6 @@ jobs:
         path: |
           Build
           Resources
-          libONI
 
   deploy-windows:
 
@@ -145,7 +148,7 @@ jobs:
         mkdir plugins
         cp $build_dir/*.dll plugins
         mkdir shared
-        cp libONI/win64/*.dll shared
+        cp Build/x64/Release/*.dll shared
         cp Resources/okFrontPanel.dll shared
         cp Resources/*.bit shared
         zipfile=${package}_${new_plugin_ver}.zip
