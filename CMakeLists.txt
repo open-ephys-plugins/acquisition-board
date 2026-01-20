@@ -198,28 +198,48 @@ elseif(LINUX OR APPLE)
 	set(ONIDRIVER_FT600_NAME libonidriver_ft600)
 	set(ONIDRIVER_FT600_PNAME "submodule_${ONIDRIVER_FT600_NAME}")
 
-	ExternalProject_Add(
-		${ONIDRIVER_FT600_PNAME}
-		SOURCE_DIR "${ONIDRIVER_FT600_DIR}"
-		CONFIGURE_COMMAND ""
-		BUILD_COMMAND make
-		BUILD_IN_SOURCE 1
-		INSTALL_COMMAND ""
-		DEPENDS ${LIBONI_PNAME}
-	)
+  set(INSTALL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Build/lib")
 
-	if(LINUX)
+  if(APPLE)
+		set(ONIDRIVER_FT600_FILENAME "${ONIDRIVER_FT600_NAME}.dylib")
+    
+    ExternalProject_Add(
+      ${ONIDRIVER_FT600_PNAME}
+      SOURCE_DIR "${ONIDRIVER_FT600_DIR}"
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND make
+      BUILD_IN_SOURCE 1
+      INSTALL_COMMAND
+        ${CMAKE_COMMAND} -E make_directory("${INSTALL_DIR}")
+        COMMAND ${CMAKE_COMMAND} -E copy
+          "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}"
+          "${INSTALL_DIR}"
+      DEPENDS ${LIBONI_PNAME}
+    )
+
+		# Ensure needed shared libraries are installed to the shared folder
+		install(FILES "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}"
+            DESTINATION "${MAC_SHARED_FOLDER}")
+  elseif(LINUX)
 		set(ONIDRIVER_FT600_FILENAME "${ONIDRIVER_FT600_NAME}.so")
+    
+    ExternalProject_Add(
+      ${ONIDRIVER_FT600_PNAME}
+      SOURCE_DIR "${ONIDRIVER_FT600_DIR}"
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND make
+      BUILD_IN_SOURCE 1
+      INSTALL_COMMAND
+        ${CMAKE_COMMAND} -E make_directory("${INSTALL_DIR}")
+        COMMAND ${CMAKE_COMMAND} -E copy
+          "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}.1"
+          "${INSTALL_DIR}/${ONIDRIVER_FT600_FILENAME}"
+      DEPENDS ${LIBONI_PNAME}
+    )
 
 		# Ensure needed shared libraries are installed to the shared folder
 		install(FILES "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}.1" 
 				DESTINATION ${GUI_BIN_DIR}/shared
 				RENAME "${ONIDRIVER_FT600_FILENAME}")
-	elseif(APPLE)
-		set(ONIDRIVER_FT600_FILENAME "${ONIDRIVER_FT600_NAME}.dylib")
-
-		# Ensure needed shared libraries are installed to the shared folder
-		install(FILES "${ONIDRIVER_FT600_DIR}/${ONIDRIVER_FT600_FILENAME}"
-            DESTINATION "${MAC_SHARED_FOLDER}")
-	endif()
+  endif()
 endif()
