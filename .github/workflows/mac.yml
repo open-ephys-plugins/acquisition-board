@@ -104,7 +104,6 @@ jobs:
         path: |
           Build
           Resources
-          libONI
 
   deploy-mac:
 
@@ -142,7 +141,7 @@ jobs:
         mkdir shared 
         cp -r Resources/libokFrontPanel.1.dylib shared
         cp Resources/*.bit shared
-        cp -r libONI/osx/*.dylib shared
+        cp -r Build/lib/*.dylib shared
 
         # Turn our base64-encoded certificate back to a regular .p12 file
         echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
