@@ -2,11 +2,17 @@
 
 A source that can stream data from any version of the Open Ephys Acquisition Board, plus a sink that can trigger board outputs.
 
+## Installation
+
+This plugin can be added via the Open Ephys GUI Plugin Installer. To access the Plugin Installer, press **ctrl-P** or **⌘P** from inside the GUI. Once the installer is loaded, browse to the "Acquisition Board" plugin and click "Install."
+
+## Usage
+
+Instructions for using the Acquisition Board plugin are available [here](https://open-ephys.github.io/gui-docs/User-Manual/Plugins/Acquisition-Board.html).
+
 ## Building from source
 
 First, follow the instructions on [this page](https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-the-GUI.html) to build the Open Ephys GUI.
-
-**Important:** This plugin is intended for use with a preview of GUI version 1.0. The GUI should be compiled from the [`development-juce8`](https://github.com/open-ephys/plugin-gui/tree/development-juce8) branch, rather than the `main` branch.
 
 Then, clone this repository into a directory at the same level as the `plugin-GUI`, e.g.:
  
