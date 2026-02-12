@@ -63,6 +63,12 @@ public:
     /** Enable UI after acquisition is finished*/
     void stopAcquisition() override;
 
+    /** Paint section dividers */
+    void paint (Graphics& g) override;
+
+    /** Update colours when look-and-feel changes */
+    void lookAndFeelChanged() override;
+
     /** Runs impedance test*/
     void measureImpedances();
 
@@ -129,6 +135,12 @@ private:
     std::unique_ptr<ComboBox> ttlSettleCombo, dacHPFcombo;
     std::unique_ptr<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
     std::unique_ptr<Label> noBoardsDetectedLabel;
+
+    std::unique_ptr<Label> amplifiersLabel, digitalInLabel, digitalOutLabel, analogInLabel, analogOutLabel;
+    std::unique_ptr<Label> auxTitleLabel, adcTitleLabel;
+    std::unique_ptr<Label> dspHighpassLabel, triggerLabel;
+
+    int sectionDividers[2] = { 0 };
 
     enum AudioChannel
     {
