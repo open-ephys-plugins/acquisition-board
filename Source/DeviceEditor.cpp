@@ -469,6 +469,7 @@ void DeviceEditor::buttonClicked (Button* button)
     {
         LOGD ("DSP offset ", button->getToggleState());
         board->setDspOffset (button->getToggleState());
+        dspoffsetButton->setLabel (button->getToggleState() ? "ON" : "OFF");
     }
     else if (button == ledButton.get())
     {
@@ -646,6 +647,7 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
     dacTTLButton->setToggleState (xml->getBoolAttribute ("DAC_TTL"), sendNotification);
     dacHPFcombo->setSelectedId (xml->getIntAttribute ("DAC_HPF"));
     dspoffsetButton->setToggleState (xml->getBoolAttribute ("DSPOffset"), sendNotification);
+    dspoffsetButton->setLabel (dspoffsetButton->getToggleState() ? "ON" : "OFF");
     dspInterface->setDspCutoffFreq (xml->getDoubleAttribute ("DSPCutoffFreq"));
     ledButton->setToggleState (xml->getBoolAttribute ("LEDs", true), sendNotification);
     clockInterface->setClockDivideRatio (xml->getIntAttribute ("ClockDivideRatio"));
