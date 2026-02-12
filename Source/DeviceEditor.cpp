@@ -41,7 +41,7 @@ inline double round (double x)
 
 DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
                             AcquisitionBoard* board_)
-    : VisualizerEditor (parentNode, "Acq Board", 382),
+    : VisualizerEditor (parentNode, "Acq Board", 375),
       board (board_)
 {
     canvas = nullptr;
@@ -82,10 +82,10 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     // ===== SECTION POSITIONS =====
     int hsX = xOffset + 3;
     int ampX = xOffset + 93;
-    int diX = xOffset + 200;
-    int doX = xOffset + 200;
-    int aiX = xOffset + 295;
-    int aoX = xOffset + 295;
+    int diX = xOffset + 205;
+    int doX = xOffset + 205;
+    int aiX = xOffset + 292;
+    int aoX = xOffset + 292;
 
     // Store divider positions for paint()
     sectionDividers[0] = diX - 3;
@@ -163,7 +163,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     addAndMakeVisible (ttlSettleLabel.get());
 
     ttlSettleCombo = std::make_unique<ComboBox> ("FastSettleComboBox");
-    ttlSettleCombo->setBounds (diX + 5, 52, 80, 20);
+    ttlSettleCombo->setBounds (diX + 5, 52, 70, 20);
     ttlSettleCombo->addListener (this);
     ttlSettleCombo->addItem ("OFF", 1);
     for (int k = 0; k < 8; k++)
@@ -184,7 +184,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     clockInterface = std::make_unique<ClockDivideInterface> (board, this);
     addAndMakeVisible (clockInterface.get());
-    clockInterface->setBounds (doX + 5, 100, 105, 30);
+    clockInterface->setBounds (doX + 8, 100, 105, 30);
 
     // ===== ANALOG IN SECTION =====
     analogInLabel = std::make_unique<Label> ("analogIn", "ANALOG IN");
@@ -200,7 +200,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     auxButton = std::make_unique<UtilityButton> ("OFF");
     auxButton->setRadius (3.0f);
-    auxButton->setBounds (aiX + 33, 40, 48, 18);
+    auxButton->setBounds (aiX + 30, 40, 43, 18);
     auxButton->addListener (this);
     auxButton->setClickingTogglesState (true);
     auxButton->setTooltip ("Toggle AUX channels (3 per headstage)");
@@ -213,7 +213,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     adcButton = std::make_unique<UtilityButton> ("OFF");
     adcButton->setRadius (3.0f);
-    adcButton->setBounds (aiX + 33, 60, 48, 18);
+    adcButton->setBounds (aiX + 30, 60, 43, 18);
     adcButton->addListener (this);
     adcButton->setClickingTogglesState (true);
     adcButton->setTooltip ("Toggle 8 external HDMI ADC channels");
@@ -238,7 +238,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
             ElectrodeButton* button = new ElectrodeButton (-1);
             electrodeButtons.add (button);
 
-            button->setBounds (aoX + col * (buttonSize - 1) + 7, 95 + row * (buttonSize - 1), buttonSize, buttonSize);
+            button->setBounds (aoX + col * (buttonSize - 1) + 9, 95 + row * (buttonSize - 1), buttonSize, buttonSize);
             button->setChannelNum (-1);
             button->setClickingTogglesState (false);
             button->setToggleState (false, dontSendNotification);
@@ -393,7 +393,7 @@ void DeviceEditor::channelStateChanged (Array<int> newChannels)
         selectedChannel = newChannels[0];
     }
 
-    board->connectHeadstageChannelToDAC (selectedChannel, int (activeAudioChannel));
+    board->connectHeadstageChannelToDAC (selectedChannel, activeAudioChannel);
 
     if (selectedChannel > -1)
     {
@@ -424,18 +424,15 @@ void DeviceEditor::buttonClicked (Button* button)
         }
         CoreServices::updateSignalChain (this);
     }
-    else if (button == electrodeButtons[0] || button == electrodeButtons[1])
+    else if (electrodeButtons.contains ((ElectrodeButton*) button))
     {
         std::vector<bool> channelStates;
 
-        if (button == electrodeButtons[0])
-            activeAudioChannel = LEFT;
-        else
-            activeAudioChannel = RIGHT;
+        activeAudioChannel = electrodeButtons.indexOf ((ElectrodeButton*) button);
 
         for (int i = 0; i < board->getNumDataOutputs (ContinuousChannel::ELECTRODE); i++)
         {
-            if (electrodeButtons[int (activeAudioChannel)]->getChannelNum() - 1 == i)
+            if (electrodeButtons[activeAudioChannel]->getChannelNum() - 1 == i)
                 channelStates.push_back (true);
             else
                 channelStates.push_back (false);
@@ -571,8 +568,8 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
     xml->setAttribute ("HighCut", bandwidthInterface->getUpperBandwidth());
     xml->setAttribute ("AUXsOn", auxButton->getToggleState());
     xml->setAttribute ("ADCsOn", adcButton->getToggleState());
-    xml->setAttribute ("AudioOutputL", electrodeButtons[0]->getChannelNum());
-    xml->setAttribute ("AudioOutputR", electrodeButtons[1]->getChannelNum());
+    for (int i = 0; i < electrodeButtons.size(); i++)
+        xml->setAttribute ("AnalogOutput" + String (i+1), electrodeButtons[i]->getChannelNum());
     xml->setAttribute ("NoiseSlicer", audioInterface->getNoiseSlicerLevel());
     xml->setAttribute ("TTLFastSettle", ttlSettleCombo->getSelectedId());
     xml->setAttribute ("DAC_TTL", dacTTLButton->getToggleState());
@@ -640,9 +637,9 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
     bandwidthInterface->setLowerBandwidth (xml->getDoubleAttribute ("LowCut"));
     bandwidthInterface->setUpperBandwidth (xml->getDoubleAttribute ("HighCut"));
     auxButton->setToggleState (xml->getBoolAttribute ("AUXsOn"), sendNotification);
-    auxButton->setLabel (auxButton->getToggleState() ? "+3 CH" : "Off");
+    auxButton->setLabel (auxButton->getToggleState() ? "+3 CH" : "OFF");
     adcButton->setToggleState (xml->getBoolAttribute ("ADCsOn"), sendNotification);
-    adcButton->setLabel (adcButton->getToggleState() ? "+8 CH" : "Off");
+    adcButton->setLabel (adcButton->getToggleState() ? "+8 CH" : "OFF");
 
     audioInterface->setNoiseSlicerLevel (xml->getIntAttribute ("NoiseSlicer"));
     ttlSettleCombo->setSelectedId (xml->getIntAttribute ("TTLFastSettle"));
@@ -652,19 +649,16 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
     dspInterface->setDspCutoffFreq (xml->getDoubleAttribute ("DSPCutoffFreq"));
     ledButton->setToggleState (xml->getBoolAttribute ("LEDs", true), sendNotification);
     clockInterface->setClockDivideRatio (xml->getIntAttribute ("ClockDivideRatio"));
-
-    int AudioOutputL = xml->getIntAttribute ("AudioOutputL", -1);
-    int AudioOutputR = xml->getIntAttribute ("AudioOutputR", -1);
-
-    electrodeButtons[0]->setChannelNum (AudioOutputL);
-    board->connectHeadstageChannelToDAC (0, AudioOutputL);
-    if (AudioOutputL > -1)
-        electrodeButtons[0]->setToggleState (true, dontSendNotification);
-
-    electrodeButtons[1]->setChannelNum (AudioOutputR);
-    board->connectHeadstageChannelToDAC (1, AudioOutputR);
-    if (AudioOutputR > -1)
-        electrodeButtons[1]->setToggleState (true, dontSendNotification);
+    
+    for (int i = 0; i < electrodeButtons.size(); i++)
+    {
+        electrodeButtons[i]->setChannelNum (xml->getIntAttribute ("AnalogOutput" + String (i + 1), -1));
+        if (xml->getIntAttribute ("AnalogOutput" + String (i + 1), -1) > -1)
+        {
+            board->connectHeadstageChannelToDAC (xml->getIntAttribute ("AnalogOutput" + String (i + 1), -1), i);
+            electrodeButtons[i]->setToggleState (true, dontSendNotification);
+        }
+    }
 
     forEachXmlChildElementWithTagName (*xml, hsOptions, "HSOPTIONS")
     {

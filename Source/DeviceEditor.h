@@ -142,13 +142,7 @@ private:
 
     int sectionDividers[2] = { 0 };
 
-    enum AudioChannel
-    {
-        LEFT = 0,
-        RIGHT = 1
-    };
-
-    AudioChannel activeAudioChannel;
+    int activeAudioChannel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DeviceEditor);
 };
