@@ -81,7 +81,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     // ===== SECTION POSITIONS =====
     int hsX = xOffset + 3;
-    int ampX = xOffset + 93;
+    int ampX = xOffset + 95;
     int diX = xOffset + 205;
     int doX = xOffset + 205;
     int aiX = xOffset + 292;
@@ -109,7 +109,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     ledButton = std::make_unique<UtilityButton> ("LED");
     ledButton->setRadius (3.0f);
-    ledButton->setBounds (hsX + 65, 109, 25, 18);
+    ledButton->setBounds (hsX + 67, 109, 25, 18);
     ledButton->addListener (this);
     ledButton->setClickingTogglesState (true);
     ledButton->setTooltip ("Toggle board LEDs");
@@ -139,7 +139,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     dspoffsetButton = std::make_unique<UtilityButton> ("ON");
     dspoffsetButton->setRadius (3.0f);
-    dspoffsetButton->setBounds (ampX + 65, 108, 30, 18);
+    dspoffsetButton->setBounds (ampX + 65, 109, 30, 18);
     dspoffsetButton->addListener (this);
     dspoffsetButton->setClickingTogglesState (true);
     dspoffsetButton->setTooltip ("Toggle DSP offset removal");
@@ -298,7 +298,7 @@ void DeviceEditor::paint (Graphics& g)
     for (int i = 0; i < 4; i++)
     {
         auto bounds = headstageOptionsInterfaces[i]->getBounds();
-        float cx = (float) bounds.getRight() + 7.0f;
+        float cx = (float) bounds.getRight() + 9.0f;
         float cy = (float) bounds.getCentreY();
 
         g.setColour (Colours::darkgrey);
@@ -811,9 +811,9 @@ void BandwidthInterface::paint (Graphics& g)
 
     g.setFont (FontOptions ("Inter", "Regular", 13.0f));
 
-    g.drawText ("-", 30, 13, 13, 18, Justification::centred, false);
+    g.drawText ("-", 30, 12, 13, 18, Justification::centred, false);
 
-    g.drawText ("Hz", 85, 14, 16, 18, Justification::left, false);
+    g.drawText ("Hz", 85, 12, 16, 18, Justification::left, false);
 }
 
 // Sample rate Options --------------------------------------------------------------------
