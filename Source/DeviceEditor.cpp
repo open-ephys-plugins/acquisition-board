@@ -118,19 +118,19 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     // ===== AMPLIFIERS SECTION =====
     auto sectionColour = findColour (ThemeColours::defaultText).withAlpha (0.4f);
-    amplifiersLabel = std::make_unique<Label> ("headstages", "HEADSTAGES");
-    amplifiersLabel->setBounds (ampX, 25, 125, 14);
-    amplifiersLabel->setFont (FontOptions ("Inter", "Regular", 12.0f));
-    amplifiersLabel->setColour (Label::textColourId, sectionColour);
-    addAndMakeVisible (amplifiersLabel.get());
+    //amplifiersLabel = std::make_unique<Label> ("headstages", "SIGNALS");
+    //amplifiersLabel->setBounds (ampX, 25, 125, 14);
+    //amplifiersLabel->setFont (FontOptions ("Inter", "Regular", 12.0f));
+    //amplifiersLabel->setColour (Label::textColourId, sectionColour);
+    //addAndMakeVisible (amplifiersLabel.get());
 
     sampleRateInterface = std::make_unique<SampleRateInterface> (board, this);
     addAndMakeVisible (sampleRateInterface.get());
-    sampleRateInterface->setBounds (ampX + 5, 38, 155, 35);
+    sampleRateInterface->setBounds (ampX + 5, 28, 155, 35);
 
     bandwidthInterface = std::make_unique<BandwidthInterface> (board, this);
     addAndMakeVisible (bandwidthInterface.get());
-    bandwidthInterface->setBounds (ampX, 75, 125, 42);
+    bandwidthInterface->setBounds (ampX, 69, 125, 42);
 
     dspHighpassLabel = std::make_unique<Label> ("dspHp", "DSP Highpass");
     dspHighpassLabel->setBounds (ampX, 108, 80, 18);
@@ -146,24 +146,40 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     addAndMakeVisible (dspoffsetButton.get());
     dspoffsetButton->setToggleState (true, dontSendNotification);
 
+
+
     dspInterface = std::make_unique<DSPInterface> (board, this);
     dspInterface->setVisible (false);
     addChildComponent (dspInterface.get());
 
     // ===== DIGITAL IN SECTION =====
-    digitalInLabel = std::make_unique<Label> ("digitalIn", "DIGITAL IN");
-    digitalInLabel->setBounds (diX, 25, 90, 14);
+    digitalInLabel = std::make_unique<Label> ("digitalIn", "HEADSTAGES");
+    digitalInLabel->setBounds (diX, 28, 90, 14);
     digitalInLabel->setFont (FontOptions ("Inter", "Regular", 12.0f));
     digitalInLabel->setColour (Label::textColourId, sectionColour);
     addAndMakeVisible (digitalInLabel.get());
 
-    ttlSettleLabel = std::make_unique<Label> ("TTL Settle", "TTL Settle");
+    auxTitleLabel = std::make_unique<Label> ("auxTitle", "AUX");
+    auxTitleLabel->setBounds (diX, 42, 35, 22);
+    auxTitleLabel->setFont (FontOptions ("Inter", "Bold", 12.0f));
+    addAndMakeVisible (auxTitleLabel.get());
+
+    auxButton = std::make_unique<UtilityButton> ("OFF");
+    auxButton->setRadius (3.0f);
+    auxButton->setBounds (diX + 30, 44, 43, 18);
+    auxButton->addListener (this);
+    auxButton->setClickingTogglesState (true);
+    auxButton->setTooltip ("Toggle AUX channels (3 per headstage)");
+    addAndMakeVisible (auxButton.get());
+
+    ttlSettleLabel = std::make_unique<Label> ("TTL Settle", "Amplifier Settle");
     ttlSettleLabel->setFont (FontOptions ("Inter", "Regular", 10.0f));
-    ttlSettleLabel->setBounds (diX, 38, 90, 15);
+    ttlSettleLabel->setBounds (diX, 63, 110, 15);
+    ttlSettleLabel->setVisible (false);
     addAndMakeVisible (ttlSettleLabel.get());
 
     ttlSettleCombo = std::make_unique<ComboBox> ("FastSettleComboBox");
-    ttlSettleCombo->setBounds (diX + 5, 52, 70, 20);
+    ttlSettleCombo->setBounds (diX + 5, 78, 70, 20);
     ttlSettleCombo->addListener (this);
     ttlSettleCombo->addItem ("OFF", 1);
     for (int k = 0; k < 8; k++)
@@ -173,47 +189,35 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     ttlSettleCombo->setSelectedId (1, sendNotification);
     addAndMakeVisible (ttlSettleCombo.get());
 
+    clockInterface = std::make_unique<ClockDivideInterface> (board, this);
+    addAndMakeVisible (clockInterface.get());
+    clockInterface->setBounds (doX + 5, 105, 105, 30);
+
     // ===== DIGITAL OUT SECTION =====
-    digitalOutLabel = std::make_unique<Label> ("digitalOut", "DIGITAL OUT");
-    digitalOutLabel->setBounds (doX, 80, 105, 14);
-    digitalOutLabel->setFont (FontOptions ("Inter", "Regular", 12.0f));
-    digitalOutLabel->setColour (Label::textColourId, sectionColour);
-    addAndMakeVisible (digitalOutLabel.get());
+    //digitalOutLabel = std::make_unique<Label> ("digitalOut", "SYNC OUTPUT");
+    //digitalOutLabel->setBounds (doX, 74, 105, 14);
+    //digitalOutLabel->setFont (FontOptions ("Inter", "Regular", 12.0f));
+    //digitalOutLabel->setColour (Label::textColourId, sectionColour);
+    //addAndMakeVisible (digitalOutLabel.get());
 
     // Trigger buttons (1-8) will be added in step 4
 
-    clockInterface = std::make_unique<ClockDivideInterface> (board, this);
-    addAndMakeVisible (clockInterface.get());
-    clockInterface->setBounds (doX + 8, 100, 105, 30);
 
     // ===== ANALOG IN SECTION =====
     analogInLabel = std::make_unique<Label> ("analogIn", "ANALOG IN");
-    analogInLabel->setBounds (aiX, 25, 80, 14);
+    analogInLabel->setBounds (aiX, 28, 80, 14);
     analogInLabel->setFont (FontOptions ("Inter", "Regular", 12.0f));
     analogInLabel->setColour (Label::textColourId, sectionColour);
     addAndMakeVisible (analogInLabel.get());
 
-    auxTitleLabel = std::make_unique<Label> ("auxTitle", "AUX");
-    auxTitleLabel->setBounds (aiX, 38, 35, 22);
-    auxTitleLabel->setFont (FontOptions ("Inter", "Bold", 12.0f));
-    addAndMakeVisible (auxTitleLabel.get());
-
-    auxButton = std::make_unique<UtilityButton> ("OFF");
-    auxButton->setRadius (3.0f);
-    auxButton->setBounds (aiX + 30, 40, 43, 18);
-    auxButton->addListener (this);
-    auxButton->setClickingTogglesState (true);
-    auxButton->setTooltip ("Toggle AUX channels (3 per headstage)");
-    addAndMakeVisible (auxButton.get());
-
     adcTitleLabel = std::make_unique<Label> ("adcTitle", "ADC");
-    adcTitleLabel->setBounds (aiX, 58, 35, 22);
+    adcTitleLabel->setBounds (aiX, 42, 35, 22);
     adcTitleLabel->setFont (FontOptions ("Inter", "Bold", 12.0f));
     addAndMakeVisible (adcTitleLabel.get());
 
     adcButton = std::make_unique<UtilityButton> ("OFF");
     adcButton->setRadius (3.0f);
-    adcButton->setBounds (aiX + 30, 60, 43, 18);
+    adcButton->setBounds (aiX + 30, 44, 43, 18);
     adcButton->addListener (this);
     adcButton->setClickingTogglesState (true);
     adcButton->setTooltip ("Toggle 8 external HDMI ADC channels");
@@ -221,7 +225,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
 
     // ===== ANALOG OUT SECTION =====
     analogOutLabel = std::make_unique<Label> ("analogOut", "ANALOG OUT");
-    analogOutLabel->setBounds (aoX, 80, 105, 14);
+    analogOutLabel->setBounds (aoX, 74, 105, 14);
     analogOutLabel->setFont (FontOptions ("Inter", "Regular", 12.0f));
     analogOutLabel->setColour (Label::textColourId, sectionColour);
     addAndMakeVisible (analogOutLabel.get());
@@ -238,7 +242,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
             ElectrodeButton* button = new ElectrodeButton (-1);
             electrodeButtons.add (button);
 
-            button->setBounds (aoX + col * (buttonSize - 1) + 9, 95 + row * (buttonSize - 1), buttonSize, buttonSize);
+            button->setBounds (aoX + col * (buttonSize - 1) + 9, 91 + row * (buttonSize - 1), buttonSize, buttonSize);
             button->setChannelNum (-1);
             button->setClickingTogglesState (false);
             button->setToggleState (false, dontSendNotification);
@@ -317,9 +321,9 @@ void DeviceEditor::lookAndFeelChanged()
 
     auto sectionColour = findColour (ThemeColours::defaultText).withAlpha (0.4f);
 
-    amplifiersLabel->setColour (Label::textColourId, sectionColour);
+    //amplifiersLabel->setColour (Label::textColourId, sectionColour);
     digitalInLabel->setColour (Label::textColourId, sectionColour);
-    digitalOutLabel->setColour (Label::textColourId, sectionColour);
+    //digitalOutLabel->setColour (Label::textColourId, sectionColour);
     analogInLabel->setColour (Label::textColourId, sectionColour);
     analogOutLabel->setColour (Label::textColourId, sectionColour);
 }
@@ -480,6 +484,8 @@ void DeviceEditor::buttonClicked (Button* button)
 
 void DeviceEditor::startAcquisition()
 {
+    sampleRateInterface->setEnabled (false);
+    bandwidthInterface->setEnabled (false);
     rescanButton->setEnabledState (false);
     auxButton->setEnabledState (false);
     adcButton->setEnabledState (false);
@@ -503,6 +509,8 @@ void DeviceEditor::startAcquisition()
 
 void DeviceEditor::stopAcquisition()
 {
+    sampleRateInterface->setEnabled (true);
+    bandwidthInterface->setEnabled (true);
     rescanButton->setEnabledState (true);
     auxButton->setEnabledState (true);
     adcButton->setEnabledState (true);
@@ -708,18 +716,32 @@ BandwidthInterface::BandwidthInterface (AcquisitionBoard* board_,
     lowerBandwidthSelection = std::make_unique<Label> ("LowerBandwidth", lastLowCutString);
     lowerBandwidthSelection->setEditable (true, false, false);
     lowerBandwidthSelection->addListener (this);
-    lowerBandwidthSelection->setBounds (0, 15, 30, 15);
+    lowerBandwidthSelection->setBounds (5, 15, 30, 15);
     addAndMakeVisible (lowerBandwidthSelection.get());
 
     upperBandwidthSelection = std::make_unique<Label> ("UpperBandwidth", lastHighCutString);
     upperBandwidthSelection->setEditable (true, false, false);
     upperBandwidthSelection->addListener (this);
-    upperBandwidthSelection->setBounds (40, 15, 48, 15);
+    upperBandwidthSelection->setBounds (45, 15, 40, 15);
     addAndMakeVisible (upperBandwidthSelection.get());
+
+    lookAndFeelChanged();
 }
 
 BandwidthInterface::~BandwidthInterface()
 {
+}
+
+
+void BandwidthInterface::lookAndFeelChanged()
+{
+    lowerBandwidthSelection->setColour (Label::textColourId, findColour (ThemeColours::defaultText));
+    lowerBandwidthSelection->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker (0.2f));
+    lowerBandwidthSelection->setColour (Label::outlineColourId, findColour (ThemeColours::defaultText).darker (0.5f));
+
+    upperBandwidthSelection->setColour (Label::textColourId, findColour (ThemeColours::defaultText));
+    upperBandwidthSelection->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker (0.2f));
+    upperBandwidthSelection->setColour (Label::outlineColourId, findColour (ThemeColours::defaultText).darker (0.5f));
 }
 
 void BandwidthInterface::labelTextChanged (Label* label)
@@ -741,10 +763,11 @@ void BandwidthInterface::labelTextChanged (Label* label)
             }
 
             actualUpperBandwidth = board->setUpperBandwidth (requestedValue);
+            lastHighCutString = String (int(actualUpperBandwidth));
 
             LOGD ("Setting Upper Bandwidth to ", requestedValue);
             LOGD ("Actual Upper Bandwidth:  ", actualUpperBandwidth);
-            label->setText (String (round (actualUpperBandwidth * 10.f) / 10.f), dontSendNotification);
+            label->setText (lastHighCutString, dontSendNotification);
         }
         else
         {
@@ -761,11 +784,12 @@ void BandwidthInterface::labelTextChanged (Label* label)
             }
 
             actualLowerBandwidth = board->setLowerBandwidth (requestedValue);
+            lastLowCutString = String (actualLowerBandwidth, 1);
 
             LOGD ("Setting Lower Bandwidth to ", requestedValue);
             LOGD ("Actual Lower Bandwidth:  ", actualLowerBandwidth);
 
-            label->setText (String (round (actualLowerBandwidth * 10.f) / 10.f), dontSendNotification);
+            label->setText (lastLowCutString, dontSendNotification);
         }
     }
     else if (editor->acquisitionIsActive)
@@ -782,13 +806,15 @@ void BandwidthInterface::labelTextChanged (Label* label)
 void BandwidthInterface::setLowerBandwidth (double value)
 {
     actualLowerBandwidth = board->setLowerBandwidth (value);
-    lowerBandwidthSelection->setText (String (round (actualLowerBandwidth * 10.f) / 10.f), dontSendNotification);
+    lastLowCutString = String (actualLowerBandwidth, 1);
+    lowerBandwidthSelection->setText (lastLowCutString, dontSendNotification);
 }
 
 void BandwidthInterface::setUpperBandwidth (double value)
 {
     actualUpperBandwidth = board->setUpperBandwidth (value);
-    upperBandwidthSelection->setText (String (round (actualUpperBandwidth * 10.f) / 10.f), dontSendNotification);
+    lastHighCutString = String (int(actualUpperBandwidth));
+    upperBandwidthSelection->setText (lastHighCutString, dontSendNotification);
 }
 
 double BandwidthInterface::getLowerBandwidth()
@@ -809,11 +835,11 @@ void BandwidthInterface::paint (Graphics& g)
 
     g.drawText (name, 5, 0, 200, 12, Justification::left, false);
 
-    g.setFont (FontOptions ("Inter", "Regular", 13.0f));
+    g.setFont (FontOptions ("Inter", "Regular", 14.0f));
 
-    g.drawText ("-", 30, 12, 13, 18, Justification::centred, false);
+    g.drawText ("-", 33, 12, 13, 18, Justification::centred, false);
 
-    g.drawText ("Hz", 85, 12, 16, 18, Justification::left, false);
+    g.drawText ("Hz", 87, 13, 16, 18, Justification::left, false);
 }
 
 // Sample rate Options --------------------------------------------------------------------
@@ -1163,7 +1189,17 @@ ClockDivideInterface::ClockDivideInterface (AcquisitionBoard* board_,
     divideRatioSelection->setEditable (true, false, false);
     divideRatioSelection->addListener (this);
     divideRatioSelection->setBounds (35, 0, 35, 20);
+    
     addAndMakeVisible (divideRatioSelection.get());
+
+    lookAndFeelChanged();
+}
+
+void ClockDivideInterface::lookAndFeelChanged()
+{
+    divideRatioSelection->setColour (Label::textColourId, findColour (ThemeColours::defaultText));
+    divideRatioSelection->setColour (Label::backgroundColourId, findColour (ThemeColours::componentBackground).darker (0.2f));
+    divideRatioSelection->setColour (Label::outlineColourId, findColour (ThemeColours::defaultText).darker (0.5f));
 }
 
 void ClockDivideInterface::labelTextChanged (Label* label)

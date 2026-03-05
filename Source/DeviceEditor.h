@@ -228,6 +228,9 @@ public:
     /** Returns actual upper bandwidth value */
     double getUpperBandwidth();
 
+    /** Update colours when look-and-feel changes */
+    void lookAndFeelChanged() override;
+
 private:
     String name;
 
@@ -389,6 +392,9 @@ public:
 
     /** Returns actual clock divide ratio */
     int getClockDivideRatio() const { return actualDivideRatio; };
+
+    /** Update colours when look-and-feel changes */
+    void lookAndFeelChanged() override;
 
 private:
     String name;
