@@ -173,8 +173,17 @@ public:
     /** Refresh button state*/
     void checkEnabledState();
 
+    /** Returns the cable delay adjustment for this port */
+    int getCableDelayAdjustment() const;
+
+    /** Sets the cable delay adjustment for this port */
+    void setCableDelayAdjustment (int newAdjustment);
+
     /** Set enabled (e.g. during acquisition) */
     void setEnabled (bool state);
+
+    /** Show a cable delay adjustment popup menu */
+    void mouseUp (const MouseEvent& event) override;
 
     /** Checks whether headstage is in 32- or 16-channel mode*/
     bool is32Channel (int hsIndex);
@@ -185,6 +194,7 @@ public:
 private:
     int hsNumber1, hsNumber2;
     int channelsOnHs1, channelsOnHs2;
+    int cableDelayAdjustment = 0;
     String name;
 
     bool isEnabled;

@@ -97,7 +97,7 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
         HeadstageOptionsInterface* hsOptions = new HeadstageOptionsInterface (board, this, i);
         headstageOptionsInterfaces.add (hsOptions);
         addAndMakeVisible (hsOptions);
-        hsOptions->setBounds (hsX, 28 + i * 20, 70, 18);
+        hsOptions->setBounds (hsX, 28 + i * 20, 75, 18);
     }
 
     rescanButton = std::make_unique<UtilityButton> ("RESCAN");
@@ -145,8 +145,6 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     dspoffsetButton->setTooltip ("Toggle DSP offset removal");
     addAndMakeVisible (dspoffsetButton.get());
     dspoffsetButton->setToggleState (true, dontSendNotification);
-
-
 
     dspInterface = std::make_unique<DSPInterface> (board, this);
     dspInterface->setVisible (false);
@@ -201,7 +199,6 @@ DeviceEditor::DeviceEditor (GenericProcessor* parentNode,
     //addAndMakeVisible (digitalOutLabel.get());
 
     // Trigger buttons (1-8) will be added in step 4
-
 
     // ===== ANALOG IN SECTION =====
     analogInLabel = std::make_unique<Label> ("analogIn", "ANALOG IN");
@@ -302,7 +299,7 @@ void DeviceEditor::paint (Graphics& g)
     for (int i = 0; i < 4; i++)
     {
         auto bounds = headstageOptionsInterfaces[i]->getBounds();
-        float cx = (float) bounds.getRight() + 9.0f;
+        float cx = (float) bounds.getRight() + 5.0f;
         float cy = (float) bounds.getCentreY();
 
         g.setColour (Colours::darkgrey);
@@ -567,6 +564,7 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
             newHsOptions->setAttribute ("index", index);
             newHsOptions->setAttribute ("hs1_full_channels", hsOptions->getBoolAttribute ("hs1_full_channels", true));
             newHsOptions->setAttribute ("hs2_full_channels", hsOptions->getBoolAttribute ("hs2_full_channels", true));
+            newHsOptions->setAttribute ("cable_delay_adjustment", hsOptions->getIntAttribute ("cable_delay_adjustment", 0));
         }
 
         return;
@@ -578,7 +576,7 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
     xml->setAttribute ("AUXsOn", auxButton->getToggleState());
     xml->setAttribute ("ADCsOn", adcButton->getToggleState());
     for (int i = 0; i < electrodeButtons.size(); i++)
-        xml->setAttribute ("AnalogOutput" + String (i+1), electrodeButtons[i]->getChannelNum());
+        xml->setAttribute ("AnalogOutput" + String (i + 1), electrodeButtons[i]->getChannelNum());
     xml->setAttribute ("NoiseSlicer", audioInterface->getNoiseSlicerLevel());
     xml->setAttribute ("TTLFastSettle", ttlSettleCombo->getSelectedId());
     xml->setAttribute ("DAC_TTL", dacTTLButton->getToggleState());
@@ -595,6 +593,7 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
         hsOptions->setAttribute ("index", i);
         hsOptions->setAttribute ("hs1_full_channels", headstageOptionsInterfaces[i]->is32Channel (0));
         hsOptions->setAttribute ("hs2_full_channels", headstageOptionsInterfaces[i]->is32Channel (1));
+        hsOptions->setAttribute ("cable_delay_adjustment", headstageOptionsInterfaces[i]->getCableDelayAdjustment());
     }
 
     // save channel naming scheme
@@ -631,6 +630,7 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
             newHsOptions->setAttribute ("index", index);
             newHsOptions->setAttribute ("hs1_full_channels", hsOptions->getBoolAttribute ("hs1_full_channels", true));
             newHsOptions->setAttribute ("hs2_full_channels", hsOptions->getBoolAttribute ("hs2_full_channels", true));
+            newHsOptions->setAttribute ("cable_delay_adjustment", hsOptions->getIntAttribute ("cable_delay_adjustment", 0));
         }
 
         return;
@@ -659,7 +659,7 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
     dspInterface->setDspCutoffFreq (xml->getDoubleAttribute ("DSPCutoffFreq"));
     ledButton->setToggleState (xml->getBoolAttribute ("LEDs", true), sendNotification);
     clockInterface->setClockDivideRatio (xml->getIntAttribute ("ClockDivideRatio"));
-    
+
     for (int i = 0; i < electrodeButtons.size(); i++)
     {
         electrodeButtons[i]->setChannelNum (xml->getIntAttribute ("AnalogOutput" + String (i + 1), -1));
@@ -678,8 +678,15 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
         {
             headstageOptionsInterfaces[index]->set32Channel (0, hsOptions->getBoolAttribute ("hs1_full_channels", true));
             headstageOptionsInterfaces[index]->set32Channel (1, hsOptions->getBoolAttribute ("hs2_full_channels", true));
+            headstageOptionsInterfaces[index]->setCableDelayAdjustment (hsOptions->getIntAttribute ("cable_delay_adjustment", 0));
+
+            if (board->supportsCableDelayAdjustment())
+                board->setCableDelayAdjustment (index, headstageOptionsInterfaces[index]->getCableDelayAdjustment());
         }
     }
+
+    if (board->supportsCableDelayAdjustment())
+        board->refreshCableDelays();
 
     // load channel naming scheme
     board->setNamingScheme ((ChannelNamingScheme) xml->getIntAttribute ("Channel_Naming_Scheme", 0));
@@ -732,7 +739,6 @@ BandwidthInterface::~BandwidthInterface()
 {
 }
 
-
 void BandwidthInterface::lookAndFeelChanged()
 {
     lowerBandwidthSelection->setColour (Label::textColourId, findColour (ThemeColours::defaultText));
@@ -763,7 +769,7 @@ void BandwidthInterface::labelTextChanged (Label* label)
             }
 
             actualUpperBandwidth = board->setUpperBandwidth (requestedValue);
-            lastHighCutString = String (int(actualUpperBandwidth));
+            lastHighCutString = String (int (actualUpperBandwidth));
 
             LOGD ("Setting Upper Bandwidth to ", requestedValue);
             LOGD ("Actual Upper Bandwidth:  ", actualUpperBandwidth);
@@ -813,7 +819,7 @@ void BandwidthInterface::setLowerBandwidth (double value)
 void BandwidthInterface::setUpperBandwidth (double value)
 {
     actualUpperBandwidth = board->setUpperBandwidth (value);
-    lastHighCutString = String (int(actualUpperBandwidth));
+    lastHighCutString = String (int (actualUpperBandwidth));
     upperBandwidthSelection->setText (lastHighCutString, dontSendNotification);
 }
 
@@ -941,10 +947,11 @@ HeadstageOptionsInterface::HeadstageOptionsInterface (AcquisitionBoard* board_,
 
     channelsOnHs1 = 0;
     channelsOnHs2 = 0;
+    cableDelayAdjustment = board->getCableDelayAdjustment (hsNum);
 
     hsButton1 = std::make_unique<UtilityButton> (" ");
     hsButton1->setRadius (3.0f);
-    hsButton1->setBounds (23, 1, 20, 17);
+    hsButton1->setBounds (28, 1, 20, 17);
     hsButton1->setEnabledState (false);
     hsButton1->setCorners (true, false, true, false);
     hsButton1->addListener (this);
@@ -952,7 +959,7 @@ HeadstageOptionsInterface::HeadstageOptionsInterface (AcquisitionBoard* board_,
 
     hsButton2 = std::make_unique<UtilityButton> (" ");
     hsButton2->setRadius (3.0f);
-    hsButton2->setBounds (43, 1, 20, 17);
+    hsButton2->setBounds (48, 1, 20, 17);
     hsButton2->setEnabledState (false);
     hsButton2->setCorners (false, true, false, true);
     hsButton2->addListener (this);
@@ -976,6 +983,7 @@ void HeadstageOptionsInterface::checkEnabledState()
     LOGD ("Checking enabled state of HS ", hsNumber1, " and HS ", hsNumber2);
 
     isEnabled = (board->isHeadstageEnabled (hsNumber1) || board->isHeadstageEnabled (hsNumber2));
+    cableDelayAdjustment = board->getCableDelayAdjustment (hsNumber1 / 2);
 
     LOGD ("Is enabled: ", isEnabled);
 
@@ -1016,6 +1024,61 @@ void HeadstageOptionsInterface::checkEnabledState()
     LOGD ("Channels on HS2: ", channelsOnHs1);
 
     repaint();
+}
+
+int HeadstageOptionsInterface::getCableDelayAdjustment() const
+{
+    return cableDelayAdjustment;
+}
+
+void HeadstageOptionsInterface::setCableDelayAdjustment (int newAdjustment)
+{
+    if (newAdjustment > 1)
+        cableDelayAdjustment = 1;
+    else if (newAdjustment < 0)
+        cableDelayAdjustment = 0;
+    else
+        cableDelayAdjustment = newAdjustment;
+
+    repaint();
+}
+
+void HeadstageOptionsInterface::mouseUp (const MouseEvent& event)
+{
+    if (! event.mods.isPopupMenu())
+        return;
+
+    if (event.x >= hsButton1->getX())
+        return;
+
+    if (! board->supportsCableDelayAdjustment() || ! board->foundInputSource() || editor->acquisitionIsActive)
+        return;
+
+    PopupMenu menu;
+    const int currentAdjustment = getCableDelayAdjustment();
+
+    menu.addSectionHeader ("Port " + name + " Cable Delay");
+    menu.addItem (1, "Auto", true, currentAdjustment == 0);
+    menu.addItem (2, "+1 ", true, currentAdjustment == 1);
+
+    int newAdjustment = 0;
+    menu.showMenuAsync (PopupMenu::Options(),
+                        [this, &newAdjustment, currentAdjustment] (int result)
+                        {
+                            if (result == 1)
+                                newAdjustment = 0;
+                            else if (result == 2)
+                                newAdjustment = 1;
+                            else
+                                return;
+
+                            if (newAdjustment == currentAdjustment)
+                                return;
+
+                            setCableDelayAdjustment (newAdjustment);
+                            board->setCableDelayAdjustment (hsNumber1 / 2, getCableDelayAdjustment());
+                            board->refreshCableDelays();
+                        });
 }
 
 void HeadstageOptionsInterface::buttonClicked (Button* button)
@@ -1079,7 +1142,7 @@ void HeadstageOptionsInterface::set32Channel (int hsIndex, bool is32Channel)
             channelsOnHs2 = 16;
 
         hsButton2->setLabel (String (channelsOnHs2));
-        board->setNumHeadstageChannels (hsNumber1, channelsOnHs1);
+        board->setNumHeadstageChannels (hsNumber2, channelsOnHs2);
     }
 }
 
@@ -1093,7 +1156,10 @@ void HeadstageOptionsInterface::paint (Graphics& g)
 
     g.setFont (FontOptions ("Inter", "Regular", 15.0f));
 
-    g.drawText (name, 10, 2, 200, 15, Justification::left, false);
+    if (cableDelayAdjustment == 1)
+        g.drawText ("+" + name, 7, 2, hsButton1->getX(), 15, Justification::left, false);
+    else
+        g.drawText (name, 15, 2, hsButton1->getX() - 5, 15, Justification::left, false);
 }
 
 // (Direct OpalKelly) Audio Options --------------------------------------------------------------------
@@ -1189,7 +1255,7 @@ ClockDivideInterface::ClockDivideInterface (AcquisitionBoard* board_,
     divideRatioSelection->setEditable (true, false, false);
     divideRatioSelection->addListener (this);
     divideRatioSelection->setBounds (35, 0, 35, 20);
-    
+
     addAndMakeVisible (divideRatioSelection.get());
 
     lookAndFeelChanged();
