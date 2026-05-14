@@ -235,6 +235,18 @@ public:
     /** Sets the number of channels to use in a headstage */
     void setNumHeadstageChannels (int headstageIndex, int channelCount);
 
+    /** Returns whether manual cable delay adjustment is supported */
+    bool supportsCableDelayAdjustment() const override;
+
+    /** Returns the manual cable delay adjustment for a port */
+    int getCableDelayAdjustment (int portIndex) const override;
+
+    /** Sets the manual cable delay adjustment for a port */
+    void setCableDelayAdjustment (int portIndex, int adjustment) override;
+
+    /** Re-applies cable delays using the current sample rate */
+    void refreshCableDelays() override;
+
     /** Creates buffers for custom streams if the acquisition board type has them */
     void createCustomStreams (OwnedArray<DataBuffer>& otherBuffers) override;
 
@@ -259,6 +271,9 @@ private:
 
     /** Updates board streams after scanning ports */
     void updateBoardStreams();
+
+    /** Returns the base or adjusted cable delay for a port */
+    int getCableDelayForPort (int portIndex, bool includeAdjustment) const;
 
     /** Returns the device ID for an Intan chip*/
     int getIntanChipId (Rhd2000ONIDataBlock* dataBlock, int stream, int& register59Value);
@@ -349,6 +364,7 @@ private:
     bool varSampleRateCapable = false;
     bool commonCommandsSet = false;
     bool initialScan = true;
+    std::array<int, NUMBER_OF_PORTS> cableDelayAdjustments = { 0, 0, 0, 0 };
     bool hasBNO[NUMBER_OF_PORTS]; // Tracks if there is a BNO on any of the available ports
     bool hasI2c[NUMBER_OF_PORTS]; // Tracks if there is an I2C-capable device on any of the available ports
     uint32_t headstageId[NUMBER_OF_PORTS];
