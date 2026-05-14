@@ -167,7 +167,7 @@ if (MSVC)
   add_dependencies(${ONIDRIVER_FT600_PNAME} ${LIBONI_PNAME})
 
   # Ensure needed DLLs are installed to the shared folder
-  install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/${ONIDRIVER_FT600_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
+  install(FILES "${ONIDRIVER_FT600_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/Release/${ONIDRIVER_FT600_NAME}.dll" DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(LINUX OR APPLE)
   # Add liboni project
 
