@@ -141,6 +141,15 @@ public:
     /** Sets analog filter lower limit; returns actual value */
     double setLowerBandwidth (double lowerBandwidth);
 
+    /** Restores analog filter lower limit from underlying DAC/register state; returns actual value */
+    double setLowerBandwidthState (int dac1, int dac2, int dac3) override;
+
+    /** Restores analog filter lower limit from a saved actual bandwidth value; returns actual value */
+    double setLowerBandwidthActual (double lowerBandwidth) override;
+
+    /** Gets the underlying DAC/register state for the analog filter lower limit */
+    void getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const override;
+
     /** Sets DSP cutoff frequency; returns actual value */
     double setDspCutoffFreq (double freq);
 

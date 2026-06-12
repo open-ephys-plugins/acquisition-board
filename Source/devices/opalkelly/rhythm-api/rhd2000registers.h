@@ -70,6 +70,10 @@ public:
 
     double setUpperBandwidth(double upperBandwidth);
     double setLowerBandwidth(double lowerBandwidth);
+    double setLowerBandwidthDacValues(int dac1, int dac2, int dac3);
+    double setLowerBandwidthActual(double lowerBandwidth);
+    void getLowerBandwidthDacValues(int& dac1, int& dac2, int& dac3) const;
+    double getLowerBandwidth() const;
 
     int createCommandListRegisterConfig(std::vector<int> &commandList, bool calibrate);
     int createCommandListTempSensor(std::vector<int> &commandList);

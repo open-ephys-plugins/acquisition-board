@@ -497,7 +497,19 @@ void AcqBoardOpalKelly::updateRegisters()
     // Before generating register configuration command sequences, set amplifier
     // bandwidth paramters.
     settings.dsp.cutoffFreq = chipRegisters.setDspCutoffFreq (settings.dsp.cutoffFreq);
-    settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidth (settings.analogFilter.lowerBandwidth);
+    if (settings.analogFilter.useLowerBandwidthDacState)
+    {
+        settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                                                                          settings.analogFilter.lowerBandwidthDac2,
+                                                                                          settings.analogFilter.lowerBandwidthDac3);
+    }
+    else
+    {
+        settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidth (settings.analogFilter.lowerBandwidthRequested);
+    }
+    chipRegisters.getLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                              settings.analogFilter.lowerBandwidthDac2,
+                                              settings.analogFilter.lowerBandwidthDac3);
     settings.analogFilter.upperBandwidth = chipRegisters.setUpperBandwidth (settings.analogFilter.upperBandwidth);
     chipRegisters.enableDsp (settings.dsp.enabled);
 
@@ -1159,11 +1171,44 @@ double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 
 double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 {
-    settings.analogFilter.lowerBandwidth = lower;
+    settings.analogFilter.lowerBandwidthRequested = lower;
+    settings.analogFilter.useLowerBandwidthDacState = false;
 
     updateRegisters();
 
     return settings.analogFilter.lowerBandwidth;
+}
+
+double AcqBoardOpalKelly::setLowerBandwidthActual (double lowerBandwidth)
+{
+    settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidthActual (lowerBandwidth);
+    chipRegisters.getLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                              settings.analogFilter.lowerBandwidthDac2,
+                                              settings.analogFilter.lowerBandwidthDac3);
+    settings.analogFilter.useLowerBandwidthDacState = true;
+
+    updateRegisters();
+
+    return settings.analogFilter.lowerBandwidth;
+}
+
+double AcqBoardOpalKelly::setLowerBandwidthState (int dac1, int dac2, int dac3)
+{
+    settings.analogFilter.lowerBandwidthDac1 = dac1;
+    settings.analogFilter.lowerBandwidthDac2 = dac2;
+    settings.analogFilter.lowerBandwidthDac3 = dac3;
+    settings.analogFilter.useLowerBandwidthDacState = true;
+
+    updateRegisters();
+
+    return settings.analogFilter.lowerBandwidth;
+}
+
+void AcqBoardOpalKelly::getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const
+{
+    dac1 = settings.analogFilter.lowerBandwidthDac1;
+    dac2 = settings.analogFilter.lowerBandwidthDac2;
+    dac3 = settings.analogFilter.lowerBandwidthDac3;
 }
 
 double AcqBoardOpalKelly::setDspCutoffFreq (double freq)

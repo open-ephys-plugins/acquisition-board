@@ -124,6 +124,21 @@ public:
     /** Sets analog filter lower limit; returns actual value */
     virtual double setLowerBandwidth (double lowerBandwidth) = 0;
 
+    /** Restores analog filter lower limit from underlying DAC/register state; returns actual value */
+    virtual double setLowerBandwidthState (int dac1, int dac2, int dac3) = 0;
+
+    /** Restores analog filter lower limit from a saved actual bandwidth value; returns actual value */
+    virtual double setLowerBandwidthActual (double lowerBandwidth) = 0;
+
+    /** Gets the underlying DAC/register state for the analog filter lower limit */
+    virtual void getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const = 0;
+
+    /** Gets the current analog filter upper limit */
+    double getUpperBandwidth() const { return settings.analogFilter.upperBandwidth; }
+
+    /** Gets the current analog filter lower limit */
+    double getLowerBandwidth() const { return settings.analogFilter.lowerBandwidth; }
+
     /** Sets DSP cutoff frequency; returns actual value */
     virtual double setDspCutoffFreq (double freq) = 0;
 
@@ -329,6 +344,11 @@ protected:
     {
         double upperBandwidth = 7500.0f;
         double lowerBandwidth = 1.0f;
+        double lowerBandwidthRequested = 1.0f;
+        int lowerBandwidthDac1 = 0;
+        int lowerBandwidthDac2 = 0;
+        int lowerBandwidthDac3 = 0;
+        bool useLowerBandwidthDacState = false;
     };
 
     /** struct containing board settings*/

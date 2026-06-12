@@ -540,6 +540,9 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 
         xml->setAttribute ("SampleRate", previousSettings->getIntAttribute ("SampleRate"));
         xml->setAttribute ("LowCut", previousSettings->getDoubleAttribute ("LowCut"));
+        xml->setAttribute ("LowCutDac1", previousSettings->getIntAttribute ("LowCutDac1"));
+        xml->setAttribute ("LowCutDac2", previousSettings->getIntAttribute ("LowCutDac2"));
+        xml->setAttribute ("LowCutDac3", previousSettings->getIntAttribute ("LowCutDac3"));
         xml->setAttribute ("HighCut", previousSettings->getDoubleAttribute ("HighCut"));
 
         xml->setAttribute ("AUXsOn", previousSettings->getBoolAttribute ("AUXsOn"));
@@ -572,6 +575,11 @@ void DeviceEditor::saveVisualizerEditorParameters (XmlElement* xml)
 
     xml->setAttribute ("SampleRate", sampleRateInterface->getSelectedId());
     xml->setAttribute ("LowCut", bandwidthInterface->getLowerBandwidth());
+    int lowCutDac1, lowCutDac2, lowCutDac3;
+    board->getLowerBandwidthState (lowCutDac1, lowCutDac2, lowCutDac3);
+    xml->setAttribute ("LowCutDac1", lowCutDac1);
+    xml->setAttribute ("LowCutDac2", lowCutDac2);
+    xml->setAttribute ("LowCutDac3", lowCutDac3);
     xml->setAttribute ("HighCut", bandwidthInterface->getUpperBandwidth());
     xml->setAttribute ("AUXsOn", auxButton->getToggleState());
     xml->setAttribute ("ADCsOn", adcButton->getToggleState());
@@ -607,6 +615,9 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
         previousSettings = std::make_unique<XmlElement> ("DeviceEditorSettings");
         previousSettings->setAttribute ("SampleRate", xml->getIntAttribute ("SampleRate"));
         previousSettings->setAttribute ("LowCut", xml->getDoubleAttribute ("LowCut"));
+        previousSettings->setAttribute ("LowCutDac1", xml->getIntAttribute ("LowCutDac1"));
+        previousSettings->setAttribute ("LowCutDac2", xml->getIntAttribute ("LowCutDac2"));
+        previousSettings->setAttribute ("LowCutDac3", xml->getIntAttribute ("LowCutDac3"));
         previousSettings->setAttribute ("HighCut", xml->getDoubleAttribute ("HighCut"));
         previousSettings->setAttribute ("AUXsOn", xml->getBoolAttribute ("AUXsOn"));
         previousSettings->setAttribute ("ADCsOn", xml->getBoolAttribute ("ADCsOn"));
@@ -643,7 +654,16 @@ void DeviceEditor::loadVisualizerEditorParameters (XmlElement* xml)
         sampleRateId = sampleRates.getLast(); // if the requested sample rate is not available, use the last one in the list
     }
     sampleRateInterface->setSelectedId (sampleRateId);
-    bandwidthInterface->setLowerBandwidth (xml->getDoubleAttribute ("LowCut"));
+    if (xml->hasAttribute ("LowCutDac1") && xml->hasAttribute ("LowCutDac2") && xml->hasAttribute ("LowCutDac3"))
+    {
+        bandwidthInterface->setLowerBandwidthState (xml->getIntAttribute ("LowCutDac1"),
+                                                    xml->getIntAttribute ("LowCutDac2"),
+                                                    xml->getIntAttribute ("LowCutDac3"));
+    }
+    else
+    {
+        bandwidthInterface->setLowerBandwidthActual (xml->getDoubleAttribute ("LowCut"));
+    }
     bandwidthInterface->setUpperBandwidth (xml->getDoubleAttribute ("HighCut"));
     auxButton->setToggleState (xml->getBoolAttribute ("AUXsOn"), sendNotification);
     auxButton->setLabel (auxButton->getToggleState() ? "+3 CH" : "OFF");
@@ -713,12 +733,11 @@ BandwidthInterface::BandwidthInterface (AcquisitionBoard* board_,
                                                                  editor (editor_)
 {
     name = "Analog Bandwidth";
+    actualUpperBandwidth = board->getUpperBandwidth();
+    actualLowerBandwidth = board->getLowerBandwidth();
 
-    lastHighCutString = "7500";
-    lastLowCutString = "1";
-
-    actualUpperBandwidth = 7500.0f;
-    actualLowerBandwidth = 1.0f;
+    lastHighCutString = String (int (actualUpperBandwidth));
+    lastLowCutString = String (actualLowerBandwidth, 1);
 
     lowerBandwidthSelection = std::make_unique<Label> ("LowerBandwidth", lastLowCutString);
     lowerBandwidthSelection->setEditable (true, false, false);
@@ -812,6 +831,20 @@ void BandwidthInterface::labelTextChanged (Label* label)
 void BandwidthInterface::setLowerBandwidth (double value)
 {
     actualLowerBandwidth = board->setLowerBandwidth (value);
+    lastLowCutString = String (actualLowerBandwidth, 1);
+    lowerBandwidthSelection->setText (lastLowCutString, dontSendNotification);
+}
+
+void BandwidthInterface::setLowerBandwidthState (int dac1, int dac2, int dac3)
+{
+    actualLowerBandwidth = board->setLowerBandwidthState (dac1, dac2, dac3);
+    lastLowCutString = String (actualLowerBandwidth, 1);
+    lowerBandwidthSelection->setText (lastLowCutString, dontSendNotification);
+}
+
+void BandwidthInterface::setLowerBandwidthActual (double value)
+{
+    actualLowerBandwidth = board->setLowerBandwidthActual (value);
     lastLowCutString = String (actualLowerBandwidth, 1);
     lowerBandwidthSelection->setText (lastLowCutString, dontSendNotification);
 }

@@ -229,6 +229,12 @@ public:
     /** Sets lower bandwidth value */
     void setLowerBandwidth (double value);
 
+    /** Restores lower bandwidth from underlying DAC/register state */
+    void setLowerBandwidthState (int dac1, int dac2, int dac3);
+
+    /** Restores lower bandwidth from a saved actual value in legacy settings files */
+    void setLowerBandwidthActual (double value);
+
     /** Sets upper bandwidth value */
     void setUpperBandwidth (double value);
 
