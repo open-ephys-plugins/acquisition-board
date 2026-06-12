@@ -333,7 +333,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 
             const std::string axesLower = "xyz";
             const std::string axesUpper = "XYZ";
-            const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
+            const ContinuousChannel::InputRange accelerationRange { -10.0f, 10.0f };
 
             for (int i = 0; i < 3; i++)
             {

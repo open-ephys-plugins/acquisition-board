@@ -200,7 +200,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
 
         if (acquisitionBoard->areAuxChannelsEnabled())
         {
-            const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
+            const ContinuousChannel::InputRange accelerationRange { -10.0f, 10.0f };
 
             for (auto headstage : acquisitionBoard->getHeadstages())
             {
