@@ -179,7 +179,7 @@ elseif(LINUX OR APPLE)
 		${LIBONI_PNAME}
 		SOURCE_DIR "${LIBONI_DIR}"
 		CONFIGURE_COMMAND ""
-		BUILD_COMMAND make "CFLAGS=-Wall -W -Werror -fPIC -O3"
+		BUILD_COMMAND make "CFLAGS=-Wall -W -Werror -Wno-pointer-sign -fPIC -O3"
 		BUILD_IN_SOURCE 1
 		INSTALL_COMMAND ""
 	)
