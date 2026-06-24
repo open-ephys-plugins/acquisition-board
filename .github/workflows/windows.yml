@@ -69,7 +69,7 @@ jobs:
 
     needs: [check-semver]
     if: always() && !failure() && !cancelled()
-    runs-on: windows-latest
+    runs-on: windows-2022
     outputs:
       PLUGIN_API: ${{ steps.setup.outputs.PLUGIN_API }}
       PLUGIN_VERSION: ${{ steps.setup.outputs.PLUGIN_VERSION }}
