@@ -2288,7 +2288,9 @@ void AcqBoardONI::ShowFirmwareUpdateMessage (std::string message)
 
     auto hyperlink = std::make_unique<HyperlinkButton> ("Update Gateware", URL ("https://open-ephys.github.io/acq-board-docs/User-Manual/Gateware-Update.html"));
     hyperlink->setName ("");
-    hyperlink->setSize (127, 20);
+    hyperlink->setFont (FontOptions ("Inter", "Medium", 18.0f).withUnderline (true), false);
+    hyperlink->changeWidthToFitText();
+    hyperlink->setSize (hyperlink->getWidth() + 20, 20);
     hyperlink->setJustificationType (Justification::centred);
     hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::deepskyblue);
 
