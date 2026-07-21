@@ -63,6 +63,12 @@ public:
     /** Enable UI after acquisition is finished*/
     void stopAcquisition() override;
 
+    /** Paint section dividers */
+    void paint (Graphics& g) override;
+
+    /** Update colours when look-and-feel changes */
+    void lookAndFeelChanged() override;
+
     /** Runs impedance test*/
     void measureImpedances();
 
@@ -130,13 +136,13 @@ private:
     std::unique_ptr<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
     std::unique_ptr<Label> noBoardsDetectedLabel;
 
-    enum AudioChannel
-    {
-        LEFT = 0,
-        RIGHT = 1
-    };
+    std::unique_ptr<Label> amplifiersLabel, digitalInLabel, digitalOutLabel, analogInLabel, analogOutLabel;
+    std::unique_ptr<Label> auxTitleLabel, adcTitleLabel;
+    std::unique_ptr<Label> dspHighpassLabel, triggerLabel;
 
-    AudioChannel activeAudioChannel;
+    int sectionDividers[2] = { 0 };
+
+    int activeAudioChannel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DeviceEditor);
 };
@@ -167,8 +173,17 @@ public:
     /** Refresh button state*/
     void checkEnabledState();
 
+    /** Returns the cable delay adjustment for this port */
+    int getCableDelayAdjustment() const;
+
+    /** Sets the cable delay adjustment for this port */
+    void setCableDelayAdjustment (int newAdjustment);
+
     /** Set enabled (e.g. during acquisition) */
     void setEnabled (bool state);
+
+    /** Show a cable delay adjustment popup menu */
+    void mouseUp (const MouseEvent& event) override;
 
     /** Checks whether headstage is in 32- or 16-channel mode*/
     bool is32Channel (int hsIndex);
@@ -179,6 +194,7 @@ public:
 private:
     int hsNumber1, hsNumber2;
     int channelsOnHs1, channelsOnHs2;
+    int cableDelayAdjustment = 0;
     String name;
 
     bool isEnabled;
@@ -213,6 +229,12 @@ public:
     /** Sets lower bandwidth value */
     void setLowerBandwidth (double value);
 
+    /** Restores lower bandwidth from underlying DAC/register state */
+    void setLowerBandwidthState (int dac1, int dac2, int dac3);
+
+    /** Restores lower bandwidth from a saved actual value in legacy settings files */
+    void setLowerBandwidthActual (double value);
+
     /** Sets upper bandwidth value */
     void setUpperBandwidth (double value);
 
@@ -221,6 +243,9 @@ public:
 
     /** Returns actual upper bandwidth value */
     double getUpperBandwidth();
+
+    /** Update colours when look-and-feel changes */
+    void lookAndFeelChanged() override;
 
 private:
     String name;
@@ -383,6 +408,9 @@ public:
 
     /** Returns actual clock divide ratio */
     int getClockDivideRatio() const { return actualDivideRatio; };
+
+    /** Update colours when look-and-feel changes */
+    void lookAndFeelChanged() override;
 
 private:
     String name;

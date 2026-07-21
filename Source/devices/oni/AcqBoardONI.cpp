@@ -30,6 +30,14 @@
 //#define DEBUG_EMULATE_HEADSTAGES 8
 //#define DEBUG_EMULATE_64CH
 
+namespace
+{
+int clampHardwareCableDelay (int delay)
+{
+    return jlimit (0, 15, delay);
+}
+} // namespace
+
 AcqBoardONI::AcqBoardONI() : AcquisitionBoard(),
                              chipRegisters (30000.0f)
 {
@@ -147,29 +155,15 @@ bool AcqBoardONI::detectBoard()
             {
                 LOGC ("Open Ephys ECP5-ONI FPGA open. Gateware version v", major, ".", minor, ".", patch);
             }
-            hasI2cSupport = major >= 1 && minor >= 5;
-            hasMemoryMonitorSupport = major >= 1 && minor >= 5 && patch >= 1;
+            hasI2cSupport = CheckSemVer (major, minor, patch, 1, 5, 0);
+            hasMemoryMonitorSupport = CheckSemVer (major, minor, patch, 1, 5, 1);
 
             if (major == 0)
             {
-                AlertWindow alert ("Update Gateware Version",
-                                   "Warning: The detected version of the gateware is v"
-                                       + std::to_string (major) + "." + std::to_string (minor) + "." + std::to_string (patch)
-                                       + ", and should be updated to the latest version."
-                                       + "\n\nTo learn how to update the gateware, please click on the link below.",
-                                   MessageBoxIconType::WarningIcon);
-
-                auto hyperlink = std::make_unique<HyperlinkButton> ("Update Gateware", URL ("https://open-ephys.github.io/acq-board-docs/User-Manual/Gateware-Update.html"));
-                hyperlink->setName ("");
-                hyperlink->setSize (127, 20);
-                hyperlink->setJustificationType (Justification::centred);
-                hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::deepskyblue);
-
-                alert.addCustomComponent (hyperlink.get());
-
-                alert.addButton ("Okay", 0);
-
-                alert.runModalLoop();
+                ShowFirmwareUpdateMessage ("Warning: The detected version of the gateware is v"
+                                           + std::to_string (major) + "." + std::to_string (minor) + "." + std::to_string (patch)
+                                           + ", and should be updated to the latest version."
+                                           + "\n\nTo learn how to update the gateware, please click on the link below.");
             }
         }
         oni_reg_val_t tmpId;
@@ -203,6 +197,12 @@ bool AcqBoardONI::detectBoard()
         else if (return_code == -2)
         {
             LOGC ("No ONI Acquisition Board found.");
+        }
+        else if (return_code == -3)
+        {
+            ShowFirmwareUpdateMessage ("Warning: The gateware on the acquisition board is not compatible with"
+                                       " this version of the plugin and needs to be updated to version 2.0.0 or greater."
+                                       "\n\nTo learn how to update the gateware, please click on the link below.");
         }
         deviceFound = false;
         return false;
@@ -285,8 +285,8 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
             const int numEulerStreams = 3;
 
             std::array<std::string, numEulerStreams> eulerIdentifiers = { "yaw",
-                                                            "roll",
-                                                            "pitch" };
+                                                                          "roll",
+                                                                          "pitch" };
             const std::string eulerNames = "YRP";
 
             const std::array<ContinuousChannel::InputRange, numEulerStreams> eulerRanges = {
@@ -333,7 +333,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
 
             const std::string axesLower = "xyz";
             const std::string axesUpper = "XYZ";
-            const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
+            const ContinuousChannel::InputRange accelerationRange { -10.0f, 10.0f };
 
             for (int i = 0; i < 3; i++)
             {
@@ -376,7 +376,7 @@ void AcqBoardONI::updateCustomStreams (OwnedArray<DataStream>& otherStreams, Own
                 stream
             };
             otherChannels.add (new ContinuousChannel (temperatureChannelSettings));
-            otherChannels.getLast()->setUnits (String::fromUTF8 ("\xc2\xb0") + String("C")); // NB: "\xc2\xb0" --> degree symbol
+            otherChannels.getLast()->setUnits (String::fromUTF8 ("\xc2\xb0") + String ("C")); // NB: "\xc2\xb0" --> degree symbol
             otherChannels.getLast()->inputRange = ContinuousChannel::InputRange { -100.0f, 100.0f };
 
             std::array<std::string, 4> calibrationTypesName = { "Mag", "Acc", "Gyr", "Sys" };
@@ -522,7 +522,65 @@ Array<int> AcqBoardONI::getAvailableSampleRates()
     return sampleRates;
 }
 
-void AcqBoardONI::setSampleRate(int desiredSampleRate)
+bool AcqBoardONI::supportsCableDelayAdjustment() const
+{
+    return true;
+}
+
+int AcqBoardONI::getCableDelayAdjustment (int portIndex) const
+{
+    if (! isPositiveAndBelow (portIndex, NUMBER_OF_PORTS))
+        return 0;
+
+    return cableDelayAdjustments[(size_t) portIndex];
+}
+
+void AcqBoardONI::setCableDelayAdjustment (int portIndex, int adjustment)
+{
+    if (! isPositiveAndBelow (portIndex, NUMBER_OF_PORTS))
+        return;
+
+    cableDelayAdjustments[(size_t) portIndex] = clampCableDelayAdjustment (adjustment);
+    LOGD ("Cable delay adjustment for port ", portIndex, " set to ", cableDelayAdjustments[(size_t) portIndex]);
+}
+
+void AcqBoardONI::refreshCableDelays()
+{
+    if (! deviceFound || evalBoard == nullptr || initialScan)
+        return;
+
+    checkAllCableDelays();
+}
+
+int AcqBoardONI::getCableDelayForPort (int portIndex, bool includeAdjustment) const
+{
+    int delay = 0;
+
+    switch (portIndex)
+    {
+        case 0:
+            delay = roundToInt (settings.optimumDelay.portA);
+            break;
+        case 1:
+            delay = roundToInt (settings.optimumDelay.portB);
+            break;
+        case 2:
+            delay = roundToInt (settings.optimumDelay.portC);
+            break;
+        case 3:
+            delay = roundToInt (settings.optimumDelay.portD);
+            break;
+        default:
+            return 0;
+    }
+
+    if (includeAdjustment)
+        delay += getCableDelayAdjustment (portIndex);
+
+    return clampHardwareCableDelay (delay);
+}
+
+void AcqBoardONI::setSampleRate (int desiredSampleRate)
 {
     setSampleRate (desiredSampleRate, true);
 }
@@ -680,29 +738,10 @@ void AcqBoardONI::checkAllCableDelays()
     {
         LOGD ("Setting delay to: ", delay);
 
-        int delayA = settings.optimumDelay.portA + delay;
-        if (delayA < 0)
-            delayA = 0;
-        if (delayA > 16)
-            delayA = 16;
-
-        int delayB = settings.optimumDelay.portB + delay;
-        if (delayB < 0)
-            delayB = 0;
-        if (delayB > 16)
-            delayB = 16;
-
-        int delayC = settings.optimumDelay.portC + delay;
-        if (delayC < 0)
-            delayC = 0;
-        if (delayC > 16)
-            delayC = 16;
-
-        int delayD = settings.optimumDelay.portD + delay;
-        if (delayD < 0)
-            delayD = 0;
-        if (delayD > 16)
-            delayD = 16;
+        int delayA = clampHardwareCableDelay (getCableDelayForPort (0, false) + delay);
+        int delayB = clampHardwareCableDelay (getCableDelayForPort (1, false) + delay);
+        int delayC = clampHardwareCableDelay (getCableDelayForPort (2, false) + delay);
+        int delayD = clampHardwareCableDelay (getCableDelayForPort (3, false) + delay);
 
         evalBoard->setCableDelay (Rhd2000ONIBoard::PortA, delayA);
         evalBoard->setCableDelay (Rhd2000ONIBoard::PortB, delayB);
@@ -731,7 +770,7 @@ void AcqBoardONI::checkAllCableDelays()
 
                 if (id == CHIP_ID_RHD2132 || id == CHIP_ID_RHD2216 || (id == CHIP_ID_RHD2164 && register59Value == REGISTER_59_MISO_A))
                 {
-                    LOGD ("Device ID found: ", id);
+                    LOGD ("Device ID found: ", id, " on headstage ", hs);
 
                     sumGoodDelays.set (hs, sumGoodDelays[hs] + 1);
 
@@ -768,36 +807,36 @@ void AcqBoardONI::checkAllCableDelays()
     {
         int delayShift = jmax (optimumDelay[0], optimumDelay[1]);
 
-        evalBoard->setCableDelay (Rhd2000ONIBoard::PortA, settings.optimumDelay.portA + delayShift);
+        evalBoard->setCableDelay (Rhd2000ONIBoard::PortA, clampHardwareCableDelay (getCableDelayForPort (0, true) + delayShift));
 
-        LOGD ("Port A cable delay at ", settings.boardSampleRate, " samples/sec: ", settings.optimumDelay.portA + delayShift);
+        LOGD ("Port A cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (0, true) + delayShift));
     }
 
     if (cableIsConnected[1])
     {
         int delayShift = jmax (optimumDelay[2], optimumDelay[3]);
 
-        evalBoard->setCableDelay (Rhd2000ONIBoard::PortB, settings.optimumDelay.portB + delayShift);
+        evalBoard->setCableDelay (Rhd2000ONIBoard::PortB, clampHardwareCableDelay (getCableDelayForPort (1, true) + delayShift));
 
-        LOGD ("Port B cable delay at ", settings.boardSampleRate, " samples/sec: ", settings.optimumDelay.portB + delayShift);
+        LOGD ("Port B cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (1, true) + delayShift));
     }
 
     if (cableIsConnected[2])
     {
         int delayShift = jmax (optimumDelay[4], optimumDelay[5]);
 
-        evalBoard->setCableDelay (Rhd2000ONIBoard::PortC, settings.optimumDelay.portC + delayShift);
+        evalBoard->setCableDelay (Rhd2000ONIBoard::PortC, clampHardwareCableDelay (getCableDelayForPort (2, true) + delayShift));
 
-        LOGD ("Port C cable delay at ", settings.boardSampleRate, " samples/sec: ", settings.optimumDelay.portC + delayShift);
+        LOGD ("Port C cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (2, true) + delayShift));
     }
 
     if (cableIsConnected[3])
     {
         int delayShift = jmax (optimumDelay[6], optimumDelay[7]);
 
-        evalBoard->setCableDelay (Rhd2000ONIBoard::PortD, settings.optimumDelay.portD + delayShift);
+        evalBoard->setCableDelay (Rhd2000ONIBoard::PortD, clampHardwareCableDelay (getCableDelayForPort (3, true) + delayShift));
 
-        LOGD ("Port D cable delay at ", settings.boardSampleRate, " samples/sec: ", settings.optimumDelay.portD + delayShift);
+        LOGD ("Port D cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (3, true) + delayShift));
     }
 }
 
@@ -853,7 +892,19 @@ void AcqBoardONI::updateRegisters()
     // Before generating register configuration command sequences, set amplifier
     // bandwidth parameters.
     settings.dsp.cutoffFreq = chipRegisters.setDspCutoffFreq (settings.dsp.cutoffFreq);
-    settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidth (settings.analogFilter.lowerBandwidth);
+    if (settings.analogFilter.useLowerBandwidthDacState)
+    {
+        settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                                                                          settings.analogFilter.lowerBandwidthDac2,
+                                                                                          settings.analogFilter.lowerBandwidthDac3);
+    }
+    else
+    {
+        settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidth (settings.analogFilter.lowerBandwidthRequested);
+    }
+    chipRegisters.getLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                              settings.analogFilter.lowerBandwidthDac2,
+                                              settings.analogFilter.lowerBandwidthDac3);
     settings.analogFilter.upperBandwidth = chipRegisters.setUpperBandwidth (settings.analogFilter.upperBandwidth);
     chipRegisters.enableDsp (settings.dsp.enabled);
 
@@ -1106,7 +1157,7 @@ void AcqBoardONI::scanPortsInThread()
         {
             id = getIntanChipId (dataBlock.get(), hs, register59Value);
 
-                // LOGD("hs ", hs, " id ", id, " r59 ", (int)register59Value);
+            // LOGD("hs ", hs, " id ", id, " r59 ", (int)register59Value);
 
             if (id == CHIP_ID_RHD2132 || id == CHIP_ID_RHD2216 || (id == CHIP_ID_RHD2164 && register59Value == REGISTER_59_MISO_A))
             {
@@ -1220,17 +1271,17 @@ void AcqBoardONI::scanPortsInThread()
     settings.optimumDelay.portC = jmax (optimumDelay[4], optimumDelay[5]);
     settings.optimumDelay.portD = jmax (optimumDelay[6], optimumDelay[7]);
 
-    evalBoard->setCableDelay (Rhd2000ONIBoard::PortA, settings.optimumDelay.portA);
-    evalBoard->setCableDelay (Rhd2000ONIBoard::PortB, settings.optimumDelay.portB);
-    evalBoard->setCableDelay (Rhd2000ONIBoard::PortC, settings.optimumDelay.portC);
-    evalBoard->setCableDelay (Rhd2000ONIBoard::PortD, settings.optimumDelay.portD);
+    evalBoard->setCableDelay (Rhd2000ONIBoard::PortA, getCableDelayForPort (0, true));
+    evalBoard->setCableDelay (Rhd2000ONIBoard::PortB, getCableDelayForPort (1, true));
+    evalBoard->setCableDelay (Rhd2000ONIBoard::PortC, getCableDelayForPort (2, true));
+    evalBoard->setCableDelay (Rhd2000ONIBoard::PortD, getCableDelayForPort (3, true));
 
-    LOGD ("Set optimum delay for port A: ", settings.optimumDelay.portA);
-    LOGD ("Set optimum delay for port B: ", settings.optimumDelay.portB);
-    LOGD ("Set optimum delay for port C: ", settings.optimumDelay.portC);
-    LOGD ("Set optimum delay for port D: ", settings.optimumDelay.portD);
+    LOGD ("Set optimum delay for port A: ", getCableDelayForPort (0, true));
+    LOGD ("Set optimum delay for port B: ", getCableDelayForPort (1, true));
+    LOGD ("Set optimum delay for port C: ", getCableDelayForPort (2, true));
+    LOGD ("Set optimum delay for port D: ", getCableDelayForPort (3, true));
 
-    setSampleRate (currentSampleRate, !initialScan); // restore saved sample rate and check delays
+    setSampleRate (currentSampleRate, ! initialScan); // restore saved sample rate and check delays
 
     initialScan = false;
 }
@@ -1459,11 +1510,44 @@ double AcqBoardONI::setUpperBandwidth (double upper)
 
 double AcqBoardONI::setLowerBandwidth (double lower)
 {
-    settings.analogFilter.lowerBandwidth = lower;
+    settings.analogFilter.lowerBandwidthRequested = lower;
+    settings.analogFilter.useLowerBandwidthDacState = false;
 
     updateRegisters();
 
     return settings.analogFilter.lowerBandwidth;
+}
+
+double AcqBoardONI::setLowerBandwidthActual (double lowerBandwidth)
+{
+    settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidthActual (lowerBandwidth);
+    chipRegisters.getLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                              settings.analogFilter.lowerBandwidthDac2,
+                                              settings.analogFilter.lowerBandwidthDac3);
+    settings.analogFilter.useLowerBandwidthDacState = true;
+
+    updateRegisters();
+
+    return settings.analogFilter.lowerBandwidth;
+}
+
+double AcqBoardONI::setLowerBandwidthState (int dac1, int dac2, int dac3)
+{
+    settings.analogFilter.lowerBandwidthDac1 = dac1;
+    settings.analogFilter.lowerBandwidthDac2 = dac2;
+    settings.analogFilter.lowerBandwidthDac3 = dac3;
+    settings.analogFilter.useLowerBandwidthDacState = true;
+
+    updateRegisters();
+
+    return settings.analogFilter.lowerBandwidth;
+}
+
+void AcqBoardONI::getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const
+{
+    dac1 = settings.analogFilter.lowerBandwidthDac1;
+    dac2 = settings.analogFilter.lowerBandwidthDac2;
+    dac3 = settings.analogFilter.lowerBandwidthDac3;
 }
 
 double AcqBoardONI::setDspCutoffFreq (double freq)
@@ -2176,4 +2260,43 @@ int AcqBoardONI::getHeadstageChannel (int& hs, int ch) const
 bool AcqBoardONI::getMemoryMonitorSupport() const
 {
     return hasMemoryMonitorSupport;
+}
+
+bool AcqBoardONI::CheckSemVer (int major, int minor, int patch, int targetMajor, int targetMinor, int targetPatch)
+{
+    if (major > targetMajor)
+        return true;
+    else if (major < targetMajor)
+        return false;
+
+    if (minor > targetMinor)
+        return true;
+    else if (minor < targetMinor)
+        return false;
+
+    if (patch >= targetPatch)
+        return true;
+
+    return false;
+}
+
+void AcqBoardONI::ShowFirmwareUpdateMessage (std::string message)
+{
+    AlertWindow alert ("Update Gateware Version",
+                       message,
+                       MessageBoxIconType::WarningIcon);
+
+    auto hyperlink = std::make_unique<HyperlinkButton> ("Update Gateware", URL ("https://open-ephys.github.io/acq-board-docs/User-Manual/Gateware-Update.html"));
+    hyperlink->setName ("");
+    hyperlink->setFont (FontOptions ("Inter", "Medium", 18.0f).withUnderline (true), false);
+    hyperlink->changeWidthToFitText();
+    hyperlink->setSize (hyperlink->getWidth() + 20, 20);
+    hyperlink->setJustificationType (Justification::centred);
+    hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::deepskyblue);
+
+    alert.addCustomComponent (hyperlink.get());
+
+    alert.addButton ("Okay", 0);
+
+    alert.runModalLoop();
 }

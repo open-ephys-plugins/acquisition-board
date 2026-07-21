@@ -222,9 +222,33 @@ double AcqBoardSim::setUpperBandwidth (double upperBandwidth)
 
 double AcqBoardSim::setLowerBandwidth (double lowerBandwidth)
 {
+    settings.analogFilter.lowerBandwidthRequested = lowerBandwidth;
     settings.analogFilter.lowerBandwidth = lowerBandwidth;
+    settings.analogFilter.useLowerBandwidthDacState = false;
 
     return lowerBandwidth;
+}
+
+double AcqBoardSim::setLowerBandwidthState (int dac1, int dac2, int dac3)
+{
+    settings.analogFilter.lowerBandwidthDac1 = dac1;
+    settings.analogFilter.lowerBandwidthDac2 = dac2;
+    settings.analogFilter.lowerBandwidthDac3 = dac3;
+    settings.analogFilter.useLowerBandwidthDacState = true;
+
+    return settings.analogFilter.lowerBandwidth;
+}
+
+double AcqBoardSim::setLowerBandwidthActual (double lowerBandwidth)
+{
+    return setLowerBandwidth (lowerBandwidth);
+}
+
+void AcqBoardSim::getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const
+{
+    dac1 = settings.analogFilter.lowerBandwidthDac1;
+    dac2 = settings.analogFilter.lowerBandwidthDac2;
+    dac3 = settings.analogFilter.lowerBandwidthDac3;
 }
 
 double AcqBoardSim::setDspCutoffFreq (double freq)

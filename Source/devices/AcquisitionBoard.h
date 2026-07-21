@@ -48,7 +48,7 @@ class AcquisitionBoard : public Thread
 {
 public:
     /** Constructor */
-    AcquisitionBoard () : Thread ("Acquisition Board")
+    AcquisitionBoard() : Thread ("Acquisition Board")
     {
         buffer = nullptr;
     }
@@ -124,6 +124,21 @@ public:
     /** Sets analog filter lower limit; returns actual value */
     virtual double setLowerBandwidth (double lowerBandwidth) = 0;
 
+    /** Restores analog filter lower limit from underlying DAC/register state; returns actual value */
+    virtual double setLowerBandwidthState (int dac1, int dac2, int dac3) = 0;
+
+    /** Restores analog filter lower limit from a saved actual bandwidth value; returns actual value */
+    virtual double setLowerBandwidthActual (double lowerBandwidth) = 0;
+
+    /** Gets the underlying DAC/register state for the analog filter lower limit */
+    virtual void getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const = 0;
+
+    /** Gets the current analog filter upper limit */
+    double getUpperBandwidth() const { return settings.analogFilter.upperBandwidth; }
+
+    /** Gets the current analog filter lower limit */
+    double getLowerBandwidth() const { return settings.analogFilter.lowerBandwidth; }
+
     /** Sets DSP cutoff frequency; returns actual value */
     virtual double setDspCutoffFreq (double freq) = 0;
 
@@ -162,6 +177,25 @@ public:
 
     /** Sets the number of channels to use in a headstage */
     virtual void setNumHeadstageChannels (int headstageIndex, int channelCount) = 0;
+
+    /** Returns whether manual cable delay adjustment is supported */
+    virtual bool supportsCableDelayAdjustment() const { return false; }
+
+    /** Returns the manual cable delay adjustment for a port */
+    virtual int getCableDelayAdjustment (int portIndex) const
+    {
+        ignoreUnused (portIndex);
+        return 0;
+    }
+
+    /** Sets the manual cable delay adjustment for a port */
+    virtual void setCableDelayAdjustment (int portIndex, int adjustment)
+    {
+        ignoreUnused (portIndex, adjustment);
+    }
+
+    /** Re-applies cable delays using the current sample rate */
+    virtual void refreshCableDelays() {}
 
     /** Returns the active number of channels in a headstage */
     virtual int getActiveChannelsInHeadstage (int hsNum) const = 0;
@@ -258,6 +292,17 @@ protected:
         digitalOutputTimers.removeObject (timerToDelete);
     }
 
+    /** Clamps a cable delay adjustment to the supported range */
+    static int clampCableDelayAdjustment (int adjustment)
+    {
+        if (adjustment > 1)
+            return 1;
+        else if (adjustment < 0)
+            return 0;
+        else
+            return adjustment;
+    }
+
     /** Sample buffer to fill */
     DataBuffer* buffer;
 
@@ -299,6 +344,11 @@ protected:
     {
         double upperBandwidth = 7500.0f;
         double lowerBandwidth = 1.0f;
+        double lowerBandwidthRequested = 1.0f;
+        int lowerBandwidthDac1 = 0;
+        int lowerBandwidthDac2 = 0;
+        int lowerBandwidthDac3 = 0;
+        bool useLowerBandwidthDacState = false;
     };
 
     /** struct containing board settings*/

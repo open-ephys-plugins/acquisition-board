@@ -35,6 +35,14 @@
 
 #define INIT_STEP (evalBoard->isUSB3() ? 256 : 60)
 
+namespace
+{
+int clampHardwareCableDelay (int delay)
+{
+    return jlimit (0, 15, delay);
+}
+} // namespace
+
 AcqBoardOpalKelly::AcqBoardOpalKelly() : AcquisitionBoard(),
                                          chipRegisters (30000.0f)
 {
@@ -186,7 +194,7 @@ bool AcqBoardOpalKelly::initializeBoard()
     //  - clears the ttlOut
     //  - disables all DACs and sets gain to 0
 
-    setSampleRate (30000);
+    setSampleRate (30000, false);
 
     evalBoard->setCableLengthMeters (Rhd2000EvalBoard::PortA, settings.cableLength.portA);
     evalBoard->setCableLengthMeters (Rhd2000EvalBoard::PortB, settings.cableLength.portB);
@@ -279,6 +287,68 @@ Array<int> AcqBoardOpalKelly::getAvailableSampleRates()
 }
 
 void AcqBoardOpalKelly::setSampleRate (int desiredSampleRate)
+{
+    setSampleRate (desiredSampleRate, true);
+}
+
+bool AcqBoardOpalKelly::supportsCableDelayAdjustment() const
+{
+    return true;
+}
+
+int AcqBoardOpalKelly::getCableDelayAdjustment (int portIndex) const
+{
+    if (! isPositiveAndBelow (portIndex, NUMBER_OF_PORTS))
+        return 0;
+
+    return cableDelayAdjustments[(size_t) portIndex];
+}
+
+void AcqBoardOpalKelly::setCableDelayAdjustment (int portIndex, int adjustment)
+{
+    if (! isPositiveAndBelow (portIndex, NUMBER_OF_PORTS))
+        return;
+
+    cableDelayAdjustments[(size_t) portIndex] = clampCableDelayAdjustment (adjustment);
+}
+
+void AcqBoardOpalKelly::refreshCableDelays()
+{
+    if (! deviceFound || evalBoard == nullptr || initialScan)
+        return;
+
+    checkAllCableDelays();
+}
+
+int AcqBoardOpalKelly::getCableDelayForPort (int portIndex, bool includeAdjustment) const
+{
+    int delay = 0;
+
+    switch (portIndex)
+    {
+        case 0:
+            delay = roundToInt (settings.optimumDelay.portA);
+            break;
+        case 1:
+            delay = roundToInt (settings.optimumDelay.portB);
+            break;
+        case 2:
+            delay = roundToInt (settings.optimumDelay.portC);
+            break;
+        case 3:
+            delay = roundToInt (settings.optimumDelay.portD);
+            break;
+        default:
+            return 0;
+    }
+
+    if (includeAdjustment)
+        delay += getCableDelayAdjustment (portIndex);
+
+    return clampHardwareCableDelay (delay);
+}
+
+void AcqBoardOpalKelly::setSampleRate (int desiredSampleRate, bool reScanDelays)
 {
     Rhd2000EvalBoard::AmplifierSampleRate sampleRate;
 
@@ -379,12 +449,10 @@ void AcqBoardOpalKelly::setSampleRate (int desiredSampleRate)
 
     LOGC ("Sample rate set to ", evalBoard->getSampleRate());
 
-    // Now that we have set our sampling rate, we can set the MISO sampling delay
-    // which is dependent on the sample rate.
-    evalBoard->setCableLengthMeters (Rhd2000EvalBoard::PortA, settings.cableLength.portA);
-    evalBoard->setCableLengthMeters (Rhd2000EvalBoard::PortB, settings.cableLength.portB);
-    evalBoard->setCableLengthMeters (Rhd2000EvalBoard::PortC, settings.cableLength.portC);
-    evalBoard->setCableLengthMeters (Rhd2000EvalBoard::PortD, settings.cableLength.portD);
+    if (reScanDelays && ! initialScan)
+    {
+        checkAllCableDelays();
+    }
 
     updateRegisters();
 }
@@ -429,7 +497,19 @@ void AcqBoardOpalKelly::updateRegisters()
     // Before generating register configuration command sequences, set amplifier
     // bandwidth paramters.
     settings.dsp.cutoffFreq = chipRegisters.setDspCutoffFreq (settings.dsp.cutoffFreq);
-    settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidth (settings.analogFilter.lowerBandwidth);
+    if (settings.analogFilter.useLowerBandwidthDacState)
+    {
+        settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                                                                          settings.analogFilter.lowerBandwidthDac2,
+                                                                                          settings.analogFilter.lowerBandwidthDac3);
+    }
+    else
+    {
+        settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidth (settings.analogFilter.lowerBandwidthRequested);
+    }
+    chipRegisters.getLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                              settings.analogFilter.lowerBandwidthDac2,
+                                              settings.analogFilter.lowerBandwidthDac3);
     settings.analogFilter.upperBandwidth = chipRegisters.setUpperBandwidth (settings.analogFilter.upperBandwidth);
     chipRegisters.enableDsp (settings.dsp.enabled);
 
@@ -516,7 +596,7 @@ void AcqBoardOpalKelly::scanPorts()
 
     float previousSampleRate = settings.boardSampleRate;
 
-    setSampleRate (30000); // set to 30 kHz temporarily
+    setSampleRate (30000, false); // set to 30 kHz temporarily
 
     // Enable all data streams, and set sources to cover one or two chips
     // on Ports A-D.
@@ -690,25 +770,173 @@ void AcqBoardOpalKelly::scanPorts()
         }
     }
 
-    evalBoard->setCableDelay (Rhd2000EvalBoard::PortA,
-                              jmax (optimumDelay[0], optimumDelay[1]));
-    evalBoard->setCableDelay (Rhd2000EvalBoard::PortB,
-                              jmax (optimumDelay[2], optimumDelay[3]));
-    evalBoard->setCableDelay (Rhd2000EvalBoard::PortC,
-                              jmax (optimumDelay[4], optimumDelay[5]));
-    evalBoard->setCableDelay (Rhd2000EvalBoard::PortD,
-                              jmax (optimumDelay[6], optimumDelay[7]));
+    settings.optimumDelay.portA = jmax (optimumDelay[0], optimumDelay[1]);
+    settings.optimumDelay.portB = jmax (optimumDelay[2], optimumDelay[3]);
+    settings.optimumDelay.portC = jmax (optimumDelay[4], optimumDelay[5]);
+    settings.optimumDelay.portD = jmax (optimumDelay[6], optimumDelay[7]);
+
+    evalBoard->setCableDelay (Rhd2000EvalBoard::PortA, getCableDelayForPort (0, true));
+    evalBoard->setCableDelay (Rhd2000EvalBoard::PortB, getCableDelayForPort (1, true));
+    evalBoard->setCableDelay (Rhd2000EvalBoard::PortC, getCableDelayForPort (2, true));
+    evalBoard->setCableDelay (Rhd2000EvalBoard::PortD, getCableDelayForPort (3, true));
 
     settings.cableLength.portA =
-        evalBoard->estimateCableLengthMeters (jmax (optimumDelay[0], optimumDelay[1]));
+        evalBoard->estimateCableLengthMeters (getCableDelayForPort (0, true));
     settings.cableLength.portB =
-        evalBoard->estimateCableLengthMeters (jmax (optimumDelay[2], optimumDelay[3]));
+        evalBoard->estimateCableLengthMeters (getCableDelayForPort (1, true));
     settings.cableLength.portC =
-        evalBoard->estimateCableLengthMeters (jmax (optimumDelay[4], optimumDelay[5]));
+        evalBoard->estimateCableLengthMeters (getCableDelayForPort (2, true));
     settings.cableLength.portD =
-        evalBoard->estimateCableLengthMeters (jmax (optimumDelay[6], optimumDelay[7]));
+        evalBoard->estimateCableLengthMeters (getCableDelayForPort (3, true));
 
-    setSampleRate (previousSampleRate); // restore saved sample rate
+    setSampleRate (previousSampleRate, ! initialScan); // restore saved sample rate
+
+    initialScan = false;
+}
+
+void AcqBoardOpalKelly::checkAllCableDelays()
+{
+    Array<bool> cableIsConnected;
+
+    for (int cableIndex = 0; cableIndex < NUMBER_OF_PORTS; cableIndex++)
+    {
+        cableIsConnected.add (headstages[cableIndex * 2]->isConnected() || headstages[cableIndex * 2 + 1]->isConnected());
+    }
+
+    LOGD ("Number of enabled data streams: ", evalBoard->getNumEnabledDataStreams());
+
+    evalBoard->selectAuxCommandBank (Rhd2000EvalBoard::PortA,
+                                     Rhd2000EvalBoard::AuxCmd3,
+                                     0);
+    evalBoard->selectAuxCommandBank (Rhd2000EvalBoard::PortB,
+                                     Rhd2000EvalBoard::AuxCmd3,
+                                     0);
+    evalBoard->selectAuxCommandBank (Rhd2000EvalBoard::PortC,
+                                     Rhd2000EvalBoard::AuxCmd3,
+                                     0);
+    evalBoard->selectAuxCommandBank (Rhd2000EvalBoard::PortD,
+                                     Rhd2000EvalBoard::AuxCmd3,
+                                     0);
+
+    evalBoard->setMaxTimeStep (INIT_STEP);
+    evalBoard->setContinuousRunMode (false);
+
+    std::unique_ptr<Rhd2000DataBlock> dataBlock =
+        std::make_unique<Rhd2000DataBlock> (evalBoard->getNumEnabledDataStreams(), evalBoard->isUSB3());
+
+    Array<int> sumGoodDelays;
+    sumGoodDelays.insertMultiple (0, 0, 8);
+
+    Array<int> indexFirstGoodDelay;
+    indexFirstGoodDelay.insertMultiple (0, -1, 8);
+
+    Array<int> indexSecondGoodDelay;
+    indexSecondGoodDelay.insertMultiple (0, -1, 8);
+
+    LOGD ("Checking for connected amplifier chips...");
+
+    int delay, hs, id;
+    int register59Value;
+
+    for (delay = -2; delay < 2; delay++)
+    {
+        LOGD ("Setting delay to: ", delay);
+
+        int delayA = clampHardwareCableDelay (getCableDelayForPort (0, false) + delay);
+        int delayB = clampHardwareCableDelay (getCableDelayForPort (1, false) + delay);
+        int delayC = clampHardwareCableDelay (getCableDelayForPort (2, false) + delay);
+        int delayD = clampHardwareCableDelay (getCableDelayForPort (3, false) + delay);
+
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortA, delayA);
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortB, delayB);
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortC, delayC);
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortD, delayD);
+
+        evalBoard->run();
+
+        while (evalBoard->isRunning())
+        {
+            ;
+        }
+
+        evalBoard->readDataBlock (dataBlock.get(), INIT_STEP);
+
+        for (hs = 0; hs < headstages.size(); ++hs)
+        {
+            if (headstages[hs]->isConnected())
+            {
+                id = getIntanChipId (dataBlock.get(), headstages[hs]->getStreamIndex (0), register59Value);
+
+                if (id == CHIP_ID_RHD2132 || id == CHIP_ID_RHD2216 || (id == CHIP_ID_RHD2164 && register59Value == REGISTER_59_MISO_A))
+                {
+                    LOGD ("Device ID found: ", id);
+
+                    sumGoodDelays.set (hs, sumGoodDelays[hs] + 1);
+
+                    if (indexFirstGoodDelay[hs] == -1)
+                    {
+                        indexFirstGoodDelay.set (hs, delay);
+                    }
+                    else if (indexSecondGoodDelay[hs] == -1)
+                    {
+                        indexSecondGoodDelay.set (hs, delay);
+                    }
+                }
+            }
+        }
+    }
+
+    Array<int> optimumDelay;
+
+    optimumDelay.insertMultiple (0, -5, headstages.size());
+
+    for (hs = 0; hs < headstages.size(); ++hs)
+    {
+        if (sumGoodDelays[hs] == 1 || sumGoodDelays[hs] == 2)
+        {
+            optimumDelay.set (hs, indexFirstGoodDelay[hs]);
+        }
+        else if (sumGoodDelays[hs] > 2)
+        {
+            optimumDelay.set (hs, indexSecondGoodDelay[hs]);
+        }
+    }
+
+    if (cableIsConnected[0])
+    {
+        int delayShift = jmax (optimumDelay[0], optimumDelay[1]);
+
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortA, clampHardwareCableDelay (getCableDelayForPort (0, true) + delayShift));
+
+        LOGD ("Port A cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (0, true) + delayShift));
+    }
+
+    if (cableIsConnected[1])
+    {
+        int delayShift = jmax (optimumDelay[2], optimumDelay[3]);
+
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortB, clampHardwareCableDelay (getCableDelayForPort (1, true) + delayShift));
+
+        LOGD ("Port B cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (1, true) + delayShift));
+    }
+
+    if (cableIsConnected[2])
+    {
+        int delayShift = jmax (optimumDelay[4], optimumDelay[5]);
+
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortC, clampHardwareCableDelay (getCableDelayForPort (2, true) + delayShift));
+
+        LOGD ("Port C cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (2, true) + delayShift));
+    }
+
+    if (cableIsConnected[3])
+    {
+        int delayShift = jmax (optimumDelay[6], optimumDelay[7]);
+
+        evalBoard->setCableDelay (Rhd2000EvalBoard::PortD, clampHardwareCableDelay (getCableDelayForPort (3, true) + delayShift));
+
+        LOGD ("Port D cable delay at ", settings.boardSampleRate, " samples/sec: ", clampHardwareCableDelay (getCableDelayForPort (3, true) + delayShift));
+    }
 }
 
 void AcqBoardOpalKelly::setCableLength (int hsNum, float length)
@@ -943,11 +1171,44 @@ double AcqBoardOpalKelly::setUpperBandwidth (double upper)
 
 double AcqBoardOpalKelly::setLowerBandwidth (double lower)
 {
-    settings.analogFilter.lowerBandwidth = lower;
+    settings.analogFilter.lowerBandwidthRequested = lower;
+    settings.analogFilter.useLowerBandwidthDacState = false;
 
     updateRegisters();
 
     return settings.analogFilter.lowerBandwidth;
+}
+
+double AcqBoardOpalKelly::setLowerBandwidthActual (double lowerBandwidth)
+{
+    settings.analogFilter.lowerBandwidth = chipRegisters.setLowerBandwidthActual (lowerBandwidth);
+    chipRegisters.getLowerBandwidthDacValues (settings.analogFilter.lowerBandwidthDac1,
+                                              settings.analogFilter.lowerBandwidthDac2,
+                                              settings.analogFilter.lowerBandwidthDac3);
+    settings.analogFilter.useLowerBandwidthDacState = true;
+
+    updateRegisters();
+
+    return settings.analogFilter.lowerBandwidth;
+}
+
+double AcqBoardOpalKelly::setLowerBandwidthState (int dac1, int dac2, int dac3)
+{
+    settings.analogFilter.lowerBandwidthDac1 = dac1;
+    settings.analogFilter.lowerBandwidthDac2 = dac2;
+    settings.analogFilter.lowerBandwidthDac3 = dac3;
+    settings.analogFilter.useLowerBandwidthDacState = true;
+
+    updateRegisters();
+
+    return settings.analogFilter.lowerBandwidth;
+}
+
+void AcqBoardOpalKelly::getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const
+{
+    dac1 = settings.analogFilter.lowerBandwidthDac1;
+    dac2 = settings.analogFilter.lowerBandwidthDac2;
+    dac3 = settings.analogFilter.lowerBandwidthDac3;
 }
 
 double AcqBoardOpalKelly::setDspCutoffFreq (double freq)

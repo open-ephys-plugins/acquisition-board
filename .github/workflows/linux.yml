@@ -76,6 +76,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
 
     - name: setup
       id: setup
@@ -104,7 +106,6 @@ jobs:
         path: |
           Build
           Resources
-          libONI
 
   deploy-linux:
 
@@ -133,7 +134,7 @@ jobs:
         mkdir shared
         cp Resources/libokFrontPanel.so shared
         cp Resources/*.bit shared
-        cp -r libONI/linux/*.so shared
+        cp Build/lib/*.so shared
         zipfile=${package}_${new_plugin_ver}.zip
         zip -r -X $zipfile plugins shared
         curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/AcquisitionBoard-plugin/linux/$zipfile"

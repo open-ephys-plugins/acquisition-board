@@ -99,15 +99,29 @@ AcquisitionBoard* DeviceThread::detectBoard()
         oniBoard.reset();
     }
 
-    bool response = AlertWindow::showOkCancelBox (AlertWindow::NoIcon,
-                                                  "No device found.",
-                                                  "An acquisition board could not be found. Do you want to run this plugin in simulation mode?",
-                                                  "Yes",
-                                                  "No",
-                                                  0,
-                                                  0);
+    AlertWindow alert ("No device found",
+                       "An acquisition board could not be found. Make sure your device is connected properly and powered on. "
+                       "If the problem persists, refer to the troubleshooting guide linked below.",
+                       MessageBoxIconType::WarningIcon);
 
-    if (response)
+    auto hyperlink = std::make_unique<HyperlinkButton> ("Troubleshooting Guide", URL ("https://open-ephys.github.io/acq-board-docs/User-Manual/Troubleshooting.html"));
+    hyperlink->setName ("");
+    hyperlink->setFont (FontOptions ("Inter", "Medium", 18.0f).withUnderline (true), false);
+    hyperlink->setTooltip ("https://open-ephys.github.io/acq-board-docs/User-Manual/Troubleshooting.html");
+    hyperlink->setJustificationType (Justification::centred);
+    hyperlink->changeWidthToFitText();
+    hyperlink->setSize (hyperlink->getWidth() + 20, 20);
+    hyperlink->setColour (HyperlinkButton::ColourIds::textColourId, Colours::deepskyblue);
+
+    alert.addCustomComponent (hyperlink.get());
+
+    alert.addTextBlock ("\t\tDo you want to run this plugin in simulation mode?");
+
+    alert.addButton ("Yes", 0, KeyPress (KeyPress::returnKey, 0, 0));
+    alert.addButton ("No", 1, KeyPress (KeyPress::escapeKey, 0, 0));
+    int response = alert.runModalLoop();
+
+    if (response == 0)
     {
         return new AcqBoardSim();
     }
@@ -200,7 +214,7 @@ void DeviceThread::updateSettings (OwnedArray<ContinuousChannel>* continuousChan
 
         if (acquisitionBoard->areAuxChannelsEnabled())
         {
-            const ContinuousChannel::InputRange accelerationRange { -100.0f, 100.0f };
+            const ContinuousChannel::InputRange accelerationRange { -10.0f, 10.0f };
 
             for (auto headstage : acquisitionBoard->getHeadstages())
             {

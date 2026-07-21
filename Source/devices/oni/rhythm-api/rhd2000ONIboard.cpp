@@ -43,11 +43,15 @@ int Rhd2000ONIBoard::open (const oni_driver_info_t** driverInfo)
     if (driverInfo)
         getONIDriverInfo (driverInfo);
 
-    if (oni_init_ctx (ctx, -1) != ONI_ESUCCESS)
+    int res = oni_init_ctx (ctx, -1);
+    if (res != ONI_ESUCCESS)
     {
         oni_destroy_ctx (ctx);
         ctx = nullptr;
-        return -2;
+        if (res == ONI_EBADCONTROLLER)
+            return -3;
+        else
+            return -2;
     }
 
     return 1;

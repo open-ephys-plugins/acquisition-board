@@ -21,6 +21,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <queue>
 #include <vector>
 
@@ -703,6 +704,94 @@ double Rhd2000ONIRegisters::setLowerBandwidth (double lowerBandwidth)
     */
 
     return actualLowerBandwidth;
+}
+
+double Rhd2000ONIRegisters::setLowerBandwidthDacValues (int dac1, int dac2, int dac3)
+{
+    if (dac1 < 0)
+        rLDac1 = 0;
+    else if (dac1 > 127)
+        rLDac1 = 127;
+    else
+        rLDac1 = dac1;
+
+    if (dac2 < 0)
+        rLDac2 = 0;
+    else if (dac2 > 63)
+        rLDac2 = 63;
+    else
+        rLDac2 = dac2;
+
+    if (dac3 <= 0)
+        rLDac3 = 0;
+    else
+        rLDac3 = 1;
+
+    return getLowerBandwidth();
+}
+
+double Rhd2000ONIRegisters::setLowerBandwidthActual (double lowerBandwidth)
+{
+    const double RLBase = 3500.0;
+    const double RLDac1Unit = 175.0;
+    const double RLDac2Unit = 12700.0;
+    const double RLDac3Unit = 3000000.0;
+
+    double bestBandwidth = getLowerBandwidth();
+    double bestDiff = std::numeric_limits<double>::max();
+    int bestDac1 = rLDac1;
+    int bestDac2 = rLDac2;
+    int bestDac3 = rLDac3;
+
+    for (int dac3 = 0; dac3 <= 1; ++dac3)
+    {
+        for (int dac2 = 0; dac2 <= 63; ++dac2)
+        {
+            for (int dac1 = 0; dac1 <= 127; ++dac1)
+            {
+                double rLActual = RLBase
+                                  + static_cast<double> (dac1) * RLDac1Unit
+                                  + static_cast<double> (dac2) * RLDac2Unit
+                                  + static_cast<double> (dac3) * RLDac3Unit;
+                double candidateBandwidth = lowerBandwidthFromRL (rLActual);
+                double diff = std::abs (candidateBandwidth - lowerBandwidth);
+
+                if (diff < bestDiff)
+                {
+                    bestDiff = diff;
+                    bestBandwidth = candidateBandwidth;
+                    bestDac1 = dac1;
+                    bestDac2 = dac2;
+                    bestDac3 = dac3;
+                }
+            }
+        }
+    }
+
+    setLowerBandwidthDacValues (bestDac1, bestDac2, bestDac3);
+    return bestBandwidth;
+}
+
+void Rhd2000ONIRegisters::getLowerBandwidthDacValues (int& dac1, int& dac2, int& dac3) const
+{
+    dac1 = rLDac1;
+    dac2 = rLDac2;
+    dac3 = rLDac3;
+}
+
+double Rhd2000ONIRegisters::getLowerBandwidth() const
+{
+    const double RLBase = 3500.0;
+    const double RLDac1Unit = 175.0;
+    const double RLDac2Unit = 12700.0;
+    const double RLDac3Unit = 3000000.0;
+
+    double rLActual = RLBase
+                      + static_cast<double> (rLDac1) * RLDac1Unit
+                      + static_cast<double> (rLDac2) * RLDac2Unit
+                      + static_cast<double> (rLDac3) * RLDac3Unit;
+
+    return lowerBandwidthFromRL (rLActual);
 }
 
 // Return a 16-bit MOSI command (CALIBRATE or CLEAR)

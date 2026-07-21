@@ -24,8 +24,8 @@
 #define __ACQBOARDOPALKELLY_H_2C4CBD67__
 
 #include "../AcquisitionBoard.h"
-#include "ImpedanceMeterOpalKelly.h"
 #include "HeadstageOpalKelly.h"
+#include "ImpedanceMeterOpalKelly.h"
 
 #include "rhythm-api/okFrontPanelDLL.h"
 #include "rhythm-api/rhd2000datablock.h"
@@ -53,7 +53,7 @@
 class AcqBoardOpalKelly : public AcquisitionBoard
 {
     friend class ImpedanceMeterOpalKelly;
-    
+
 public:
     /** Constructor */
     AcqBoardOpalKelly();
@@ -85,6 +85,18 @@ public:
     /** Checks for connected headstages */
     void scanPorts();
 
+    /** Returns whether manual cable delay adjustment is supported */
+    bool supportsCableDelayAdjustment() const override;
+
+    /** Returns the manual cable delay adjustment for a port */
+    int getCableDelayAdjustment (int portIndex) const override;
+
+    /** Sets the manual cable delay adjustment for a port */
+    void setCableDelayAdjustment (int portIndex, int adjustment) override;
+
+    /** Re-applies cable delays using the current sample rate */
+    void refreshCableDelays() override;
+
     /** Enables AUX channel out */
     void enableAuxChannels (bool enabled);
 
@@ -100,7 +112,7 @@ public:
     /** Returns bitVolts scaling value for each channel type */
     float getBitVolts (ContinuousChannel::Type) const;
 
-     /** Measures impedance of each channel */
+    /** Measures impedance of each channel */
     void measureImpedances();
 
     /**  Called when impedance measurement is complete */
@@ -109,7 +121,7 @@ public:
     /** Save impedance measurements to XML*/
     void saveImpedances (File& file);
 
-     /** Sets the method for determining channel names*/
+    /** Sets the method for determining channel names*/
     void setNamingScheme (ChannelNamingScheme scheme);
 
     /** Gets the method for determining channel names*/
@@ -129,11 +141,20 @@ public:
     /** Sets analog filter lower limit; returns actual value */
     double setLowerBandwidth (double lowerBandwidth);
 
+    /** Restores analog filter lower limit from underlying DAC/register state; returns actual value */
+    double setLowerBandwidthState (int dac1, int dac2, int dac3) override;
+
+    /** Restores analog filter lower limit from a saved actual bandwidth value; returns actual value */
+    double setLowerBandwidthActual (double lowerBandwidth) override;
+
+    /** Gets the underlying DAC/register state for the analog filter lower limit */
+    void getLowerBandwidthState (int& dac1, int& dac2, int& dac3) const override;
+
     /** Sets DSP cutoff frequency; returns actual value */
     double setDspCutoffFreq (double freq);
 
     /** Returns the current DSP cutoff frequency */
-    double getDspCutoffFreq () const;
+    double getDspCutoffFreq() const;
 
     /** Sets whether DSP offset is enabled */
     void setDspOffset (bool enabled);
@@ -178,15 +199,23 @@ public:
     void setNumHeadstageChannels (int headstageIndex, int channelCount);
 
 private:
+    /** Sets sample rate and optionally rescans cable delays */
+    void setSampleRate (int sampleRateHz, bool reScanDelays);
+
+    /** Checks cable delays after sample rate update */
+    void checkAllCableDelays();
 
     /** Fills data buffer */
     void run();
-    
+
     /** Updates registers to modify settings */
     void updateRegisters();
 
     /** Updates board streams after scanning ports */
     void updateBoardStreams();
+
+    /** Returns the base or adjusted cable delay for a port */
+    int getCableDelayForPort (int portIndex, bool includeAdjustment) const;
 
     /** Returns the device ID for an Intan chip*/
     int getIntanChipId (Rhd2000DataBlock* dataBlock, int stream, int& register59Value);
@@ -198,7 +227,7 @@ private:
     bool enableHeadstage (int hsNum, bool enabled, int nStr = 1, int strChans = 32);
 
     /**Returns the global channel index for a local headstage channel */
-    int getChannelFromHeadstage(int headstageIndex, int channelIndex);
+    int getChannelFromHeadstage (int headstageIndex, int channelIndex);
 
     /** ??? Returns the global channel index for a local headstage channel */
     int getHeadstageChannel (int& headstageIndex, int channelIndex) const;
@@ -250,6 +279,10 @@ private:
 
     /** True if acquisition is active */
     bool isTransmitting;
+
+    static constexpr int NUMBER_OF_PORTS = 4;
+    bool initialScan = true;
+    std::array<int, NUMBER_OF_PORTS> cableDelayAdjustments = { 0, 0, 0, 0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AcqBoardOpalKelly);
 };
